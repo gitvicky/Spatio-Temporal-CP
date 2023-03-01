@@ -39,7 +39,7 @@ def solve_burgers(configuration):
     L = configuration['domain length']
     N = configuration['discretisation']
     dt = configuration['dt']
-    iterations = configuration['time iteration']
+    iterations = configuration['iterations']
 
 
     dx = L/N 

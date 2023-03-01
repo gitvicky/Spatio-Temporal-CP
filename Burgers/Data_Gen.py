@@ -52,27 +52,29 @@ configuration = {'viscosity': 0.002,
                  'iterations': 500,
                  }
 # %%
-for sim in range(n_sims):
-    run = Run()
-    configuration['alpha'] = params[sim, 0]
-    configuration['beta'] = params[sim, 1]
-    configuration['gamma'] = params[sim, 2]
-    run.init(folder="/Burgers_trial", tags=['Burgers1D', 'Spectral'], metadata=configuration)
+if __name__ == "__main__":
 
-    u_sol = solve_burgers(configuration) #Running the simulation with the specified configuration. 
+    for sim in range(n_sims):
+        run = Run()
+        configuration['alpha'] = params[sim, 0]
+        configuration['beta'] = params[sim, 1]
+        configuration['gamma'] = params[sim, 2]
+        run.init(folder="/Burgers_trial", tags=['Burgers1D', 'Spectral'], metadata=configuration)
 
-    run.save(u_sol, 'output', name='u_field') #Saving the solution as a numpy array to simvue
+        u_sol = solve_burgers(configuration) #Running the simulation with the specified configuration. 
 
-    #Generating the spatio-temporal plot
-    fig = plt.figure()
-    plt.imshow(np.flipud(u), aspect=.8)
-    plt.axis('off')
-    plt.set_cmap('plasma')
+        run.save(u_sol, 'output', name='u_field') #Saving the solution as a numpy array to simvue
 
-    run.save(fig, 'output', name='kymograph') #Saving the solution as a numpy array to simvue
+        #Generating the spatio-temporal plot
+        fig = plt.figure()
+        plt.imshow(np.flipud(u), aspect=.8)
+        plt.axis('off')
+        plt.set_cmap('plasma')
 
-    #Simvue Artifact storage
-    run.save('Data_Gen.py', 'code', name='Data_Gen') #Saving the data generation script to simvue
-    run.save('Burgers_fft.py', 'code', name='Burgers_fft') #Saving the data generation script to simvue
+        run.save(fig, 'output', name='kymograph') #Saving the solution as a numpy array to simvue
 
-    run.close()
+        #Simvue Artifact storage
+        run.save('Data_Gen.py', 'code', name='Data_Gen') #Saving the data generation script to simvue
+        run.save('Burgers_fft.py', 'code', name='Burgers_fft') #Saving the data generation script to simvue
+
+        run.close()
