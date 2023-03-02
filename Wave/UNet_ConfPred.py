@@ -31,7 +31,6 @@ configuration = {"Case": 'Wave',
                  "T_in": 20,    
                  "T_out": 20,
                  "Step": 20,
-                 "Modes":16,
                  "Width": 32, 
                  "Variables":1, 
                  "Noise":0.0, 
@@ -483,8 +482,9 @@ gamma = configuration['Pinball Gamma']
 
 # %%
 epochs = configuration['Epochs']
-# y_normalizer.cuda()
-
+if torch.cuda.is_available():
+    y_normalizer.cuda()
+    
 start_time = time.time()
 for ep in tqdm(range(epochs)):
     model.train()
