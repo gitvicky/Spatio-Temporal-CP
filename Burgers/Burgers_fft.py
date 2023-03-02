@@ -31,9 +31,8 @@ u_t(x,y,t=0) = 0
 import numpy as np
 import matplotlib.pyplot as plt 
 from scipy.integrate import odeint
-from simvue import run 
 
-def solve_burgers(configuration):
+def solve_burgers(run, configuration):
 
     nu = configuration['viscosity']
     L = configuration['domain length']
@@ -65,8 +64,9 @@ def solve_burgers(configuration):
         d_u = np.fft.ifft(d_uhat)
         dd_u = np.fft.ifft(dd_uhat)
         du_dt = -u*d_u + nu*dd_u
+        residual = (du_dt + u*d_u - nu*dd_u).mean()
 
-        run.log_metrics({'u_mid': uhat.real})
+        run.log_metrics({'residual': residual.real})
                         
         return du_dt.real
     
