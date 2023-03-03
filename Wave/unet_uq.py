@@ -297,3 +297,36 @@ fig = go.Figure(data=[
 
 fig.show()
 # %%
+
+def get_prediction_sets(alpha):
+    
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+
+    #Obtaining the Prediction Sets
+    stacked_x = torch.FloatTensor(pred_a)
+
+    with torch.no_grad():
+        mean = model_50(stacked_x).numpy()
+
+    return  [mean - qhat, mean + qhat]
+
+
+alpha_levels = np.arange(0.05, 0.95, 0.05)
+cols = cm.plasma(alpha_levels)
+pred_sets = [get_prediction_sets(a) for a in alpha_levels] 
+
+# %%
+x_id = 16
+
+# x_points = pred_a[idx, tt][x_id, :]
+x_points = np.arange(S)
+
+fig, ax = plt.subplots()
+[plt.fill_between(x_points, pred_sets[i][0][idx, tt][x_id,:], pred_sets[i][1][idx, tt][x_id,:], color = cols[i]) for i in range(len(alpha_levels))]
+fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
+
+plt.plot(x_points, y_response[idx, tt][x_id, :], linewidth = 4, color = "black", label = "exact")
+plt.legend()
+
+
+# %%
