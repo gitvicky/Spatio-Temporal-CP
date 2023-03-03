@@ -215,7 +215,9 @@ pred_sets = [get_prediction_sets(x_true.squeeze().reshape(-1,1).astype(np.float3
 fig, ax = plt.subplots()
 [plt.fill_between(x_true, pred_sets[i][0].squeeze(), pred_sets[i][1].squeeze(), color = cols[i]) for i in range(len(alpha_levels))]
 fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
-
+plt.plot(x_true, y_true, '--', label='function', alpha=1, linewidth = 2)
 
 # [plt.plot(x_grid, inf.(ints[i,:]), color = "black", linewidth = 0.7) for i in 1:length(ps)]
 # [plt.plot(x_grid, sup.(ints[i,:]), color = "black", linewidth = 0.7) for i in 1:length(ps)]
+
+# %%
