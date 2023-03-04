@@ -34,7 +34,7 @@ from tqdm import tqdm
 from pyDOE import lhs 
 from Burgers_fft import *
 # %%
-n_sims = 10 #Total Number of simulation datapoints to be generated. 
+n_sims = 1000 #Total Number of simulation datapoints to be generated. 
 
 #Grabbing the simulation parameters from the specified domain. 
  #alpha, beta, gamma
@@ -60,7 +60,7 @@ if __name__ == "__main__":
         configuration['alpha'] = params[sim, 0]
         configuration['beta'] = params[sim, 1]
         configuration['gamma'] = params[sim, 2]
-        run.init(folder="/Burgers_trial", tags=['Burgers1D', 'Spectral'], metadata=configuration)
+        run.init(folder="/Burgers", tags=['Burgers1D', 'Spectral'], metadata=configuration)
         u_sol = solve_burgers(run, configuration) #Running the simulation with the specified configuration
         u_list.append(u_sol)
         #Passing the simvue run object as well. 
@@ -73,7 +73,7 @@ if __name__ == "__main__":
         plt.axis('off')
         plt.set_cmap('plasma')
 
-        run.save(fig, 'output', name='kymograph') #Saving the solution as a numpy array to simvue
+        # run.save(fig, 'output', name='kymograph') #Saving the solution as a numpy array to simvue
 
         #Simvue Artifact storage
         run.save('Data_Gen.py', 'code', name='Data_Gen') #Saving the data generation script to simvue

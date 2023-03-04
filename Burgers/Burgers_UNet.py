@@ -12,15 +12,15 @@ Surrogate Model for the 1D Burgers Reimann Problem developed using a 1D U-Net Mo
 
 configuration = {"Case": 'Burgers',
                  "Field": 'u',
-                 "Type": 'U-Net',
-                 "Epochs": 0,
+                 "Type": 'MLP',
+                 "Epochs": 500,
                  "Batch Size": 50,
                  "Optimizer": 'Adam',
                  "Learning Rate": 0.005,
                  "Scheduler Step": 100,
                  "Scheduler Gamma": 0.5,
                  "Activation": 'Tanh',
-                 "Normalisation Strategy": 'Min-Max',
+                 "Normalisation Strategy": 'None.',
                  "Instance Norm": 'No',
                  "Log Normalisation":  'No',
                  "Physics Normalisation": 'No',
@@ -30,10 +30,11 @@ configuration = {"Case": 'Burgers',
                  "Width": 32, 
                  "Variables":1, 
                  "Noise":0.0, 
-                 "Loss Function": 'Quantile Loss',
-                 "UQ": 'Quantile Regression',
-                 "Pinball Gamma": 0.5,
-                 "Dropout Rate": 'NA'
+                 "Loss Function": 'Pinball',
+                 "UQ": 'Pinball',
+                 "Pinball Gamma": 0.50,
+                 "Dropout Rate": 'NA',
+                 "Spatial Resolution": 200
                  }
 
 from simvue import Run
@@ -68,7 +69,7 @@ np.random.seed(0)
 # %%
 import os 
 path = os.getcwd()
-data_loc = os.path.dirname(os.path.dirname(os.path.dirname(os.getcwd())))
+data_loc = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.getcwd())))))
 # model_loc = os.path.dirname(os.path.dirname(os.getcwd()))
 file_loc = os.getcwd()
 
@@ -80,16 +81,16 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 ################################################################
 
 # %%
-data_loc = path
+# data_loc = path
 data =  np.load(data_loc + '/Data/Burgers1d_sliced.npy')
-u_sol = data.astype(np.float32)
+u_sol = data.astype(np.float32)[:,:,::5]
 u = torch.from_numpy(u_sol)
 # u = u.permute(0, 2, 3, 1)
 
 # %% 
 ntrain = 500
 ntest = 20
-S = 33 #Grid Size
+S = 1000 #Grid Size
 
 width = configuration['Width']
 output_size = configuration['Step']
@@ -120,21 +121,21 @@ print(test_u.shape)
 
 
 # %%
-# a_normalizer = RangeNormalizer(train_a)
-a_normalizer = MinMax_Normalizer(train_a)
-train_a = a_normalizer.encode(train_a)
-test_a = a_normalizer.encode(test_a)
+# # a_normalizer = RangeNormalizer(train_a)
+# a_normalizer = MinMax_Normalizer(train_a)
+# train_a = a_normalizer.encode(train_a)
+# test_a = a_normalizer.encode(test_a)
 
-# y_normalizer = RangeNormalizer(train_u)
-y_normalizer = MinMax_Normalizer(train_u)
-train_u = y_normalizer.encode(train_u)
-# test_u = y_normalizer.encode(test_u)
-test_u_encoded = y_normalizer.encode(test_u)
+# # y_normalizer = RangeNormalizer(train_u)
+# y_normalizer = MinMax_Normalizer(train_u)
+# train_u = y_normalizer.encode(train_u)
+# # test_u = y_normalizer.encode(test_u)
+# test_u_encoded = y_normalizer.encode(test_u)
 
 # %%
 
 train_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(train_a, train_u), batch_size=batch_size, shuffle=True)
-test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(test_a, test_u_encoded), batch_size=batch_size, shuffle=False)
+test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(test_a, test_u), batch_size=batch_size, shuffle=False)
 
 t2 = default_timer()
 print('preprocessing finished, time used:', t2-t1)
@@ -145,7 +146,11 @@ print('preprocessing finished, time used:', t2-t1)
 # training and evaluation
 ################################################################
 
-model = UNet1d(T_in, step, 32)
+# model = UNet1d(T_in, step, 32)
+# model = UNet1d_dropout(T_in, step, 32)
+# model.to(device)
+
+model = MLP(1000, 1000, 4, 2048)
 model.to(device)
 
 # wandb.watch(model, log='all')
@@ -168,8 +173,8 @@ myloss = quantile_loss
 # %%
 epochs = configuration['Epochs']
 
-if torch.cuda.is_available():
-    y_normalizer.cuda()
+# if torch.cuda.is_available():
+#     y_normalizer.cuda()
     
 start_time = time.time()
 for ep in tqdm(range(epochs)):
@@ -249,7 +254,7 @@ for ep in tqdm(range(epochs)):
 train_time = time.time() - start_time
 # %%
 
-model_loc = file_loc + '/Models/Unet_Burgers_' + run.name + '.pth'
+model_loc = file_loc + '/Models/MLP_Burgers_' + run.name + '.pth'
 torch.save(model.state_dict(),  model_loc)
 
 # %%
@@ -288,8 +293,8 @@ with torch.no_grad():
 
 # %%
 #Logging Metrics 
-MSE_error = (pred_set - test_u_encoded).pow(2).mean()
-MAE_error = torch.abs(pred_set - test_u_encoded).mean()
+MSE_error = (pred_set - test_u).pow(2).mean()
+MAE_error = torch.abs(pred_set - test_u).mean()
 LP_error = loss / (ntest*T/step)
 
 print('(MSE) Testing Error: %.3e' % (MSE_error))
@@ -302,14 +307,14 @@ run.update_metadata({'Training Time': float(train_time),
                      'LP Test Error': float(LP_error)
                     })
 
-pred_set = y_normalizer.decode(pred_set.to(device)).cpu()
+# pred_set = y_normalizer.decode(pred_set.to(device)).cpu()
 
 # %%
 #Plotting the comparison plots
 
 idx = np.random.randint(0,ntest) 
 idx = 5
-x_range = np.linspace(-1,1,1000)
+x_range = np.linspace(-1,1,1000)[::5]
 
 u_field_actual = test_u[idx]
 u_field_pred = pred_set[idx]
@@ -344,13 +349,13 @@ ax.set_ylim([v_min, v_max])
 ax.axes.yaxis.set_ticks([])
 
 
-output_plot = (file_loc + '/Plots/_Unet_CP_' + run.name + '.png')
+output_plot = (file_loc + '/Plots/_MLP_CP_' + run.name + '.png')
 plt.savefig(output_plot)
 
 
 # %%
 
-CODE = ['Unet_ConfPred.py']
+CODE = ['Burgers_UNet.py']
 INPUTS = []
 OUTPUTS = [model_loc, output_plot[0], output_plot[1], output_plot[2]]
 
@@ -386,3 +391,5 @@ for output_file in OUTPUTS:
 run.close()
 
 
+
+# %%
