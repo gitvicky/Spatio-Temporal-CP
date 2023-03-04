@@ -3,6 +3,7 @@ simvue.ini
 
 #Saved Models
 
+*.pyc
 
 #Saved Plot
 Plots/
