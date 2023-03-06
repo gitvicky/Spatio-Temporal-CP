@@ -22,7 +22,6 @@ import time
 from timeit import default_timer
 from tqdm import tqdm 
 
-from utils import *
 
 torch.manual_seed(0)
 np.random.seed(0)
@@ -34,7 +33,7 @@ f_x = lambda x:  np.sin(x) + np.cos(2*x)
 
 N_train = 10
 N_cal = 40
-N_val = 100
+N_val = 500
 
 def LHS(lb, ub, N): #Latin Hypercube Sampling for each the angles and the length. 
     return lb + (ub-lb)*lhs(1, N)
@@ -172,7 +171,7 @@ for ii in tqdm(range(len(alpha_levels))):
     empirical_coverage = ((y_val >= sets[0]) & (y_val <= sets[1])).mean()
     emp_cov.append(empirical_coverage)
 
-
+plt.figure()
 plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal')
 plt.plot(1-alpha_levels, emp_cov, label='Coverage')
 plt.xlabel('1-alpha')
@@ -214,10 +213,86 @@ pred_sets = [get_prediction_sets(x_true.squeeze().reshape(-1,1).astype(np.float3
 
 fig, ax = plt.subplots()
 [plt.fill_between(x_true, pred_sets[i][0].squeeze(), pred_sets[i][1].squeeze(), color = cols[i]) for i in range(len(alpha_levels))]
-fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
+cbar = fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
 plt.plot(x_true, y_true, '--', label='function', alpha=1, linewidth = 2)
+
+cbar.ax.set_ylabel('alpha', rotation=270)
 
 # [plt.plot(x_grid, inf.(ints[i,:]), color = "black", linewidth = 0.7) for i in 1:length(ps)]
 # [plt.plot(x_grid, sup.(ints[i,:]), color = "black", linewidth = 0.7) for i in 1:length(ps)]
 
+# %% Polynomial regression
+
+mymodel = np.poly1d(np.polyfit(x_train.squeeze(), y_train.squeeze(), 3))
+cal_scores_poly = np.abs(mymodel(x_cal.squeeze()) - y_cal.squeeze())
+
+
+# cal_scores_poly = np.abs( mymodel(x_cal) - y_cal )
+# cal_scores = np.abs(mymodel(x_cal.squeeze())-y_cal.squeeze())/mymodel(x_cal.squeeze())
+
+plt.figure()
+plt.hist(cal_scores)
+plt.show()
+
+plt.figure()
+plt.step(np.sort(cal_scores_poly), np.linspace(0,1, N_cal))
+plt.show()
+
+def get_prediction_sets_poly(x, alpha = 0.1):
+
+    Y_predicted = mymodel(x)
+
+    qhat = np.quantile(np.sort(cal_scores_poly), np.ceil((N_cal+1)*(1-alpha))/(N_cal), axis = 0,interpolation='higher')
+
+    return [Y_predicted - qhat, Y_predicted + qhat]
+
+alpha = 0.1
+
+[Y_lo, Y_hi] = get_prediction_sets_poly(x_true, alpha)
+
+plt.figure()
+plt.scatter(x_train, y_train)
+plt.plot(x_true, mymodel(x_true), '--', label='Predictions', alpha=0.5)
+plt.plot(x_true, Y_lo, '--', label='Conf_lower', alpha=0.5)
+plt.plot(x_true, Y_hi, '--', label='Conf_upper', alpha=0.5)
+plt.plot(x_true, y_true, '--', label='function', alpha=1, linewidth = 2)
+plt.legend()
+plt.show()
+
+# %% Compute empirical coverage
+
+#[Y_lo_val, Y_hi_val] = get_prediction_sets_poly(x_val, alpha)
+[Y_lo_val, Y_hi_val] = get_prediction_sets_poly(x_val, alpha)
+
+empirical_coverage = ((y_val >= Y_lo_val) & (y_val <= Y_hi_val)).mean()
+print(f"The empirical coverage after calibration is: {empirical_coverage}")
+print(f"1 - Alpha <=  empirical_coverage : 1 - {alpha} <= {empirical_coverage} is {1 - alpha <= empirical_coverage}")
+
 # %%
+
+alpha_levels = np.arange(0.05, 0.95, 0.05)
+cols = cm.plasma(alpha_levels)
+pred_sets = [get_prediction_sets_poly(x_true, a) for a in alpha_levels] 
+
+fig, ax = plt.subplots()
+[plt.fill_between(x_true, pred_sets[i][0].squeeze(), pred_sets[i][1].squeeze(), color = cols[i]) for i in range(len(alpha_levels))]
+cbar = fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
+plt.plot(x_true, y_true, '--', label='function', alpha=1, linewidth = 2)
+cbar.ax.set_ylabel('alpha', rotation=270)
+
+# %%
+
+alpha_levels = np.arange(0.05, 0.95, 0.05)
+emp_cov = []
+for ii in tqdm(range(len(alpha_levels))):
+    sets = get_prediction_sets_poly(x_val, alpha_levels[ii])
+    empirical_coverage = ((y_val >= sets[0]) & (y_val <= sets[1])).mean()
+    emp_cov.append(empirical_coverage)
+
+plt.figure()
+plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal')
+plt.plot(1-alpha_levels, emp_cov, label='Coverage')
+plt.xlabel('1-alpha')
+plt.ylabel('Empirical Coverage')
+plt.legend()
+# %% 
