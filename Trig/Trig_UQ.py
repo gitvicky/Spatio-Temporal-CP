@@ -22,9 +22,17 @@ import time
 from timeit import default_timer
 from tqdm import tqdm 
 
+import random
+import sys
 
-torch.manual_seed(0)
-np.random.seed(0)
+
+# seed = random.randrange(2**32 - 1)
+# print("Seed was:", seed)
+
+seed = 3993374104
+
+torch.manual_seed(seed)
+np.random.seed(seed)
 
 # True function is sin(x) + cos(2x)
 f_x = lambda x:  np.sin(x) + np.cos(2*x)
@@ -236,6 +244,9 @@ plt.show()
 
 plt.figure()
 plt.step(np.sort(cal_scores_poly), np.linspace(0,1, N_cal))
+plt.xlabel("s(x,y)", fontsize = 18)
+plt.ylabel("ECDF", fontsize = 18)
+plt.savefig("figures/cal_score_distribution.png", dpi = 600)
 plt.show()
 
 def get_prediction_sets_poly(x, alpha = 0.1):
@@ -251,17 +262,19 @@ alpha = 0.1
 [Y_lo, Y_hi] = get_prediction_sets_poly(x_true, alpha)
 
 plt.figure()
-plt.scatter(x_train, y_train)
-plt.plot(x_true, mymodel(x_true), '--', label='Predictions', alpha=0.5)
-plt.plot(x_true, Y_lo, '--', label='Conf_lower', alpha=0.5)
-plt.plot(x_true, Y_hi, '--', label='Conf_upper', alpha=0.5)
-plt.plot(x_true, y_true, '--', label='function', alpha=1, linewidth = 2)
+plt.scatter(x_train, y_train, label = "Training points")
+plt.plot(x_true, mymodel(x_true), '--', label='Regressor', alpha=0.5)
+plt.plot(x_true, Y_lo, '--', label='90_lower', alpha=0.5)
+plt.plot(x_true, Y_hi, '--', label='90_upper', alpha=0.5)
+plt.plot(x_true, y_true, '--', label='True function', alpha=1, linewidth = 2)
+plt.xlabel("X", fontsize = 18)
+plt.ylabel("Y", fontsize = 18)
 plt.legend()
+plt.savefig("figures/Regressor_90.png", dpi = 600)
 plt.show()
 
 # %% Compute empirical coverage
 
-#[Y_lo_val, Y_hi_val] = get_prediction_sets_poly(x_val, alpha)
 [Y_lo_val, Y_hi_val] = get_prediction_sets_poly(x_val, alpha)
 
 empirical_coverage = ((y_val >= Y_lo_val) & (y_val <= Y_hi_val)).mean()
@@ -279,6 +292,12 @@ fig, ax = plt.subplots()
 cbar = fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
 plt.plot(x_true, y_true, '--', label='function', alpha=1, linewidth = 2)
 cbar.ax.set_ylabel('alpha', rotation=270)
+plt.xlabel("X", fontsize = 18)
+plt.ylabel("Y", fontsize = 18)
+plt.legend()
+plt.savefig("figures/Calibration_all_levels.png", dpi = 600)
+plt.show()
+
 
 # %%
 
@@ -292,7 +311,39 @@ for ii in tqdm(range(len(alpha_levels))):
 plt.figure()
 plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal')
 plt.plot(1-alpha_levels, emp_cov, label='Coverage')
-plt.xlabel('1-alpha')
-plt.ylabel('Empirical Coverage')
+plt.xlabel('1-alpha', fontsize = 18)
+plt.ylabel('Empirical Coverage', fontsize = 18)
 plt.legend()
-# %% 
+plt.savefig("figures/Empirical_coverage.png", dpi = 600)
+plt.show()
+# %% Polynomial regression explain
+
+N_cal_show = 10
+
+Y_cal_model = mymodel(x_cal)
+
+fig, ax = plt.subplots()
+ax.scatter(x_train, y_train, label = 'Training points')
+ax.scatter(x_cal[:N_cal_show], y_cal[:N_cal_show], label = 'Calibration points')
+
+[ax.plot([x_cal[i], x_cal[i]], [Y_cal_model[i], y_cal[i]], alpha = 0.5, color = "red") for i in range(N_cal_show)]
+
+ax.plot(x_true, mymodel(x_true), '--', label='Regressor', alpha = 0.5)
+ax.plot(x_true, y_true, '--', label='True function', alpha = 1, linewidth = 2)
+
+N_annotate = 9
+
+ax.annotate('s(x,y)', xy=(x_cal[N_annotate], (y_cal[N_annotate] + Y_cal_model[N_annotate])/2), xytext=(1.5, 1.0), arrowprops=dict(arrowstyle="->",
+                            connectionstyle="angle3,angleA=-90,angleB=0"), fontsize = 15)
+
+plt.xlabel("X", fontsize = 18)
+plt.ylabel("Y", fontsize = 18)
+
+plt.legend()
+plt.savefig("figures/Calibration_example.png", dpi = 600)
+plt.show()
+
+
+
+
+# %%
