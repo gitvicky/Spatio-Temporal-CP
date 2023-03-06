@@ -38,7 +38,7 @@ configuration = {"Case": 'Burgers',
                  }
 
 from simvue import Run
-run = Run(mode='online')
+run = Run(mode='disabled')
 run.init(folder="/Conformal_Prediction", tags=['Conformal Prediction', 'Burgers', 'U-Net'], metadata=configuration)
 
 # %%
@@ -254,7 +254,7 @@ for ep in tqdm(range(epochs)):
 train_time = time.time() - start_time
 # %%
 
-model_loc = file_loc + '/Models/MLP_Burgers_' + run.name + '.pth'
+model_loc = file_loc + '/Models/MLP_Burgers_' + run.name + '_' + str(gamma)+ '.pth'
 torch.save(model.state_dict(),  model_loc)
 
 # %%
@@ -349,7 +349,7 @@ ax.set_ylim([v_min, v_max])
 ax.axes.yaxis.set_ticks([])
 
 
-output_plot = (file_loc + '/Plots/_MLP_CP_' + run.name + '.png')
+output_plot = (file_loc + '/Plots/_MLP_CP_' + run.name + '_' + str(gamma)+'.png')
 plt.savefig(output_plot)
 
 
