@@ -315,7 +315,7 @@ class UNet2d(nn.Module):
 class UNet2d_dropout(nn.Module):
 
     def __init__(self, in_channels=20, out_channels=5, init_features=32):
-        super(UNet2d, self).__init__()
+        super(UNet2d_dropout, self).__init__()
 
         features = init_features
         self.encoder1 = UNet2d._block(in_channels, features, name="enc1")
@@ -400,3 +400,17 @@ class UNet2d_dropout(nn.Module):
 
         return c
     
+    def enable_dropout(self):
+            """Function to enable the dropout layers during test-time"""
+            for m in self.layers:
+                if m.__class__.__name__.startswith("Dropout"):
+                    m.train() 
+    
+#Estimating the output uncertainties using Dropout. 
+def Dropout_eval(net, x, Nrepeat=100):
+    net.eval()
+    # net.enable_dropout()
+    preds = []
+    for i in range(Nrepeat):
+        preds.append(net(x).detach().numpy())
+    return np.mean(preds, axis=0), np.std(preds, axis=0)

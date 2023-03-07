@@ -48,7 +48,7 @@ configuration = {"Case": 'Wave',
                  }
 
 #%% 
-
+import os
 import numpy as np
 from tqdm import tqdm 
 import torch
@@ -73,7 +73,6 @@ torch.manual_seed(0)
 np.random.seed(0)
 
 # %% 
-import os 
 path = os.getcwd()
 model_loc = path + '/Models/'
 data_loc = path
@@ -97,7 +96,7 @@ u = torch.from_numpy(u_sol)
 xx, yy = np.meshgrid(x,y)
 
 ntrain = 500
-ncal = 480
+ncal = 300
 npred = len(u_sol) - (ntrain + ncal)
 S = 33 #Grid Size
 
@@ -277,7 +276,7 @@ def calibrate(alpha):
     return empirical_coverage
 
 
-# alpha_levels = np.arange(0.05, 0.95, 0.05)
+# alpha_levels = np.arange(0.05, 0.95, 0.1)
 # emp_cov = []
 # for ii in tqdm(range(len(alpha_levels))):
 #     emp_cov.append(calibrate(alpha_levels[ii]))
@@ -291,19 +290,19 @@ def calibrate(alpha):
 
 
 # %%
-idx = 0
-tt = -1
-import plotly.graph_objects as go
+# idx = 0
+# tt = -1
+# import plotly.graph_objects as go
 
-fig = go.Figure(data=[
-    go.Surface(z=y_response[idx, tt], opacity=0.9, colorscale='viridis'),
-    go.Surface(z=mean[idx, tt], opacity=0.9, colorscale='tealrose'),
-    # go.Surface(z=prediction_sets[0][idx, tt], colorscale = 'turbid', showscale=False, opacity=0.6),
-    # go.Surface(z=prediction_sets[1][idx, tt], colorscale = 'Electric',showscale=False, opacity=0.3)
+# fig = go.Figure(data=[
+#     go.Surface(z=y_response[idx, tt], opacity=0.9, colorscale='viridis'),
+#     go.Surface(z=mean[idx, tt], opacity=0.9, colorscale='tealrose'),
+#     # go.Surface(z=prediction_sets[0][idx, tt], colorscale = 'turbid', showscale=False, opacity=0.6),
+#     # go.Surface(z=prediction_sets[1][idx, tt], colorscale = 'Electric',showscale=False, opacity=0.3)
 
-])
+# ])
 
-fig.show()
+# fig.show()
 # %%
 
 def get_prediction_sets(alpha):
@@ -337,4 +336,57 @@ plt.plot(x_points, y_response[idx, tt][x_id, :], linewidth = 4, color = "black",
 plt.legend()
 
 
+# %%
+##############################
+# Dropout 
+##############################
+
+model_dropout = UNet2d_dropout(T_in, step, width)
+model_dropout.load_state_dict(torch.load(model_loc + 'Unet_Wave_dropout_10.pth', map_location='cpu'))
+
+# %%
+#Performing the Calibration for Dropout
+
+t1 = default_timer()
+
+n = ncal
+alpha = 0.1 #Coverage will be 1- alpha 
+
+
+with torch.no_grad():
+    mean_cal, std_cal = Dropout_eval(model_dropout, torch.FloatTensor(cal_a))
+
+cal_upper = mean_cal + std_cal
+cal_lower = mean_cal - std_cal
+
+# %%
+cal_u = cal_u.numpy()
+cal_scores = np.maximum(cal_u-cal_upper, cal_lower-cal_u)           
+qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+
+# %% 
+#Obtaining the Prediction Sets
+
+y_response = pred_u.numpy()
+stacked_x = torch.FloatTensor(pred_a)
+
+with torch.no_grad():
+    val_lower = model_05(stacked_x).numpy()
+    val_upper = model_95(stacked_x).numpy()
+    mean = model_50(stacked_x).numpy()
+
+prediction_sets = [val_lower - qhat, val_upper + qhat]
+
+
+# %%
+print('Conformal by way QCR')
+# Calculate empirical coverage (before and after calibration)
+prediction_sets_uncalibrated = [val_lower, val_upper]
+empirical_coverage_uncalibrated = ((y_response >= prediction_sets_uncalibrated[0]) & (y_response <= prediction_sets_uncalibrated[1])).mean()
+print(f"The empirical coverage before calibration is: {empirical_coverage_uncalibrated}")
+empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
+print(f"The empirical coverage after calibration is: {empirical_coverage}")
+
+t2 = default_timer()
+print('Conformalised Quantile Regression, time used:', t2-t1)
 # %%
