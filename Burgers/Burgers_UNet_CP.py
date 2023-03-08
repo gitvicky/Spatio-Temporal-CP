@@ -87,10 +87,10 @@ t1 = default_timer()
 data =  np.load(data_loc + '/Data/Burgers1d_sliced.npy')
 u_sol = data.astype(np.float32)
 u = torch.from_numpy(u_sol)
-x_range = np.linspace(-1,1,1000)
+x_range = np.linspace(-1,1,1000)[::5]
 
 ntrain = 500
-ncal = 480
+ncal = 500
 npred = len(u_sol) - (ntrain + ncal)
 S = 1000 #Grid Size
 
@@ -327,3 +327,4 @@ def calibrate(alpha):
 # plt.xlabel('1-alpha')
 # plt.ylabel('Empirical Coverage')
 # plt.legend()
+# %%

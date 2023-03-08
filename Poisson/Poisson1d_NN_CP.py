@@ -509,7 +509,7 @@ plt.legend()
 # torch.save(nn_dropout.state_dict(), path + '/Models/poisson_nn_dropout.pth')
 
 #Loading the Trained Model
-nn_dropout = MLP_dropout(1, 1, 3, 64) #Input Features, Output Features, Number of Layers, Number of Neurons
+nn_dropout = MLP_dropout(32, 32, 3, 64) #Input Features, Output Features, Number of Layers, Number of Neurons
 nn_dropout = nn_dropout.to(device)
 nn_dropout.load_state_dict(torch.load(model_loc + 'poisson_nn_dropout.pth', map_location='cpu'))
 
