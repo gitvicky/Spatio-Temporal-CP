@@ -235,7 +235,7 @@ with torch.no_grad():
 
 cal_scores = np.maximum(Y_cal-cal_upper, cal_lower-Y_cal)           
 
-qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, interpolation='higher')
+qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis=0, interpolation='higher')
 
 plt.figure()
 plt.hist(cal_scores, 50)
@@ -253,7 +253,7 @@ def get_prediction_sets(x, alpha = 0.1):
         val_upper = nn_upper(stacked_x).numpy()
 
     n = len(cal_scores)
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, interpolation='higher')
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
 
     return [val_lower - qhat, val_upper + qhat]
 
@@ -290,26 +290,26 @@ plt.ylabel("y")
 plt.legend()
 
 # %% 
-plt.figure()
-plt.title(f"Conformalised Quantile Regression, alpha = {alpha}")
-plt.scatter(Y_pred_viz, label = 'Analytical', color='black', s=10)
-plt.scatter(mean_viz.flatten(), label='Prediction', color='firebrick', s=10)
-plt.plot(prediction_sets[0], label='lower-cal', color='teal')
-plt.plot(prediction_sets_uncalibrated[0], label='lower - uncal', color='darkorange')
-plt.plot(prediction_sets[1], label='upper-cal', color='navy')
-plt.plot(prediction_sets_uncalibrated[1], label='upper - uncal', color='gold')
-plt.xlabel("x")
-plt.ylabel("y")
-plt.legend()
+# plt.figure()
+# plt.title(f"Conformalised Quantile Regression, alpha = {alpha}")
+# plt.scatter(Y_pred_viz, label = 'Analytical', color='black', s=10)
+# plt.scatter(mean_viz.flatten(), label='Prediction', color='firebrick', s=10)
+# plt.plot(prediction_sets[0], label='lower-cal', color='teal')
+# plt.plot(prediction_sets_uncalibrated[0], label='lower - uncal', color='darkorange')
+# plt.plot(prediction_sets[1], label='upper-cal', color='navy')
+# plt.plot(prediction_sets_uncalibrated[1], label='upper - uncal', color='gold')
+# plt.xlabel("x")
+# plt.ylabel("y")
+# plt.legend()
 
 # %% 
-plt.figure()
-plt.title(f"Conformalised Quantile Regression, alpha = {alpha}")
-plt.errorbar(mean_viz.flatten(), yerr=(prediction_sets[1] - prediction_sets[0]).flatten(), label='Prediction', color='firebrick', fmt='o', alpha=0.5)
-plt.scatter(Y_pred_viz, label = 'Analytical')
-plt.xlabel("x")
-plt.ylabel("y")
-plt.legend()
+# plt.figure()
+# plt.title(f"Conformalised Quantile Regression, alpha = {alpha}")
+# plt.errorbar(mean_viz.flatten(), yerr=(prediction_sets[1] - prediction_sets[0]).flatten(), label='Prediction', color='firebrick', fmt='o', alpha=0.5)
+# plt.scatter(Y_pred_viz, label = 'Analytical')
+# plt.xlabel("x")
+# plt.ylabel("y")
+# plt.legend()
 # %% 
 # Calculate empirical coverage (before and after calibration)
 
@@ -339,7 +339,7 @@ def calibrate(alpha):
         cal_upper = nn_upper(torch.Tensor(X_cal)).numpy()
 
     cal_scores = np.maximum(Y_cal-cal_upper, cal_lower-Y_cal)
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, interpolation='higher')
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
 
     prediction_sets = [val_lower - qhat, val_upper + qhat]
     empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
@@ -374,7 +374,7 @@ with torch.no_grad():
     prediction = nn_mean(stacked_x).numpy()
 
 n = len(cal_scores)
-qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, interpolation='higher')
+qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
 
 prediction_sets =  [prediction - qhat, prediction + qhat]
 
@@ -398,7 +398,7 @@ stacked_x = torch.FloatTensor(X_pred_viz)
 with torch.no_grad():
     prediction = nn_mean(stacked_x).numpy()
 n = len(cal_scores)
-qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, interpolation='higher')
+qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
 
 prediction_sets =  [prediction - qhat, prediction + qhat]
 
@@ -436,7 +436,7 @@ def calibrate_res(alpha):
     n = cal_split
 
     cal_scores = conf_metric(X_cal, Y_cal)
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, interpolation='higher')
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
 
     with torch.no_grad():
         prediction = nn_mean(stacked_x).numpy()
@@ -526,7 +526,7 @@ cal_lower = mean_cal - std_cal
 
 cal_scores = np.maximum(Y_cal-cal_upper, cal_lower-Y_cal)           
 
-qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, interpolation='higher')
+qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
 
 plt.figure()
 plt.hist(cal_scores, 50)
@@ -546,7 +546,7 @@ def get_prediction_sets(x, alpha = 0.1):
     val_lower = val_mean - val_std
 
     n = len(cal_scores)
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, interpolation='higher')
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
 
     return [val_lower - qhat, val_upper + qhat]
 
@@ -639,7 +639,7 @@ def calibrate(alpha):
     cal_lower = cal_mean - cal_std
 
     cal_scores = np.maximum(Y_cal-cal_upper, cal_lower-Y_cal)
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, interpolation='higher')
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
 
     prediction_sets = [val_lower - qhat, val_upper + qhat]
     empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
