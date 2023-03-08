@@ -91,8 +91,8 @@ x_range = np.linspace(-1,1,1000)[::5]
 
 ntrain = 500
 ncal = 500
-npred = len(u_sol) - (ntrain + ncal)
-S = 1000 #Grid Size
+npred = 500
+S = 200 #Grid Size
 
 width = configuration['Width']
 output_size = configuration['Step']
@@ -107,11 +107,11 @@ step = configuration['Step']
 train_a = u[:ntrain,:T_in,:]
 train_u = u[:ntrain,T_in:T+T_in,:]
 
-cal_a = u[ntrain:-npred,:T_in, :]
-cal_u = u[ntrain:-npred,T_in:T+T_in,:]
+cal_a = u[ntrain:ntrain+ncal,:T_in, :]
+cal_u = u[ntrain:ntrain+npred,T_in:T+T_in,:]
 
-pred_a = u[-npred:,:T_in, :]
-pred_u = u[-npred:,T_in:T+T_in,:]
+pred_a = u[ntrain+ncal:ntrain+ncal+npred,:T_in, :]
+pred_u = u[ntrain+ncal:ntrain+ncal+npred,T_in:T+T_in,:]
 
 print(train_u.shape)
 print(cal_u.shape)
