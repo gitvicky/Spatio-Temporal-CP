@@ -96,8 +96,8 @@ u = torch.from_numpy(u_sol)
 xx, yy = np.meshgrid(x,y)
 
 ntrain = 500
-ncal = 300
-npred = len(u_sol) - (ntrain + ncal)
+ncal = 20
+npred = 20
 S = 33 #Grid Size
 
 width = configuration['Width']
@@ -110,14 +110,14 @@ step = configuration['Step']
 
 # %%
 #Chunking the data. 
-train_a = u[:ntrain,:T_in,:,:]
-train_u = u[:ntrain,T_in:T+T_in,:,:]
+train_a = u[:ntrain,:T_in,:]
+train_u = u[:ntrain,T_in:T+T_in,:]
 
-cal_a = u[ntrain:-npred,:T_in, :, :]
-cal_u = u[ntrain:-npred,T_in:T+T_in,:,:]
+cal_a = u[ntrain:ntrain+ncal,:T_in, :]
+cal_u = u[ntrain:ntrain+npred,T_in:T+T_in,:]
 
-pred_a = u[-npred:,:T_in, :, :]
-pred_u = u[-npred:,T_in:T+T_in,:,:]
+pred_a = u[ntrain+ncal:ntrain+ncal+npred,:T_in, :]
+pred_u = u[ntrain+ncal:ntrain+ncal+npred,T_in:T+T_in,:]
 
 print(train_u.shape)
 print(cal_u.shape)
@@ -323,6 +323,8 @@ cols = cm.plasma(alpha_levels)
 pred_sets = [get_prediction_sets(a) for a in alpha_levels] 
 
 # %%
+idx = 0
+tt = -1
 x_id = 16
 
 # x_points = pred_a[idx, tt][x_id, :]
@@ -379,7 +381,7 @@ prediction_sets = [val_lower - qhat, val_upper + qhat]
 
 
 # %%
-print('Conformal by way QCR')
+print('Conformal by way Dropout')
 # Calculate empirical coverage (before and after calibration)
 prediction_sets_uncalibrated = [val_lower, val_upper]
 empirical_coverage_uncalibrated = ((y_response >= prediction_sets_uncalibrated[0]) & (y_response <= prediction_sets_uncalibrated[1])).mean()

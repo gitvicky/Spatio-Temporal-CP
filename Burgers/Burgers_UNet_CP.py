@@ -90,8 +90,8 @@ u = torch.from_numpy(u_sol)
 x_range = np.linspace(-1,1,1000)[::5]
 
 ntrain = 500
-ncal = 500
-npred = 500
+ncal = 20
+npred = 20
 S = 200 #Grid Size
 
 width = configuration['Width']
