@@ -41,7 +41,7 @@ f_x = lambda x:  np.sin(x) + np.cos(2*x)
 
 N_train = 10
 N_cal = 40
-N_val = 500
+N_val = 1000
 
 def LHS(lb, ub, N): #Latin Hypercube Sampling for each the angles and the length. 
     return lb + (ub-lb)*lhs(1, N)
@@ -226,28 +226,44 @@ plt.plot(x_true, y_true, '--', label='function', alpha=1, linewidth = 2)
 
 cbar.ax.set_ylabel('alpha', rotation=270)
 
-# [plt.plot(x_grid, inf.(ints[i,:]), color = "black", linewidth = 0.7) for i in 1:length(ps)]
-# [plt.plot(x_grid, sup.(ints[i,:]), color = "black", linewidth = 0.7) for i in 1:length(ps)]
 
 # %% Polynomial regression
 
 mymodel = np.poly1d(np.polyfit(x_train.squeeze(), y_train.squeeze(), 3))
 cal_scores_poly = np.abs(mymodel(x_cal.squeeze()) - y_cal.squeeze())
 
+alpha = 0.1
+alpha_cut = np.ceil((N_cal+1)*(1-alpha))/(N_cal)
+qhat = np.quantile(np.sort(cal_scores_poly), alpha_cut, axis = 0,interpolation='higher')
 
-# cal_scores_poly = np.abs( mymodel(x_cal) - y_cal )
-# cal_scores = np.abs(mymodel(x_cal.squeeze())-y_cal.squeeze())/mymodel(x_cal.squeeze())
-
+# %% Histogram of calibration scores
 plt.figure()
 plt.hist(cal_scores)
 plt.show()
 
-plt.figure()
-plt.step(np.sort(cal_scores_poly), np.linspace(0,1, N_cal))
+
+# %% cdf of calibration scores, with evaluation of inverse
+
+fig, ax = plt.subplots()
+plt.step(np.sort(cal_scores_poly), np.linspace(0, 1, N_cal+1)[:-1])
+
+ymin, ymax = ax.get_ylim()
+xmin, xmax = ax.get_xlim()
+
+ax.annotate('', xy= (qhat, alpha_cut), xytext=(0, alpha_cut), arrowprops=dict(arrowstyle="-", linestyle="--"), fontsize = 15)
+
+ax.annotate('', xy= (qhat, ymin), xytext=(qhat, alpha_cut), arrowprops=dict(arrowstyle="->", linestyle="--"), fontsize = 15)
+
+ax.annotate(r'$1 - \alpha$', xy= (xmin, alpha_cut), xytext=(-0.09, 0.7), arrowprops=dict(arrowstyle="->", color="red",connectionstyle="angle3,angleA=-70,angleB=0"), fontsize = 15, color = "red")
+
+ax.text(qhat, ymin - 0.09, r'$\hat{q}$', fontsize = 20, color = "red")
+
 plt.xlabel("s(x,y)", fontsize = 18)
-plt.ylabel("ECDF", fontsize = 18)
+plt.ylabel("cdf", fontsize = 18)
 plt.savefig("figures/cal_score_distribution.png", dpi = 600)
 plt.show()
+
+# %% Plot of regression with confidence band
 
 def get_prediction_sets_poly(x, alpha = 0.1):
 
@@ -261,12 +277,23 @@ alpha = 0.1
 
 [Y_lo, Y_hi] = get_prediction_sets_poly(x_true, alpha)
 
-plt.figure()
+X_anotate = 2.8
+
+[Y_lo_anon, Y_hi_anon] = get_prediction_sets_poly(X_anotate, alpha)
+
+fig, ax = plt.subplots()
 plt.scatter(x_train, y_train, label = "Training points")
-plt.plot(x_true, mymodel(x_true), '--', label='Regressor', alpha=0.5)
-plt.plot(x_true, Y_lo, '--', label='90_lower', alpha=0.5)
-plt.plot(x_true, Y_hi, '--', label='90_upper', alpha=0.5)
-plt.plot(x_true, y_true, '--', label='True function', alpha=1, linewidth = 2)
+plt.plot(x_true, mymodel(x_true), '--', label='Regressor', alpha=0.5,  color = 'tab:orange')
+plt.plot(x_true, Y_lo, '--', alpha=0.5, color = 'green')
+plt.plot(x_true, Y_hi, '--', label=r'$(1-\alpha)$ confidence band', alpha=0.5, color = 'green')
+plt.plot(x_true, y_true, '--', label='True function', alpha=1, linewidth = 2,  color = 'tab:cyan')
+
+ax.annotate('', xy= (X_anotate, Y_hi_anon), xytext=(X_anotate, mymodel(X_anotate)), arrowprops=dict(arrowstyle="->"), fontsize = 15)
+
+ax.annotate('', xy= (X_anotate, Y_lo_anon), xytext=(X_anotate, mymodel(X_anotate)), arrowprops=dict(arrowstyle="->"), fontsize = 15)
+
+ax.text(2.9, 0.5, r'$\hat{q}$', fontsize = 15)
+
 plt.xlabel("X", fontsize = 18)
 plt.ylabel("Y", fontsize = 18)
 plt.legend()
@@ -281,7 +308,7 @@ empirical_coverage = ((y_val >= Y_lo_val) & (y_val <= Y_hi_val)).mean()
 print(f"The empirical coverage after calibration is: {empirical_coverage}")
 print(f"1 - Alpha <=  empirical_coverage : 1 - {alpha} <= {empirical_coverage} is {1 - alpha <= empirical_coverage}")
 
-# %%
+# %% Plot all alpha levels
 
 alpha_levels = np.arange(0.05, 0.95, 0.05)
 cols = cm.plasma(alpha_levels)
@@ -290,16 +317,15 @@ pred_sets = [get_prediction_sets_poly(x_true, a) for a in alpha_levels]
 fig, ax = plt.subplots()
 [plt.fill_between(x_true, pred_sets[i][0].squeeze(), pred_sets[i][1].squeeze(), color = cols[i]) for i in range(len(alpha_levels))]
 cbar = fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
-plt.plot(x_true, y_true, '--', label='function', alpha=1, linewidth = 2)
+plt.plot(x_true, y_true, '--', label='function', alpha=1, linewidth = 2, color = 'tab:cyan')
 cbar.ax.set_ylabel('alpha', rotation=270)
 plt.xlabel("X", fontsize = 18)
 plt.ylabel("Y", fontsize = 18)
-plt.legend()
 plt.savefig("figures/Calibration_all_levels.png", dpi = 600)
 plt.show()
 
 
-# %%
+# %% Plot empirical coverage
 
 alpha_levels = np.arange(0.05, 0.95, 0.05)
 emp_cov = []
@@ -316,25 +342,21 @@ plt.ylabel('Empirical Coverage', fontsize = 18)
 plt.legend()
 plt.savefig("figures/Empirical_coverage.png", dpi = 600)
 plt.show()
-# %% Polynomial regression explain
+# %% Plot explaining polynomical conformal regression
 
-N_cal_show = 10
+N_cal_show = 10     
+N_annotate = 9
 
 Y_cal_model = mymodel(x_cal)
 
 fig, ax = plt.subplots()
 ax.scatter(x_train, y_train, label = 'Training points')
 ax.scatter(x_cal[:N_cal_show], y_cal[:N_cal_show], label = 'Calibration points')
-
 [ax.plot([x_cal[i], x_cal[i]], [Y_cal_model[i], y_cal[i]], alpha = 0.5, color = "red") for i in range(N_cal_show)]
+ax.plot(x_true, mymodel(x_true), '--', label='Regressor', alpha = 0.5, color = 'tab:orange')
+ax.plot(x_true, y_true, '--', label='True function', alpha = 1, linewidth = 2, color = 'tab:cyan')
 
-ax.plot(x_true, mymodel(x_true), '--', label='Regressor', alpha = 0.5)
-ax.plot(x_true, y_true, '--', label='True function', alpha = 1, linewidth = 2)
-
-N_annotate = 9
-
-ax.annotate('s(x,y)', xy=(x_cal[N_annotate], (y_cal[N_annotate] + Y_cal_model[N_annotate])/2), xytext=(1.5, 1.0), arrowprops=dict(arrowstyle="->",
-                            connectionstyle="angle3,angleA=-90,angleB=0"), fontsize = 15)
+ax.annotate('s(x,y)', xy=(x_cal[N_annotate], (y_cal[N_annotate] + Y_cal_model[N_annotate])/2), xytext=(1.5, 1.0), arrowprops=dict(arrowstyle="->", connectionstyle="angle3,angleA=-90,angleB=0"), fontsize = 15)
 
 plt.xlabel("X", fontsize = 18)
 plt.ylabel("Y", fontsize = 18)
