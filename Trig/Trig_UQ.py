@@ -366,6 +366,184 @@ plt.savefig("figures/Calibration_example.png", dpi = 600)
 plt.show()
 
 
+# %% Conformal with covariate shift
 
+###
+#   Useful if we want to predict on distribution other than the calibration distribution, without having to re-run the entire conformal algorithm
+###
+
+import scipy.stats as stats
+
+# Paramaters of the new distribution, truncated normal: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.truncnorm.html
+myclip_a = 0; myclip_b = 4      
+my_mean = 3; my_std = 0.2
+a, b = (myclip_a - my_mean) / my_std, (myclip_b - my_mean) / my_std
+
+def X_dist(x):
+    return stats.uniform(0, 4).pdf(x)
+
+# # Truncated normal
+def X_new(x):
+    return stats.truncnorm.pdf(x, a, b, loc = my_mean, scale = my_std)
+
+# Using LHS 
+def X_new_sample(N):
+    ps = LHS(0, 1, N)
+    return stats.truncnorm.ppf(ps, a, b, loc = my_mean, scale = my_std)
+
+# def X_new(x):
+#     return stats.uniform(0, 4).pdf(x)
+
+# def X_new_sample(N):
+#     return LHS(0, 4, N)
+
+plt.plot(np.linspace(0,4, 100), X_new(np.linspace(0,4, 100)))
+
+def like_ratio(x):
+    return X_new(x) / X_dist(x)
+
+N_new = 1000
+X_new_samps = X_new_sample(N_new).squeeze()
+Y_new_samps = f_x(X_new_samps).reshape(-1, 1).squeeze()
+
+cal_scores_poly_2 = np.abs(mymodel(X_new_samps.squeeze()) - Y_new_samps.squeeze())
+
+# %%
+# def pi(x, X_i):
+#     return like_ratio(X_i)/ (np.sum(like_ratio(x_cal)) + like_ratio(x))
+
+def pi(x, x_cal):
+    return like_ratio(x_cal)/ (np.sum(like_ratio(x_cal)) + like_ratio(x))
+    
+
+x_predict = 1
+
+wighted_scores = cal_scores_poly.squeeze() * pi(x_predict, x_cal).squeeze()
+
+fig, ax = plt.subplots()
+plt.step(np.sort(cal_scores_poly), np.linspace(0, 1, N_cal+1)[:-1])
+plt.step(np.sort(cal_scores_poly_2), np.linspace(0, 1, N_new+1)[:-1])
+#plt.step(np.sort(wighted_scores.squeeze()), np.linspace(0, 1, N_cal+1)[:-1])
+
+plt.xlabel("s(x,y)", fontsize = 18)
+plt.ylabel("cdf", fontsize = 18)
+#plt.show()
+
+import seaborn as sns
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+
+sample = cal_scores_poly.squeeze()
+weights = pi(x_predict, x_cal).squeeze()
+df = pd.DataFrame(np.vstack((sample, weights)).T, columns = ['sample', 'weights'])
+sns.ecdfplot(data = df, x = 'sample', weights = 'weights', stat = 'proportion', legend = True)
+
+# %%
+
+alpha = 0.1
+
+def weighted_quantile(data, alpha, weights=None):
+    ''' percents in units of 1%
+        weights specifies the frequency (count) of data.
+    '''
+    if weights is None:
+        return np.quantile(np.sort(data), alpha, axis = 0, interpolation='higher')
+    
+    ind=np.argsort(data)
+    d=data[ind]
+    w=weights[ind]
+
+    #d = d[1:]
+    #d = np.append(d, np.inf)
+
+    p=1.*w.cumsum()/w.sum()
+    y=np.interp(alpha, p, d)
+
+    return y
+
+qhat = weighted_quantile(cal_scores_poly, np.ceil((N_cal+1)*(1-alpha))/(N_cal), pi(x_predict, x_cal).squeeze())
+qhat_true = np.quantile(np.sort(cal_scores_poly_2), np.ceil((N_new+1)*(1-alpha))/(N_new), axis = 0, interpolation='higher')
+
+# %%
+def get_prediction_sets_poly_shift(x, alpha = 0.1):
+    Y_lo = []; Y_hi = []
+
+    for x_in in x:
+        Y_predicted = mymodel(x_in)
+        #weighted_scores = cal_scores * pi(x_in, x_cal)
+        # wighted_scores = cal_scores_poly.squeeze() * pi(x_in, x_cal).squeeze()
+        # qhat = np.quantile(np.sort(wighted_scores), np.ceil((N_cal+1)*(1-alpha))/(N_cal), axis = 0, interpolation='higher')
+        qhat = weighted_quantile(cal_scores_poly, np.ceil((N_cal+1)*(1-alpha))/(N_cal), pi(x_in, x_cal).squeeze())
+
+        Y_lo.append(Y_predicted - qhat)
+        Y_hi.append(Y_predicted + qhat)
+    
+    Y_lo = np.array(Y_lo).squeeze()
+    Y_hi = np.array(Y_hi).squeeze()
+
+    return [Y_lo, Y_hi]
+
+
+alpha = 0.1
+
+[Y_lo_val, Y_hi_val] = get_prediction_sets_poly_shift(X_new_samps, alpha)
+
+empirical_coverage = ((Y_new_samps >= Y_lo_val) & (Y_new_samps <= Y_hi_val)).mean()
+print(f"The empirical coverage after calibration is: {empirical_coverage}")
+print(f"1 - Alpha <=  empirical_coverage : 1 - {alpha} <= {empirical_coverage} is {1 - alpha <= empirical_coverage}")
+
+# %%
+alpha_levels = np.arange(0.05, 0.95, 0.05)
+emp_cov = []
+for ii in tqdm(range(len(alpha_levels))):
+    sets = get_prediction_sets_poly_shift(X_new_samps, alpha_levels[ii])
+    empirical_coverage = ((Y_new_samps >= sets[0]) & (Y_new_samps <= sets[1])).mean()
+    emp_cov.append(empirical_coverage)
+
+plt.figure()
+plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal')
+plt.plot(1-alpha_levels, emp_cov, label='Coverage')
+plt.xlabel('1-alpha', fontsize = 18)
+plt.ylabel('Empirical Coverage', fontsize = 18)
+plt.legend()
+plt.show()
+
+# %%
+
+[Y_lo_shift, Y_hi_shift] = get_prediction_sets_poly_shift(x_true, 0.1)
+[Y_lo, Y_hi] = get_prediction_sets_poly(x_true, 0.1)
+
+fig, ax = plt.subplots()
+ax.plot(x_true, mymodel(x_true), '--', label='Regressor', alpha = 0.5, color = 'tab:orange')
+ax.plot(x_true, y_true, '--', label='True function', alpha = 1, linewidth = 2, color = 'tab:cyan')
+
+plt.scatter(X_new_samps, Y_new_samps)
+
+plt.plot(x_true, Y_lo, '--', alpha=0.5, color = 'green')
+plt.plot(x_true, Y_hi, '--', label=r'Origional', alpha=0.5, color = 'green')
+
+plt.plot(x_true, Y_lo_shift, '--', alpha=0.5, color = 'red')
+plt.plot(x_true, Y_hi_shift, '--', label=r'Shift', alpha=0.5, color = 'red')
+
+
+plt.xlabel("X", fontsize = 18)
+plt.ylabel("Y", fontsize = 18)
+
+plt.legend()
+plt.show()
+
+# %% Alphas plot
+
+alpha_levels = np.arange(0.05, 0.95, 0.05)
+cols = cm.plasma(alpha_levels)
+pred_sets = [get_prediction_sets_poly_shift(x_true.squeeze().reshape(-1,1).astype(np.float32), a) for a in alpha_levels] 
+
+fig, ax = plt.subplots()
+[plt.fill_between(x_true, pred_sets[i][0].squeeze(), pred_sets[i][1].squeeze(), color = cols[i]) for i in range(len(alpha_levels))]
+cbar = fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
+plt.plot(x_true, y_true, '--', label='function', alpha=1, linewidth = 2)
+
+cbar.ax.set_ylabel('alpha', rotation=270)
 
 # %%
