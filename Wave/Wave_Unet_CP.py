@@ -114,7 +114,7 @@ train_a = u[:ntrain,:T_in,:]
 train_u = u[:ntrain,T_in:T+T_in,:]
 
 cal_a = u[ntrain:ntrain+ncal,:T_in, :]
-cal_u = u[ntrain:ntrain+npred,T_in:T+T_in,:]
+cal_u = u[ntrain:ntrain+ncal,T_in:T+T_in,:]
 
 pred_a = u[ntrain+ncal:ntrain+ncal+npred,:T_in, :]
 pred_u = u[ntrain+ncal:ntrain+ncal+npred,T_in:T+T_in,:]
