@@ -2,6 +2,7 @@
 simvue.ini
 
 #Saved Models
+MHD/Models/
 
 *.pyc
 
