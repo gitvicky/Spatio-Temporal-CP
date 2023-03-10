@@ -102,13 +102,9 @@ optimizer = torch.optim.SGD(model.parameters(), lr=learningRate)
 for epoch in range(epochs):
     # Converting inputs and labels to Variable
     if torch.cuda.is_available():
-        #inputs = torch.FloatTensor(torch.from_numpy(x_train).cuda())
-        #labels = torch.FloatTensor(torch.from_numpy(y_train).cuda())
         inputs = Variable(torch.from_numpy(x_train).cuda())
         labels = Variable(torch.from_numpy(y_train).cuda())
     else:
-        # inputs = torch.FloatTensor(torch.from_numpy(x_train))
-        # labels = torch.FloatTensor(torch.from_numpy(y_train))
         inputs = Variable(torch.from_numpy(x_train))
         labels = Variable(torch.from_numpy(y_train))
 
@@ -471,9 +467,6 @@ def get_prediction_sets_poly_shift(x, alpha = 0.1):
 
     for x_in in x:
         Y_predicted = mymodel(x_in)
-        #weighted_scores = cal_scores * pi(x_in, x_cal)
-        # wighted_scores = cal_scores_poly.squeeze() * pi(x_in, x_cal).squeeze()
-        # qhat = np.quantile(np.sort(wighted_scores), np.ceil((N_cal+1)*(1-alpha))/(N_cal), axis = 0, interpolation='higher')
         qhat = weighted_quantile(cal_scores_poly, np.ceil((N_cal+1)*(1-alpha))/(N_cal), pi(x_in, x_cal).squeeze())
 
         Y_lo.append(Y_predicted - qhat)
@@ -545,5 +538,117 @@ cbar = fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
 plt.plot(x_true, y_true, '--', label='function', alpha=1, linewidth = 2)
 
 cbar.ax.set_ylabel('alpha', rotation=270)
+
+# %% Evaluation of the output distribution
+##
+# Evaluation of the output confidence distribution
+##
+
+x_val = 2.3
+y_true = f_x(x_val)
+
+alpha_levels = np.arange(0.05, 0.95, 0.01)
+pred_sets = [get_prediction_sets_poly(x_val, a) for a in alpha_levels] 
+
+pred_sets_shift = [get_prediction_sets_poly_shift([x_val], a) for a in alpha_levels] 
+
+lows = [pred_sets[i][0] for i in range(len(alpha_levels))]
+his = [pred_sets[i][1] for i in range(len(alpha_levels))]
+
+lows_shift = [pred_sets_shift[i][0] for i in range(len(alpha_levels))]
+his_shift = [pred_sets_shift[i][1] for i in range(len(alpha_levels))]
+
+plt.figure()
+
+plt.plot(lows, alpha_levels, color = "blue")
+plt.plot(his, alpha_levels, color = "blue")
+
+plt.plot(lows_shift, alpha_levels, color = "orange")
+plt.plot(his_shift, alpha_levels, color = "orange")
+
+plt.plot([y_true, y_true], [0, 1])
+plt.show()
+
+# %%    Running Monte Carlo through the Polynomial regression
+
+N_prop = 10000
+X_prop = LHS(0, 4, N_prop)
+
+Y_prop_true = f_x(X_prop).squeeze()
+alpha_levels = np.arange(0.05, 0.95, 0.05)
+
+pred_sets = [[get_prediction_sets_poly(x_val, a) for x_val in X_prop]  for a in alpha_levels]
+
+plt.figure()
+
+cols = cm.plasma(alpha_levels)
+
+for j in range(len(alpha_levels)):
+    pred_lows = np.array([pred_sets[j][i][0] for i in range(N_prop)]).squeeze()
+    pred_his = np.array([pred_sets[j][i][1] for i in range(N_prop)]).squeeze()
+    plt.fill_betweenx(np.linspace(0, 1, N_prop+1)[:-1], np.sort(pred_his), np.sort(pred_lows), color = cols[j])
+
+plt.step(np.sort(Y_prop_true), np.linspace(0, 1, N_prop+1)[:-1])
+plt.title("Confidence bands on the output distribution")
+plt.xlabel("Y")
+plt.ylabel("cdf")
+plt.show()
+
+# %% Confidence distribution on expectation value
+
+Ex_true = np.mean(Y_prop_true)
+Ex_conf_left = [np.mean([pred_sets[j][i][0] for i in range(N_prop)])for j in range(len(alpha_levels))]
+Ex_conf_right = [np.mean([pred_sets[j][i][1] for i in range(N_prop)])for j in range(len(alpha_levels))]
+
+plt.figure()
+plt.plot(Ex_conf_left, alpha_levels, color = "blue")
+plt.plot(Ex_conf_right, alpha_levels, color = "blue")
+plt.plot([Ex_true, Ex_true], [0, 1], color = "red")
+plt.title("Confidence on the expected value")
+plt.xlabel(r"$P(Y)$")
+plt.ylabel(r"$\alpha$")
+plt.show()
+
+
+# %%    Evaluating Monte Carlo with a different (covariate shift) distribution
+
+X_new_MC = X_new_sample(N_prop)
+Y_new_MC = f_x(X_new_MC).squeeze()
+
+alpha_levels = np.arange(0.05, 0.95, 0.05)
+pred_sets_shift = [[get_prediction_sets_poly_shift(x_val, a) for x_val in X_new_MC]  for a in alpha_levels]
+
+
+plt.figure()
+
+cols = cm.plasma(alpha_levels)
+
+for j in range(len(alpha_levels)):
+    pred_lows = np.array([pred_sets_shift[j][i][0] for i in range(N_prop)]).squeeze()
+    pred_his = np.array([pred_sets_shift[j][i][1] for i in range(N_prop)]).squeeze()
+    plt.fill_betweenx(np.linspace(0, 1, N_prop+1)[:-1], np.sort(pred_his), np.sort(pred_lows), color = cols[j])
+
+plt.step(np.sort(Y_new_MC), np.linspace(0, 1, N_prop+1)[:-1])
+plt.title("Confidence bands on the output on shifted distribution")
+plt.xlabel("Y")
+plt.ylabel("cdf")
+plt.show()
+
+# %%
+
+# %% Confidence distribution on expectation value
+
+Ex_true = np.mean(Y_new_MC)
+Ex_conf_left = [np.mean([pred_sets_shift[j][i][0] for i in range(N_prop)])for j in range(len(alpha_levels))]
+Ex_conf_right = [np.mean([pred_sets_shift[j][i][1] for i in range(N_prop)])for j in range(len(alpha_levels))]
+
+plt.figure()
+plt.plot(Ex_conf_left, alpha_levels, color = "blue")
+plt.plot(Ex_conf_right, alpha_levels, color = "blue")
+plt.plot([Ex_true, Ex_true], [0, 1], color = "red")
+plt.title("Confidence on the expected value of shifted distribution")
+plt.xlabel(r"$P(Y)$")
+plt.ylabel(r"$\alpha$")
+plt.show()
 
 # %%
