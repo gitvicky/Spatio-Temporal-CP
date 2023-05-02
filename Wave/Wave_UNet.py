@@ -29,8 +29,8 @@ configuration = {"Case": 'Wave',
                  "Log Normalisation":  'No',
                  "Physics Normalisation": 'Yes',
                  "T_in": 20,    
-                 "T_out": 20,
-                 "Step": 20,
+                 "T_out": 60,
+                 "Step": 10,
                  "Width": 32, 
                  "Variables":1, 
                  "Noise":0.0, 
@@ -42,7 +42,7 @@ configuration = {"Case": 'Wave',
 
 # %%
 from simvue import Run
-run = Run()
+run = Run(mode='disabled')
 run.init(folder="/Conformal_Prediction", tags=['Conformal Prediction', 'Wave', 'U-Net'], metadata=configuration)
 
 # %% 
