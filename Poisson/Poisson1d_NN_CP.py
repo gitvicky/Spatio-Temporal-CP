@@ -17,6 +17,7 @@ import numpy as np
 import math
 from tqdm import tqdm 
 from timeit import default_timer
+import matplotlib as mpl 
 from matplotlib import pyplot as plt 
 import torch 
 import torch.nn as nn
@@ -64,6 +65,12 @@ X_cal, Y_cal = X[train_split:train_split+cal_split], Y[train_split:train_split+c
 X_pred, Y_pred = X[train_split+cal_split:train_split+cal_split+pred_split], Y[train_split+cal_split:train_split+cal_split+pred_split]
 
 # %% 
+
+#############################################################
+# Conformalised Quantile Regression 
+#############################################################
+
+
 
 # nn_lower = MLP(32, 32, 3, 64) #Input Features, Output Features, Number of Layers, Number of Neurons
 # nn_lower = nn_lower.to(device)
@@ -277,6 +284,9 @@ with torch.no_grad():
 prediction_sets = get_prediction_sets(stacked_x_viz)
 prediction_sets_uncalibrated = [val_lower_viz, val_upper_viz]
 
+pred_qr = mean_viz
+prediction_sets_qr = prediction_sets
+
 plt.figure()
 plt.title(f"Conformalised Quantile Regression, alpha = {alpha}")
 plt.plot(Y_pred_viz, label='Analytical', color='black')
@@ -303,13 +313,14 @@ plt.legend()
 # plt.legend()
 
 # %% 
-# plt.figure()
-# plt.title(f"Conformalised Quantile Regression, alpha = {alpha}")
-# plt.errorbar(mean_viz.flatten(), yerr=(prediction_sets[1] - prediction_sets[0]).flatten(), label='Prediction', color='firebrick', fmt='o', alpha=0.5)
-# plt.scatter(Y_pred_viz, label = 'Analytical')
-# plt.xlabel("x")
-# plt.ylabel("y")
-# plt.legend()
+
+plt.figure()
+plt.title(f"Conformalised Quantile Regression, alpha = {alpha}")
+plt.errorbar(np.arange(0, 32, 1), mean_viz.flatten(), yerr=(prediction_sets[1] - prediction_sets[0]).flatten(), label='Prediction', color='firebrick', fmt='o', alpha=0.5)
+plt.scatter(np.arange(0, 32, 1), Y_pred_viz, label = 'Analytical')
+plt.xlabel("x")
+plt.ylabel("y")
+plt.legend()
 # %% 
 # Calculate empirical coverage (before and after calibration)
 
@@ -355,8 +366,31 @@ plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal')
 plt.plot(1-alpha_levels, emp_cov_cqr, label='Coverage')
 plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
+plt.title("Conformalised Quantile Regression}")
 plt.legend()
+
+# %% 
+
+# %% 
+# from matplotlib import cm 
+
+# x_true = x_viz
+# y_true = Y_pred_viz 
+# alpha_levels = np.arange(0.05, 0.95, 0.05)
+# cols = cm.plasma(alpha_levels)
+# pred_sets = [get_prediction_sets(x_true.squeeze().reshape(-1,32).astype(np.float32), a) for a in alpha_levels] 
+
+# fig, ax = plt.subplots()
+# [plt.fill_between(x_true, pred_sets[i][0].squeeze(), pred_sets[i][1].squeeze(), color = cols[i]) for i in range(len(alpha_levels))]
+# fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
+# plt.plot(x_true, y_true, '--', label='function', alpha=1, linewidth = 2, color = 'darkblue')
+
 # %%
+#############################################################
+# Conformal Prediction using Residuals
+#############################################################
+
+
 # Using one network with residuals
 # https://www.stat.cmu.edu/~larry/=sml/Conformal
 
@@ -401,6 +435,9 @@ n = len(cal_scores)
 qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
 
 prediction_sets =  [prediction - qhat, prediction + qhat]
+
+pred_residual = prediction
+prediction_sets_residual = prediction_sets
 
 plt.figure()
 plt.title(f"Residual conformal, alpha = {alpha}")
@@ -456,9 +493,17 @@ plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal')
 plt.plot(1-alpha_levels, emp_cov_res, label='Coverage')
 plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
+plt.title("Residual conformal")
 plt.legend()
 
+# %% 
+
 # %%
+#############################################################
+# Conformal Prediction using Dropout
+#############################################################
+
+
 # Using one network with dropout
 
 # nn_dropout = MLP_dropout(32, 32, 3, 64) #Input Features, Output Features, Number of Layers, Number of Neurons
@@ -570,10 +615,12 @@ val_lower_viz = val_mean_viz - val_std_viz
 prediction_sets = get_prediction_sets(stacked_x_viz)
 prediction_sets_uncalibrated = [val_lower_viz, val_upper_viz]
 
+pred_dropout = val_mean_viz
+prediction_sets_dropout = prediction_sets
 #%%
 
 plt.figure()
-plt.title(f"Conformalised Quantile Regression, alpha = {alpha}")
+plt.title(f"Conformal using dropout, alpha = {alpha}")
 plt.plot(Y_pred_viz, label='Analytical', color='black')
 plt.plot(val_mean_viz, label='Mean', color='firebrick')
 plt.plot(prediction_sets[0], label='lower-cal', color='teal')
@@ -586,7 +633,7 @@ plt.legend()
 
 # %% 
 plt.figure()
-plt.title(f"Conformalised Quantile Regression, alpha = {alpha}")
+plt.title(f"Conformal using dropout, alpha = {alpha}")
 plt.scatter(np.arange(0, 32, 1), Y_pred_viz, label = 'Analytical', color='black', s=10)
 plt.scatter(np.arange(0, 32, 1), val_mean_viz.flatten(), label='Prediction', color='firebrick', s=10)
 plt.plot(prediction_sets[0], label='lower-cal', color='teal')
@@ -599,12 +646,13 @@ plt.legend()
 
 # %% 
 plt.figure()
-plt.title(f"Conformalised Quantile Regression, alpha = {alpha}")
+plt.title(f"Conformal using Dropout, alpha = {alpha}")
 plt.errorbar(np.arange(0, 32, 1), val_mean_viz.flatten(), yerr=(prediction_sets[1] - prediction_sets[0]).flatten(), label='Prediction', color='firebrick', fmt='o', alpha=0.5)
 plt.scatter(np.arange(0, 32, 1), Y_pred_viz, label = 'Analytical')
 plt.xlabel("x")
 plt.ylabel("y")
 plt.legend()
+
 # %% 
 # Calculate empirical coverage (before and after calibration)
 
@@ -655,28 +703,92 @@ plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal')
 plt.plot(1-alpha_levels, emp_cov_dropout, label='Coverage')
 plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
+plt.title('Conformal using Dropout')
 plt.legend()
-    # %%
 
-plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', lw=2.5)
-plt.plot(1-alpha_levels, emp_cov_cqr, label='Coverage - Quantile Regression', ls='--')
-plt.plot(1-alpha_levels, emp_cov_res, label='Coverage - Residual' ,ls='-')
-plt.plot(1-alpha_levels, emp_cov_dropout, label='Coverage - Dropout',  ls='-.')
+# %% 
+
+plt.figure()
+plt.title(f"Prediction Sets, alpha = {alpha}")
+plt.errorbar(np.arange(0, 32, 1), pred_residual.flatten(), yerr=(prediction_sets_residual[1] - prediction_sets_residual[0]).flatten(), label='Prediction', color='firebrick', fmt='o', alpha=0.5)
+plt.errorbar(np.arange(0, 32, 1), pred_dropout.flatten(), yerr=(prediction_sets_dropout[1] - prediction_sets_dropout[0]).flatten(), label='Prediction', color='firebrick', fmt='o', alpha=0.5)
+plt.scatter(np.arange(0, 32, 1), Y_pred_viz, label = 'Analytical')
+plt.xlabel("x")
+plt.ylabel("y")
+plt.legend()
+# %% 
+
+plt.figure()
+plt.title(f"Prediction Sets, alpha = {alpha}")
+# plt.errorbar(np.arange(0, 32, 1), pred_qr.flatten(), yerr=(prediction_sets_qr[1] - prediction_sets_qr[0]).flatten(), label='CQR', color='maroon', fmt='o', alpha=0.5, linewidth=3.0)
+# plt.errorbar(np.arange(0, 32, 1), pred_residual.flatten(), yerr=(prediction_sets_residual[1] - prediction_sets_residual[0]).flatten(), label='Residual', color='teal', fmt='o', alpha=0.5, linewidth=3.0)
+plt.errorbar(np.arange(0, 32, 1), pred_dropout.flatten(), yerr=(prediction_sets_dropout[1] - prediction_sets_dropout[0]).flatten(), label='Dropout', color='mediumblue', fmt='o', alpha=0.5, linewidth=3.0)
+plt.scatter(np.arange(0, 32, 1), Y_pred_viz, label = 'Analytical', color='black')
+plt.xlabel("x")
+plt.ylabel("y")
+plt.legend()
+
+# %% 
+plt.figure()
+plt.title(f"Prediction Sets, alpha = {alpha}")
+# plt.plot(np.arange(0, 32, 1), pred_qr.flatten(), label='CQR', color='maroon', alpha=0.8, linewidth=3.0)
+plt.plot(np.arange(0, 32, 1), pred_residual.flatten(), label='Residual', color='teal',  alpha=0.8, linewidth=3.0)
+# plt.plot(np.arange(0, 32, 1), pred_dropout.flatten(), label='Dropout', color='mediumblue',  alpha=0.8, linewidth=3.0)
+plt.plot(np.arange(0, 32, 1), Y_pred_viz, label = 'Analytical', color='black', linewidth=3.0)
+plt.xlabel("x")
+plt.ylabel("y")
+plt.legend()
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['font.size']=45
+mpl.rcParams['figure.figsize']=(16,16)
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['axes.linewidth']= 3
+mpl.rcParams['axes.titlepad'] = 20
+plt.rcParams['xtick.major.size'] =15
+plt.rcParams['ytick.major.size'] =15
+plt.rcParams['xtick.minor.size'] =10
+plt.rcParams['ytick.minor.size'] =10
+plt.rcParams['xtick.major.width'] =5
+plt.rcParams['ytick.major.width'] =5
+plt.rcParams['xtick.minor.width'] =5
+plt.rcParams['ytick.minor.width'] =5
+mpl.rcParams['axes.titlepad'] = 20
+# %%
+
+plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='mediumblue', ls='dotted',  alpha=0.8, linewidth=3.0)
 plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['font.size']=45
+mpl.rcParams['figure.figsize']=(16,16)
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['axes.linewidth']= 3
+mpl.rcParams['axes.titlepad'] = 20
+plt.rcParams['xtick.major.size'] =15
+plt.rcParams['ytick.major.size'] =15
+plt.rcParams['xtick.minor.size'] =10
+plt.rcParams['ytick.minor.size'] =10
+plt.rcParams['xtick.major.width'] =5
+plt.rcParams['ytick.major.width'] =5
+plt.rcParams['xtick.minor.width'] =5
+plt.rcParams['ytick.minor.width'] =5
+mpl.rcParams['axes.titlepad'] = 20
 # %%
-from matplotlib import cm 
+# from matplotlib import cm 
 
-x_true = x_viz
-y_true = Y_pred_viz 
-alpha_levels = np.arange(0.05, 0.95, 0.05)
-cols = cm.plasma(alpha_levels)
-pred_sets = [get_prediction_sets(x_true.squeeze().reshape(-1,1).astype(np.float32), a) for a in alpha_levels] 
+# x_true = x_viz
+# y_true = Y_pred_viz 
+# alpha_levels = np.arange(0.05, 0.95, 0.05)
+# cols = cm.plasma(alpha_levels)
+# pred_sets = [get_prediction_sets(x_true.squeeze().reshape(-1,32).astype(np.float32), a) for a in alpha_levels] 
 
-fig, ax = plt.subplots()
-[plt.fill_between(x_true, pred_sets[i][0].squeeze(), pred_sets[i][1].squeeze(), color = cols[i]) for i in range(len(alpha_levels))]
-fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
-plt.plot(x_true, y_true, '--', label='function', alpha=1, linewidth = 2, color = 'darkblue')
+# fig, ax = plt.subplots()
+# [plt.fill_between(x_true, pred_sets[i][0].squeeze(), pred_sets[i][1].squeeze(), color = cols[i]) for i in range(len(alpha_levels))]
+# fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
+# plt.plot(x_true, y_true, '--', label='function', alpha=1, linewidth = 2, color = 'darkblue')
 
-# %%
+
