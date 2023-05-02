@@ -47,6 +47,7 @@ import torch.nn.functional as F
 
 import matplotlib.pyplot as plt
 from matplotlib import cm 
+import matplotlib as mpl 
 
 import operator
 from functools import reduce
@@ -90,8 +91,8 @@ u = torch.from_numpy(u_sol)
 x_range = np.linspace(-1,1,1000)[::5]
 
 ntrain = 500
-ncal = 20
-npred = 20
+ncal = 1000
+npred = 1000
 S = 200 #Grid Size
 
 width = configuration['Width']
@@ -192,7 +193,7 @@ print(f"The empirical coverage after calibration is: {empirical_coverage}")
 t2 = default_timer()
 print('CQR, time used:', t2-t1)
 
-# %% 
+# %%% 
 idx = 5
 t_val = -1 
 Y_pred_viz = y_response[idx, t_val]
@@ -204,15 +205,31 @@ pred_set_uncal_1_viz = prediction_sets_uncalibrated[1][idx, t_val]
 
 plt.figure()
 plt.title(f"Conformalised Quantile Regression, alpha = {alpha}")
-plt.plot(x_range, Y_pred_viz, label='Analytical', color='black')
-plt.plot(x_range, mean_viz, label='Mean', color='firebrick')
-plt.plot(x_range, pred_set_0_viz, label='lower-cal', color='teal')
-plt.plot(x_range, pred_set_uncal_0_viz, label='lower - uncal', color='darkorange')
-plt.plot(x_range, pred_set_1_viz, label='upper-cal', color='navy')
-plt.plot(x_range, pred_set_uncal_1_viz, label='upper - uncal', color='gold')
+plt.plot(x_range, Y_pred_viz, label='Analytical', color='black', alpha = 0.8, linewidth=3)
+plt.plot(x_range, mean_viz, label='Mean', color='firebrick', alpha = 0.8, linewidth=3)
+plt.plot(x_range, pred_set_0_viz, label='lower-cal', color='teal', alpha = 0.8, linewidth=3)
+plt.plot(x_range, pred_set_uncal_0_viz, label='lower - uncal', color='teal', alpha = 0.5, linewidth=3, ls='--')
+plt.plot(x_range, pred_set_1_viz, label='upper-cal', color='mediumblue', alpha = 0.8, linewidth=3)
+plt.plot(x_range, pred_set_uncal_1_viz, label='upper - uncal', color='mediumblue', alpha = 0.5, linewidth=3, ls='--')
 plt.xlabel("x")
 plt.ylabel("u")
 plt.legend()
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['font.size']=45
+mpl.rcParams['figure.figsize']=(16,16)
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['axes.linewidth']= 3
+mpl.rcParams['axes.titlepad'] = 20
+plt.rcParams['xtick.major.size'] =15
+plt.rcParams['ytick.major.size'] =15
+plt.rcParams['xtick.minor.size'] =10
+plt.rcParams['ytick.minor.size'] =10
+plt.rcParams['xtick.major.width'] =5
+plt.rcParams['ytick.major.width'] =5
+plt.rcParams['xtick.minor.width'] =5
+plt.rcParams['ytick.minor.width'] =5
+mpl.rcParams['axes.titlepad'] = 2
+
 # %%
 #Testing calibration across range of Alpha for QCR 
 def calibrate(alpha):
@@ -231,17 +248,17 @@ def calibrate(alpha):
     return empirical_coverage
 
 
-# alpha_levels = np.arange(0.05, 0.95, 0.1)
-# emp_cov = []
+alpha_levels = np.arange(0.05, 0.95, 0.1)
+emp_cov_cqr = []
 
-# for ii in tqdm(range(len(alpha_levels))):
-#     emp_cov.append(calibrate(alpha_levels[ii]))
+for ii in tqdm(range(len(alpha_levels))):
+    emp_cov_cqr.append(calibrate(alpha_levels[ii]))
 
-# plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal')
-# plt.plot(1-alpha_levels, emp_cov, label='Coverage')
-# plt.xlabel('1-alpha')
-# plt.ylabel('Empirical Coverage')
-# plt.legend()
+plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', lw=3)
+plt.plot(1-alpha_levels, emp_cov_cqr, label='Coverage', lw=3)
+plt.xlabel('1-alpha')
+plt.ylabel('Empirical Coverage')
+plt.legend()
 
 # %% 
 # %%
@@ -283,8 +300,10 @@ print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
 t2 = default_timer()
 print('Residuals, time used:', t2-t1)
 
+
 # %% 
-idx =10
+
+idx = 5
 t_val = -1 
 Y_pred_viz = y_response[idx, t_val]
 mean_viz = mean[idx, t_val]
@@ -294,13 +313,29 @@ pred_set_1_viz = prediction_sets[1][idx, t_val]
 
 plt.figure()
 plt.title(f"Conformal using Residuals, alpha = {alpha}")
-plt.plot(x_range, Y_pred_viz, label='Analytical', color='black')
-plt.plot(x_range, mean_viz, label='Mean', color='firebrick')
-plt.plot(x_range, pred_set_0_viz, label='lower-cal', color='teal')
-plt.plot(x_range, pred_set_1_viz, label='upper-cal', color='navy')
+plt.plot(x_range, Y_pred_viz, label='Analytical', color='black', alpha = 0.8, linewidth=3)
+plt.plot(x_range, mean_viz, label='Mean', color='firebrick', alpha = 0.8, linewidth=3)
+plt.plot(x_range, pred_set_0_viz, label='lower-cal', color='teal', alpha = 0.8, linewidth=3)
+plt.plot(x_range, pred_set_1_viz, label='upper-cal', color='mediumblue', alpha = 0.8, linewidth=3)
 plt.xlabel("x")
 plt.ylabel("u")
 plt.legend()
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['font.size']=45
+mpl.rcParams['figure.figsize']=(16,16)
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['axes.linewidth']= 3
+mpl.rcParams['axes.titlepad'] = 20
+plt.rcParams['xtick.major.size'] =15
+plt.rcParams['ytick.major.size'] =15
+plt.rcParams['xtick.minor.size'] =10
+plt.rcParams['ytick.minor.size'] =10
+plt.rcParams['xtick.major.width'] =5
+plt.rcParams['ytick.major.width'] =5
+plt.rcParams['xtick.minor.width'] =5
+plt.rcParams['ytick.minor.width'] =5
+mpl.rcParams['axes.titlepad'] = 2
+
 # %%
 def calibrate(alpha):
     n = ncal
@@ -317,14 +352,36 @@ def calibrate(alpha):
     return empirical_coverage
 
 
-# alpha_levels = np.arange(0.05, 0.95, 0.05)
-# emp_cov = []
-# for ii in tqdm(range(len(alpha_levels))):
-#     emp_cov.append(calibrate(alpha_levels[ii]))
+alpha_levels = np.arange(0.05, 0.95, 0.1)
+emp_cov_res = []
+for ii in tqdm(range(len(alpha_levels))):
+    emp_cov_res.append(calibrate(alpha_levels[ii]))
 
-# plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal')
-# plt.plot(1-alpha_levels, emp_cov, label='Coverage')
-# plt.xlabel('1-alpha')
-# plt.ylabel('Empirical Coverage')
-# plt.legend()
+
+# %% 
+
+plt.figure()
+plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
+# plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='mediumblue', ls='dotted',  alpha=0.8, linewidth=3.0)
+plt.xlabel('1-alpha')
+plt.ylabel('Empirical Coverage')
+plt.legend()
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['font.size']=45
+mpl.rcParams['figure.figsize']=(16,16)
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['axes.linewidth']= 3
+mpl.rcParams['axes.titlepad'] = 20
+plt.rcParams['xtick.major.size'] =15
+plt.rcParams['ytick.major.size'] =15
+plt.rcParams['xtick.minor.size'] =10
+plt.rcParams['ytick.minor.size'] =10
+plt.rcParams['xtick.major.width'] =5
+plt.rcParams['ytick.major.width'] =5
+plt.rcParams['xtick.minor.width'] =5
+plt.rcParams['ytick.minor.width'] =5
+mpl.rcParams['axes.titlepad'] = 20
+
 # %%
