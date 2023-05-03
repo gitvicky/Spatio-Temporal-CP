@@ -80,7 +80,10 @@ if __name__ == "__main__":
         run.save('Burgers_fft.py', 'code', name='Burgers_fft') #Saving the data generation script to simvue
 
         run.close()
+
 # %%
 #[BS, time, space]
 u = np.asarray(u_list)
-np.save('Burgers1d.npy', u)
+u = u[:,::10, ::5]
+np.save('Burgers1d_sliced_5K.npy', u)
+# %%

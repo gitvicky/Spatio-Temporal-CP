@@ -83,14 +83,14 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # %%
 # data_loc = path
 data =  np.load(data_loc + '/Data/Burgers1d_sliced.npy')
-u_sol = data.astype(np.float32)[:,:,::5]
+u_sol = data.astype(np.float32)
 u = torch.from_numpy(u_sol)
 # u = u.permute(0, 2, 3, 1)
 
 # %% 
-ntrain = 500
-ntest = 20
-S = 1000 #Grid Size
+ntrain = 3000
+ntest = 300
+S = 200 #Grid Size
 
 width = configuration['Width']
 output_size = configuration['Step']
