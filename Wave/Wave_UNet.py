@@ -32,6 +32,7 @@ configuration = {"Case": 'Wave',
                  "T_out": 60,
                  "Step": 10,
                  "Width": 32, 
+                 "Modes": 'NA',
                  "Variables":1, 
                  "Noise":0.0, 
                  "Loss Function": 'MSE Losss',
@@ -65,15 +66,22 @@ import time
 from timeit import default_timer
 from tqdm import tqdm 
 
+import platform 
 torch.manual_seed(0)
 np.random.seed(0)
 
 # %% 
 import os 
 path = os.getcwd()
-data_loc = os.path.dirname(os.path.dirname(os.path.dirname(os.getcwd())))
+# data_loc = os.path.dirname(os.path.dirname(os.path.dirname(os.getcwd())))
 # model_loc = os.path.dirname(os.path.dirname(os.getcwd()))
 file_loc = os.getcwd()
+
+if platform.processor() == 'x86_64':
+    data_loc = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.getcwd())))))
+
+if platform.processor() == 'arm':
+    data_loc = os.path.dirname(os.path.dirname(os.path.dirname(os.getcwd())))
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -725,4 +733,3 @@ for output_file in OUTPUTS:
         print('ERROR: output file %s does not exist' % output_file)
 
 run.close()
-

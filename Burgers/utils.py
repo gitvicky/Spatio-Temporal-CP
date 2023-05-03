@@ -50,6 +50,14 @@ class MLP(nn.Module):
         x_temp = self.layer_output(x_temp)
         return x_temp
     
+    def count_params(self):
+        c = 0
+        for p in self.parameters():
+            c += reduce(operator.mul, list(p.size()))
+
+        return c
+    
+  
     
 # normalization, pointwise gaussian
 class UnitGaussianNormalizer(object):

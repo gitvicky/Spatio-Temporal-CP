@@ -34,7 +34,7 @@ from tqdm import tqdm
 from pyDOE import lhs 
 from Burgers_fft import *
 # %%
-n_sims = 1000 #Total Number of simulation datapoints to be generated. 
+n_sims = 5000 #Total Number of simulation datapoints to be generated. 
 
 #Grabbing the simulation parameters from the specified domain. 
  #alpha, beta, gamma
@@ -56,7 +56,7 @@ configuration = {'viscosity': 0.002,
 if __name__ == "__main__":
     u_list = []
     for sim in tqdm(range(n_sims)):
-        run = Run()
+        run = Run(mode='disabled')
         configuration['alpha'] = params[sim, 0]
         configuration['beta'] = params[sim, 1]
         configuration['gamma'] = params[sim, 2]

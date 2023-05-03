@@ -129,7 +129,7 @@ nn_lower.load_state_dict(torch.load(model_loc + 'poisson_nn_lower.pth', map_loca
 # nn_upper = MLP(32, 32, 3, 64) #Input Features, Output Features, Number of Layers, Number of Neurons
 # nn_upper = nn_upper.to(device)
 # #Training the Model -- Comment out this entire cell if you are loading a pre-trained model. 
-# optimizer = torch.optim.Adam(nn_upper.parameters(), lr=5e-3)
+# optimizer = torch.optim.Adam(nn_upper.parameters(), lr=1e-3)
 # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1000, gamma=0.9)
 # # loss_func = torch.nn.MSELoss()
 # loss_func = quantile_loss
@@ -182,7 +182,7 @@ nn_upper.load_state_dict(torch.load(model_loc + 'poisson_nn_upper.pth', map_loca
 # nn_mean = MLP(32, 32, 3, 64) #Input Features, Output Features, Number of Layers, Number of Neurons
 # nn_mean = nn_mean.to(device)
 # #Training the Model -- Comment out this entire cell if you are loading a pre-trained model. 
-# optimizer = torch.optim.Adam(nn_mean.parameters(), lr=5e-3)
+# optimizer = torch.optim.Adam(nn_mean.parameters(), lr=1e-3)
 # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1000, gamma=0.9)
 # # loss_func = torch.nn.MSELoss()
 # loss_func = quantile_loss

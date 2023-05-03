@@ -147,11 +147,11 @@ print('preprocessing finished, time used:', t2-t1)
 ################################################################
 
 # model = UNet1d(T_in, step, 32)
-# model = UNet1d_dropout(T_in, step, 32)
+model = UNet1d_dropout(T_in, step, 32)
 # model.to(device)
 
-model = MLP(1000, 1000, 4, 2048)
-model.to(device)
+# model = MLP(1000, 1000, 4, 2048)
+# model.to(device)
 
 # wandb.watch(model, log='all')
 run.update_metadata({'Number of Params': int(model.count_params())})
