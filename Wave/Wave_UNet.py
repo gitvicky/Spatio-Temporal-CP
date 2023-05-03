@@ -192,6 +192,7 @@ print('preprocessing finished, time used:', t2-t1)
 ################################################################
 
 model = UNet2d_dropout(T_in, step, 32)
+# model = UNet2d(T_in, step, 32)
 model.to(device)
 
 # wandb.watch(model, log='all')
@@ -301,7 +302,7 @@ torch.save(model.state_dict(),  model_loc)
 
 #Testing 
 batch_size = 1 
-test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(test_a, test_u), batch_size=1, shuffle=False)
+test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(test_a, test_u_encoded), batch_size=1, shuffle=False)
 
 pred_set = torch.zeros(test_u.shape)
 index = 0

@@ -20,7 +20,7 @@ configuration = {"Case": 'Burgers',
                  "Scheduler Step": 100,
                  "Scheduler Gamma": 0.5,
                  "Activation": 'Tanh',
-                 "Normalisation Strategy": 'None.',
+                 "Normalisation Strategy": 'Min-Max',
                  "Instance Norm": 'No',
                  "Log Normalisation":  'No',
                  "Physics Normalisation": 'No',
@@ -121,21 +121,35 @@ print(test_u.shape)
 
 
 # %%
-# # a_normalizer = RangeNormalizer(train_a)
-# a_normalizer = MinMax_Normalizer(train_a)
-# train_a = a_normalizer.encode(train_a)
-# test_a = a_normalizer.encode(test_a)
+#Normalising the train and test datasets with the preferred normalisation. 
 
-# # y_normalizer = RangeNormalizer(train_u)
-# y_normalizer = MinMax_Normalizer(train_u)
-# train_u = y_normalizer.encode(train_u)
-# # test_u = y_normalizer.encode(test_u)
-# test_u_encoded = y_normalizer.encode(test_u)
+norm_strategy = configuration['Normalisation Strategy']
+
+if norm_strategy == 'Min-Max':
+    a_normalizer = MinMax_Normalizer(train_a)
+    y_normalizer = MinMax_Normalizer(train_u)
+
+if norm_strategy == 'Range':
+    a_normalizer = RangeNormalizer(train_a)
+    y_normalizer = RangeNormalizer(train_u)
+
+if norm_strategy == 'Gaussian':
+    a_normalizer = GaussianNormalizer(train_a)
+    y_normalizer = GaussianNormalizer(train_u)
+
+
+
+train_a = a_normalizer.encode(train_a)
+test_a = a_normalizer.encode(test_a)
+
+train_u = y_normalizer.encode(train_u)
+test_u_encoded = y_normalizer.encode(test_u)
+
 
 # %%
 
 train_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(train_a, train_u), batch_size=batch_size, shuffle=True)
-test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(test_a, test_u), batch_size=batch_size, shuffle=False)
+test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(test_a, test_u_encoded), batch_size=batch_size, shuffle=False)
 
 t2 = default_timer()
 print('preprocessing finished, time used:', t2-t1)
@@ -146,8 +160,8 @@ print('preprocessing finished, time used:', t2-t1)
 # training and evaluation
 ################################################################
 
-# model = UNet1d(T_in, step, 32)
-model = UNet1d_dropout(T_in, step, 32)
+model = UNet1d(T_in, step, 32)
+# model = UNet1d_dropout(T_in, step, 32)
 # model.to(device)
 
 # model = MLP(1000, 1000, 4, 2048)
@@ -261,7 +275,7 @@ torch.save(model.state_dict(),  model_loc)
 
 #Testing 
 batch_size = 1 
-test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(test_a, test_u), batch_size=1, shuffle=False)
+test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(test_a, test_u_encodeds), batch_size=1, shuffle=False)
 
 pred_set = torch.zeros(test_u.shape)
 index = 0
@@ -293,8 +307,8 @@ with torch.no_grad():
 
 # %%
 #Logging Metrics 
-MSE_error = (pred_set - test_u).pow(2).mean()
-MAE_error = torch.abs(pred_set - test_u).mean()
+MSE_error = (pred_set - test_u_encoded).pow(2).mean()
+MAE_error = torch.abs(pred_set - test_u_encoded).mean()
 LP_error = loss / (ntest*T/step)
 
 print('(MSE) Testing Error: %.3e' % (MSE_error))
