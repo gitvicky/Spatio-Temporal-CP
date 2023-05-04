@@ -122,10 +122,10 @@ for cal_split in cal_sizes:
 alpha_levels = np.asarray(alpha_levels)
 # %% 
 plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_cqr[0], label='250', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_cqr[1], label='500' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_cqr[2], label='750',  color='mediumblue', ls='dotted',  alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_cqr[3], label='1000',  color='red', ls='dotted',  alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_cqr[0], label='250', color='teal', ls='--',  alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_cqr[1], label='500' ,ls='-.', color='maroon', alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_cqr[2], label='750',  color='mediumblue', ls=':',  alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_cqr[3], label='1000',  color='purple', ls='--',  alpha=0.8, linewidth=3.0)
 plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()
@@ -194,10 +194,10 @@ for cal_split in cal_sizes:
 alpha_levels = np.asarray(alpha_levels)
 # %% 
 plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_res[0], label='250', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_res[1], label='500' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_res[2], label='750',  color='mediumblue', ls='dotted',  alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_res[3], label='1000',  color='red', ls='dotted',  alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_res[0], label='250', color='teal', ls='--',  alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_res[1], label='500' ,ls='-.', color='maroon', alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_res[2], label='750',  color='mediumblue', ls=':',  alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_res[3], label='1000',  color='purple', ls='--',  alpha=0.8, linewidth=3.0)
 plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()
@@ -270,10 +270,10 @@ alpha_levels = np.asarray(alpha_levels)
 # %% 
 
 plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_dropout[0], label='250', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_dropout[1], label='500' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_dropout[2], label='750',  color='mediumblue', ls='dotted',  alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_dropout[3], label='1000',  color='red', ls='dotted',  alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_dropout[0], label='250', color='teal', ls='--',  alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_dropout[1], label='500' ,ls='-.', color='maroon', alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_dropout[2], label='750',  color='mediumblue', ls=':',  alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_dropout[3], label='1000',  color='purple', ls='--',  alpha=0.8, linewidth=3.0)
 plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()
@@ -292,3 +292,5 @@ plt.rcParams['ytick.major.width'] =5
 plt.rcParams['xtick.minor.width'] =5
 plt.rcParams['ytick.minor.width'] =5
 mpl.rcParams['axes.titlepad'] = 20
+
+# %%
