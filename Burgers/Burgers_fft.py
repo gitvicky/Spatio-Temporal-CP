@@ -66,7 +66,7 @@ def solve_burgers(run, configuration):
         du_dt = -u*d_u + nu*dd_u
         residual = (du_dt + u*d_u - nu*dd_u).mean()
 
-        run.log_metrics({'residual': residual.real})
+        # run.log_metrics({'residual': residual.real})
                         
         return du_dt.real
     
