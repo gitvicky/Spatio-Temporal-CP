@@ -145,7 +145,7 @@ step = configuration['Step']
 train_a = u[:ntrain,:,:,:T_in]
 train_u = u[:ntrain,:,:,T_in:T+T_in]
 
-test_a = u[-ntest:,:,:,T_in]
+test_a = u[-ntest:,:,:,:T_in]
 test_u = u[-ntest:,:,:,T_in:T+T_in]
 
 print(train_u.shape)
@@ -231,7 +231,7 @@ for ep in range(epochs): #Training Loop - Epochwise
         loss = 0
         xx = xx.to(device)
         yy = yy.to(device)
-        
+
         for t in range(0, T, step): #Training Loop - Time rollouts. 
             y = yy[..., t:t + step]
             im = model(xx)
