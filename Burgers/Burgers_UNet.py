@@ -285,7 +285,7 @@ torch.save(model.state_dict(),  model_loc)
 
 #Testing 
 batch_size = 1 
-test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(test_a, test_u_encodeds), batch_size=1, shuffle=False)
+test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(test_a, test_u_encoded), batch_size=1, shuffle=False)
 
 pred_set = torch.zeros(test_u.shape)
 index = 0
@@ -331,7 +331,7 @@ run.update_metadata({'Training Time': float(train_time),
                      'LP Test Error': float(LP_error)
                     })
 
-# pred_set = y_normalizer.decode(pred_set.to(device)).cpu()
+pred_set = y_normalizer.decode(pred_set.to(device)).cpu()
 
 # %%
 #Plotting the comparison plots
