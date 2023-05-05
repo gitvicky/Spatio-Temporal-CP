@@ -24,7 +24,7 @@ configuration = {"Case": 'Burgers',
                  "Instance Norm": 'No',
                  "Log Normalisation":  'No',
                  "Physics Normalisation": 'No',
-                 "T_in": 10,    
+                 "T_in": 20,    
                  "T_out": 10,
                  "Step": 10,
                  "Width": 32, 
@@ -38,7 +38,7 @@ configuration = {"Case": 'Burgers',
                  }
 
 from simvue import Run
-run = Run(mode='disabled')
+run = Run(mode='online')
 run.init(folder="/Conformal_Prediction", tags=['Conformal Prediction', 'Burgers', 'U-Net'], metadata=configuration)
 
 # %%
@@ -62,24 +62,30 @@ from tqdm import tqdm
 
 from collections import OrderedDict
 from utils import *
-
+import platform
 torch.manual_seed(0)
 np.random.seed(0)
 
 # %%
 import os 
 path = os.getcwd()
-data_loc = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.getcwd())))))
+# data_loc = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.getcwd())))))
 # model_loc = os.path.dirname(os.path.dirname(os.getcwd()))
 file_loc = os.getcwd()
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
+
 ################################################################
 # Loading Data 
 ################################################################
 
+if platform.processor() == 'x86_64':
+    data_loc = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.getcwd())))))
+
+if platform.processor() == 'arm':
+    data_loc = path
 # %%
 # data_loc = path
 data =  np.load(data_loc + '/Data/Burgers1d_sliced.npy')
