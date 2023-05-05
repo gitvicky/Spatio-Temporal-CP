@@ -86,6 +86,9 @@ if platform.processor() == 'x86_64':
 
 if platform.processor() == 'arm':
     data_loc = path
+
+if platform.processor() == 'ppc64le':
+    data_loc = path
 # %%
 # data_loc = path
 data =  np.load(data_loc + '/Data/Burgers1d_sliced.npy')
