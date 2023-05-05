@@ -38,7 +38,7 @@ configuration = {"Case": 'Burgers',
                  }
 
 from simvue import Run
-run = Run(mode='online')
+run = Run(mode='offline')
 run.init(folder="/Conformal_Prediction", tags=['Conformal Prediction', 'Burgers', 'U-Net'], metadata=configuration)
 
 # %%
@@ -89,6 +89,7 @@ if platform.processor() == 'arm':
 
 if platform.processor() == 'ppc64le':
     data_loc = path
+
 # %%
 # data_loc = path
 data =  np.load(data_loc + '/Data/Burgers1d_sliced.npy')
@@ -171,7 +172,7 @@ print('preprocessing finished, time used:', t2-t1)
 
 model = UNet1d(T_in, step, 32)
 # model = UNet1d_dropout(T_in, step, 32)
-# model.to(device)
+model.to(device)
 
 # model = MLP(1000, 1000, 4, 2048)
 # model.to(device)
