@@ -30,10 +30,10 @@ configuration = {"Case": 'Burgers',
                  "Width": 32, 
                  "Variables":1, 
                  "Noise":0.0, 
-                 "Loss Function": 'Pinball',
-                 "UQ": 'Pinball',
-                 "Pinball Gamma": 0.50,
-                 "Dropout Rate": 'NA',
+                 "Loss Function": 'MSE',
+                 "UQ": 'Dropout',
+                 "Pinball Gamma": 'NA',
+                 "Dropout Rate": 0.1,
                  "Spatial Resolution": 200
                  }
 
@@ -170,8 +170,8 @@ print('preprocessing finished, time used:', t2-t1)
 # training and evaluation
 ################################################################
 
-model = UNet1d(T_in, step, 32)
-# model = UNet1d_dropout(T_in, step, 32)
+# model = UNet1d(T_in, step, 32)
+model = UNet1d_dropout(T_in, step, 32)
 model.to(device)
 
 # model = MLP(1000, 1000, 4, 2048)
@@ -187,9 +187,9 @@ optimizer = torch.optim.Adam(model.parameters(), lr=configuration['Learning Rate
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=configuration['Scheduler Step'], gamma=configuration['Scheduler Gamma'])
 
 # myloss = LpLoss(size_average=False)
-# myloss = torch.nn.MSELoss()
+myloss = torch.nn.MSELoss()
 gamma = configuration['Pinball Gamma']
-myloss = quantile_loss
+# myloss = quantile_loss
 
 # gridx = gridx.to(device)
 # gridy = gridy.to(device)
@@ -215,8 +215,8 @@ for ep in tqdm(range(epochs)):
         for t in range(0, T, step):
             y = yy[:, t:t + step, :]
             im = model(xx)
-            # loss += myloss(im.reshape(batch_size, -1), y.reshape(batch_size, -1))
-            loss +=  quantile_loss(im.reshape(batch_size, -1), y.reshape(batch_size, -1), gamma=gamma).pow(2).mean()
+            loss += myloss(im.reshape(batch_size, -1), y.reshape(batch_size, -1))
+            # loss +=  quantile_loss(im.reshape(batch_size, -1), y.reshape(batch_size, -1), gamma=gamma).pow(2).mean()
 
             if t == 0:
                 pred = im
@@ -226,8 +226,8 @@ for ep in tqdm(range(epochs)):
             xx = torch.cat((xx[:, step:, :], im), dim=1)
 
         train_l2_step += loss.item()
-        # l2_full = myloss(pred.reshape(batch_size, -1), yy.reshape(batch_size, -1))
-        l2_full = quantile_loss(pred.reshape(batch_size, -1), yy.reshape(batch_size, -1), gamma=gamma).pow(2).mean()
+        l2_full = myloss(pred.reshape(batch_size, -1), yy.reshape(batch_size, -1))
+        # l2_full = quantile_loss(pred.reshape(batch_size, -1), yy.reshape(batch_size, -1), gamma=gamma).pow(2).mean()
         train_l2_full += l2_full.item()
 
         optimizer.zero_grad()
@@ -246,8 +246,8 @@ for ep in tqdm(range(epochs)):
             for t in range(0, T, step):
                 y = yy[:, t:t + step, :]
                 im = model(xx)
-                # loss += myloss(im.reshape(batch_size, -1), y.reshape(batch_size, -1))
-                loss += quantile_loss(im.reshape(batch_size, -1), y.reshape(batch_size, -1), gamma=gamma).pow(2).mean()
+                loss += myloss(im.reshape(batch_size, -1), y.reshape(batch_size, -1))
+                # loss += quantile_loss(im.reshape(batch_size, -1), y.reshape(batch_size, -1), gamma=gamma).pow(2).mean()
 
                 if t == 0:
                     pred = im
@@ -259,8 +259,8 @@ for ep in tqdm(range(epochs)):
             # pred = y_normalizer.decode(pred)
             
             test_l2_step += loss.item()
-            # test_l2_full += myloss(pred.reshape(batch_size, -1), yy.reshape(batch_size, -1)).item()
-            test_l2_full += quantile_loss(pred.reshape(batch_size, -1), yy.reshape(batch_size, -1), gamma=gamma).pow(2).mean().item()
+            test_l2_full += myloss(pred.reshape(batch_size, -1), yy.reshape(batch_size, -1)).item()
+            # test_l2_full += quantile_loss(pred.reshape(batch_size, -1), yy.reshape(batch_size, -1), gamma=gamma).pow(2).mean().item()
 
 
     t2 = default_timer()
@@ -299,8 +299,8 @@ with torch.no_grad():
         for t in range(0, T, step):
             y = yy[:, t:t + step, : ]
             out = model(xx)
-            # loss += myloss(out.reshape(1, -1), y.reshape(1, -1))
-            loss += quantile_loss(out.reshape(batch_size, -1), y.reshape(batch_size, -1), gamma=gamma).pow(2).mean()
+            loss += myloss(out.reshape(1, -1), y.reshape(1, -1))
+            # loss += quantile_loss(out.reshape(batch_size, -1), y.reshape(batch_size, -1), gamma=gamma).pow(2).mean()
 
             if t == 0:
                 pred = out
@@ -381,7 +381,7 @@ plt.savefig(output_plot)
 
 CODE = ['Burgers_UNet.py']
 INPUTS = []
-OUTPUTS = [model_loc, output_plot[0], output_plot[1], output_plot[2]]
+OUTPUTS = [model_loc, output_plot]
 
 # Save code files
 for code_file in CODE:

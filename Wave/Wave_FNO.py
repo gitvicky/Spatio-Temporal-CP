@@ -35,10 +35,10 @@ configuration = {"Case": 'Wave',
                  "Modes": 8,
                  "Variables":1, 
                  "Noise":0.0, 
-                 "Loss Function": 'MSE Losss',
-                 "UQ": 'None', #None, Dropout
+                 "Loss Function": 'MSE',
+                 "UQ": 'Dropout', #None, Dropout
                  "Pinball Gamma": 'NA',
-                 "Dropout Rate": 'NA'
+                 "Dropout Rate": 0.1
                  }
 
 # %%
@@ -191,7 +191,9 @@ print('preprocessing finished, time used:', t2-t1)
 # training and evaluation
 ################################################################
 
-model = FNO2d(modes, modes, width, T_in, step, x, y)
+# model = FNO2d(modes, modes, width, T_in, step, x, y)
+model = FNO2d_dropout(modes, modes, width, T_in, step, x, y)
+
 model.to(device)
 
 # wandb.watch(model, log='all')
@@ -428,7 +430,7 @@ plt.savefig(output_plot)
 
 CODE = ['Wave_FNO.py']
 INPUTS = []
-OUTPUTS = [model_loc, output_plot[0], output_plot[1], output_plot[2]]
+OUTPUTS = [model_loc, output_plot]
 
 # Save code files
 for code_file in CODE:
