@@ -409,14 +409,13 @@ class UNet2d_dropout(nn.Module):
                     m.train() 
     
 #Estimating the output uncertainties using Dropout. 
-def Dropout_eval(net, x, Nrepeat=100):
+def Dropout_eval(net, x, step, Nrepeat=10):
     net.eval()
     # net.enable_dropout()
-    preds = []
+    preds = torch.zeros(Nrepeat, x.shape[0], step, x.shape[-1], x.shape[-1])
     for i in range(Nrepeat):
-        preds.append(net(x).detach().numpy())
-    return np.mean(preds, axis=0), np.std(preds, axis=0)
-
+        preds[i] = net(x)
+    return torch.mean(preds, axis=0), torch.std(preds, axis=0)
 
 # %% 
 ################################################################

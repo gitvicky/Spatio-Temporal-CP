@@ -264,7 +264,7 @@ plt.legend()
 # %%
 #####################################
 #Conformalising using Residuals (MAE)
-#Performing the Calibration usign Residuals: https://www.stat.cmu.edu/~larry/=sml/Conformal
+#Performing the Calibration using Residuals: https://www.stat.cmu.edu/~larry/=sml/Conformal
 #####################################
 t1 = default_timer()
 
