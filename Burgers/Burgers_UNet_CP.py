@@ -13,7 +13,7 @@ Conformal Prediction using various Conformal Score estimates
 # %% 
 configuration = {"Case": 'Burgers',
                  "Field": 'u',
-                 "Type": 'U-Net',
+                 "Type": 'Unet',
                  "Epochs": 500,
                  "Batch Size": 50,
                  "Optimizer": 'Adam',
@@ -31,10 +31,11 @@ configuration = {"Case": 'Burgers',
                  "Width": 32, 
                  "Variables":1, 
                  "Noise":0.0, 
-                #  "Loss Function": 'MSE Loss',
-                #  "UQ": 'Dropout',
-                #  "Pinball Gamma": 'NA',
-                #  "Dropout Rate": 1.0
+                 "Loss Function": 'Quantile Loss',
+                 "UQ": 'None',
+                 "Pinball Gamma": 0.95,
+                 "Dropout Rate": 'NA',
+                 "Spatial Resolution": 200
                  }
 
 # %%
@@ -90,7 +91,7 @@ u_sol = data.astype(np.float32)
 u = torch.from_numpy(u_sol)
 x_range = np.linspace(-1,1,1000)[::5]
 
-ntrain = 500
+ntrain = 3000
 ncal = 1000
 npred = 1000
 S = 200 #Grid Size
@@ -143,13 +144,16 @@ pred_u = y_normalizer.encode(pred_u)
 #Conformalised Quantile Regression
 
 model_05 = UNet1d(T_in, step, width)
-model_05.load_state_dict(torch.load(model_loc + 'Unet_Burgers_QR_05.pth', map_location='cpu'))
+# model_05.load_state_dict(torch.load(model_loc + 'Unet_Burgers_QR_05.pth', map_location='cpu'))
+model_05.load_state_dict(torch.load(model_loc + 'Unet_Burgers_lower_0.05.pth', map_location='cpu'))
 
 model_95 = UNet1d(T_in, step, width)
-model_95.load_state_dict(torch.load(model_loc + 'Unet_Burgers_QR_95.pth', map_location='cpu'))
+# model_95.load_state_dict(torch.load(model_loc + 'Unet_Burgers_vivid-mall_QR_95.pth', map_location='cpu'))
+model_95.load_state_dict(torch.load(model_loc + 'Unet_Burgers_upper_0.95.pth', map_location='cpu'))
 
 model_50 = UNet1d(T_in, step, width)
-model_50.load_state_dict(torch.load(model_loc + 'Unet_Burgers_QR_50.pth', map_location='cpu'))
+# model_50.load_state_dict(torch.load(model_loc + 'Unet_Burgers_immature-estuary_QR_50.pth', map_location='cpu'))
+model_50.load_state_dict(torch.load(model_loc + 'Unet_Burgers_mean_0.5.pth', map_location='cpu'))
 
 
 # %%
@@ -362,7 +366,7 @@ for ii in tqdm(range(len(alpha_levels))):
 
 plt.figure()
 plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
+# plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
 plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
 # plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='mediumblue', ls='dotted',  alpha=0.8, linewidth=3.0)
 plt.xlabel('1-alpha')
@@ -385,3 +389,122 @@ plt.rcParams['ytick.minor.width'] =5
 mpl.rcParams['axes.titlepad'] = 20
 
 # %%
+
+##########################################
+#Conformal using Dropout
+##########################################
+
+
+model_dropout = UNet1d_dropout(T_in, step, width)
+model_dropout.load_state_dict(torch.load(model_loc + 'Unet_Burgers_free-food_dropout.pth', map_location='cpu'))
+
+# %%
+#Performing the Calibration for Dropout
+
+t1 = default_timer()
+
+n = ncal
+alpha = 0.1 #Coverage will be 1- alpha 
+
+with torch.no_grad():
+    xx = cal_a
+
+    for tt in tqdm(range(0, T, step)):
+        mean, std = Dropout_eval(model_dropout, xx, step)
+
+        if tt == 0:
+            cal_mean = mean
+            cal_std = std
+        else:
+            cal_mean = torch.cat((cal_mean, mean), 1)       
+            cal_std = torch.cat((cal_std, std), 1)       
+
+        xx = torch.cat((xx[:, step:, :], mean), dim=1)
+
+
+# cal_mean = cal_mean.numpy()
+
+cal_upper = cal_mean + cal_std
+cal_lower = cal_mean - cal_std
+
+cal_scores = np.maximum(cal_u-cal_upper, cal_lower-cal_u)
+qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+
+# %% 
+#Obtaining the Prediction Sets
+with torch.no_grad():
+    xx = pred_a
+
+    for tt in tqdm(range(0, T, step)):
+        mean, std = Dropout_eval(model_dropout, xx, step)
+
+        if tt == 0:
+            val_mean = mean
+            val_std = std
+        else:
+            val_mean = torch.cat((val_mean, mean), 1)       
+            val_std = torch.cat((val_std, std), 1)       
+
+        xx = torch.cat((xx[:, step:, :], mean), dim=1)
+
+val_upper = val_mean + val_std
+val_lower = val_mean - val_std
+
+prediction_sets_uncalibrated = [val_lower, val_upper]
+prediction_sets = [val_lower - qhat, val_upper + qhat]
+
+# %% 
+y_response = pred_u.numpy()
+
+print('Conformal by way Dropout')
+# Calculate empirical coverage (before and after calibration)
+prediction_sets_uncalibrated = [val_lower, val_upper]
+empirical_coverage_uncalibrated = ((y_response >= prediction_sets_uncalibrated[0].numpy()) & (y_response <= prediction_sets_uncalibrated[1].numpy())).mean()
+print(f"The empirical coverage before calibration is: {empirical_coverage_uncalibrated}")
+empirical_coverage = ((y_response >= prediction_sets[0].numpy()) & (y_response <= prediction_sets[1].numpy())).mean()
+print(f"The empirical coverage after calibration is: {empirical_coverage}")
+
+# %%
+
+def calibrate(alpha):
+
+    with torch.no_grad():
+        xx = cal_a
+
+        for tt in tqdm(range(0, T, step)):
+            mean, std = Dropout_eval(model_dropout, xx, step)
+
+            if tt == 0:
+                cal_mean = mean
+                cal_std = std
+            else:
+                cal_mean = torch.cat((cal_mean, mean), 1)       
+                cal_std = torch.cat((cal_std, std), 1)       
+
+            xx = torch.cat((xx[:, step:, :], mean), dim=1)
+
+
+    # cal_mean = cal_mean.numpy()
+
+    cal_upper = cal_mean + cal_std
+    cal_lower = cal_mean - cal_std
+
+    cal_scores = np.maximum(cal_u-cal_upper, cal_lower-cal_u)
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+    prediction_sets = [val_lower - qhat, val_upper + qhat]
+    empirical_coverage = ((y_response >= prediction_sets[0].numpy()) & (y_response <= prediction_sets[1].numpy())).mean()
+    return empirical_coverage
+
+
+alpha_levels = np.arange(0.05, 0.95, 0.1)
+emp_cov_dropout = []
+
+for ii in tqdm(range(len(alpha_levels))):
+    emp_cov_dropout.append(calibrate(alpha_levels[ii]))
+
+plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', lw=3)
+plt.plot(1-alpha_levels, emp_cov_dropout, label='Coverage', lw=3)
+plt.xlabel('1-alpha')
+plt.ylabel('Empirical Coverage')
+plt.title('Dropout')
+plt.legend()
