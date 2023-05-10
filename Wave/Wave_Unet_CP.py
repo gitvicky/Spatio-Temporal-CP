@@ -309,36 +309,38 @@ mpl.rcParams['axes.titlepad'] = 20
 #PLots
 
 def get_prediction_sets(alpha):
-    with torch.no_grad():
-        xx_lower = pred_a
-        xx_upper = pred_a
-        xx_mean = pred_a
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
 
-        for tt in tqdm(range(0, T, step)):
-            pred_lower = model_05(xx_lower)
-            pred_upper = model_95(xx_upper)
-            pred_mean = model_50(xx_mean)
+    # with torch.no_grad():
+    #     xx_lower = pred_a
+    #     xx_upper = pred_a
+    #     xx_mean = pred_a
 
-            if tt == 0:
-                val_lower = pred_lower
-                val_upper = pred_upper
-                val_mean = pred_mean
-            else:
-                val_lower = torch.cat((val_lower, pred_lower), 1)       
-                val_upper = torch.cat((val_upper, pred_upper), 1)       
-                val_mean = torch.cat((val_mean, pred_mean), 1)       
+    #     for tt in tqdm(range(0, T, step)):
+    #         pred_lower = model_05(xx_lower)
+    #         pred_upper = model_95(xx_upper)
+    #         pred_mean = model_50(xx_mean)
 
-            xx_lower = torch.cat((xx_lower[:, step:, :, :], pred_lower), dim=1)
-            xx_upper = torch.cat((xx_upper[:, step:, :, :], pred_upper), dim=1)
-            xx_mean = torch.cat((xx_mean[:, step:, :, :], pred_mean), dim=1)
+    #         if tt == 0:
+    #             val_lower = pred_lower
+    #             val_upper = pred_upper
+    #             val_mean = pred_mean
+    #         else:
+    #             val_lower = torch.cat((val_lower, pred_lower), 1)       
+    #             val_upper = torch.cat((val_upper, pred_upper), 1)       
+    #             val_mean = torch.cat((val_mean, pred_mean), 1)       
 
-        val_lower = val_lower.numpy()
-        val_upper = val_upper.numpy()
+    #         xx_lower = torch.cat((xx_lower[:, step:, :, :], pred_lower), dim=1)
+    #         xx_upper = torch.cat((xx_upper[:, step:, :, :], pred_upper), dim=1)
+    #         xx_mean = torch.cat((xx_mean[:, step:, :, :], pred_mean), dim=1)
 
-        prediction_sets = [val_lower - qhat, val_upper + qhat]
-        empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
-        print(empirical_coverage)
-        return  prediction_sets
+    #     val_lower = val_lower.numpy()
+    #     val_upper = val_upper.numpy()
+
+    prediction_sets = [val_lower - qhat, val_upper + qhat]
+    empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
+    print(empirical_coverage)
+    return  prediction_sets
 
 
 alpha_levels = np.arange(0.05, 0.95, 0.1)
@@ -359,7 +361,21 @@ fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
 
 plt.plot(x_points, y_response[idx, tt][x_id, :], linewidth = 4, color = "black", label = "exact")
 plt.legend()
-
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['font.size']=45
+mpl.rcParams['figure.figsize']=(16,16)
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['axes.linewidth']= 3
+mpl.rcParams['axes.titlepad'] = 20
+plt.rcParams['xtick.major.size'] =15
+plt.rcParams['ytick.major.size'] =15
+plt.rcParams['xtick.minor.size'] =10
+plt.rcParams['ytick.minor.size'] =10
+plt.rcParams['xtick.major.width'] =5
+plt.rcParams['ytick.major.width'] =5
+plt.rcParams['xtick.minor.width'] =5
+plt.rcParams['ytick.minor.width'] =5
+mpl.rcParams['axes.titlepad'] = 20
 # %%
 #Performing the Calibration usign Residuals: https://www.stat.cmu.edu/~larry/=sml/Conformal
 #############################################################
@@ -485,25 +501,26 @@ mpl.rcParams['axes.titlepad'] = 20
 #PLots
 
 def get_prediction_sets(alpha):
-    with torch.no_grad():
-        qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
-        xx_mean = pred_a
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
 
-        for tt in tqdm(range(0, T, step)):
-            pred_mean = model_50(xx_mean)
+    # with torch.no_grad():
+        # xx_mean = pred_a
 
-            if tt == 0:
-                val_mean = pred_mean
-            else:     
-                val_mean = torch.cat((val_mean, pred_mean), 1)       
+        # for tt in tqdm(range(0, T, step)):
+        #     pred_mean = model_50(xx_mean)
 
-            xx_mean = torch.cat((xx_mean[:, step:, :, :], pred_mean), dim=1)
+        #     if tt == 0:
+        #         val_mean = pred_mean
+        #     else:     
+        #         val_mean = torch.cat((val_mean, pred_mean), 1)       
 
-        val_mean = val_mean.numpy()
-        prediction_sets = [val_mean - qhat, val_mean + qhat]
-        empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
-        print(empirical_coverage)
-        return  prediction_sets
+        #     xx_mean = torch.cat((xx_mean[:, step:, :, :], pred_mean), dim=1)
+
+        # val_mean = val_mean.numpy()
+    prediction_sets = [val_mean - qhat, val_mean + qhat]
+    empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
+    print(empirical_coverage)
+    return  prediction_sets
 
 
 alpha_levels = np.arange(0.05, 0.95, 0.1)
@@ -524,8 +541,21 @@ fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
 
 plt.plot(x_points, y_response[idx, tt][x_id, :], linewidth = 4, color = "black", label = "exact")
 plt.legend()
-
-
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['font.size']=45
+mpl.rcParams['figure.figsize']=(16,16)
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['axes.linewidth']= 3
+mpl.rcParams['axes.titlepad'] = 20
+plt.rcParams['xtick.major.size'] =15
+plt.rcParams['ytick.major.size'] =15
+plt.rcParams['xtick.minor.size'] =10
+plt.rcParams['ytick.minor.size'] =10
+plt.rcParams['xtick.major.width'] =5
+plt.rcParams['ytick.major.width'] =5
+plt.rcParams['xtick.minor.width'] =5
+plt.rcParams['ytick.minor.width'] =5
+mpl.rcParams['axes.titlepad'] = 20
 # %%
 ##############################
 # Conformal using Dropout 
@@ -602,6 +632,8 @@ empirical_coverage_uncalibrated = ((y_response >= prediction_sets_uncalibrated[0
 print(f"The empirical coverage before calibration is: {empirical_coverage_uncalibrated}")
 empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
 print(f"The empirical coverage after calibration is: {empirical_coverage}")
+t2 = default_timer()
+print('Conformal using Dropout, time used:', t2-t1)
 
 # %% 
 def calibrate_dropout(alpha):
@@ -676,28 +708,29 @@ mpl.rcParams['axes.titlepad'] = 20
 #PLots
 
 def get_prediction_sets(alpha):
-    with torch.no_grad():
-        xx = pred_a
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+    # with torch.no_grad():
+    #     xx = pred_a
 
-        for tt in tqdm(range(0, T, step)):
-            mean, std = Dropout_eval(model_dropout, xx, step)
+    #     for tt in tqdm(range(0, T, step)):
+    #         mean, std = Dropout_eval(model_dropout, xx, step)
 
-            if tt == 0:
-                val_mean = mean
-                val_std = std
-            else:
-                val_mean = torch.cat((val_mean, mean), 1)       
-                val_std = torch.cat((val_std, std), 1)       
+    #         if tt == 0:
+    #             val_mean = mean
+    #             val_std = std
+    #         else:
+    #             val_mean = torch.cat((val_mean, mean), 1)       
+    #             val_std = torch.cat((val_std, std), 1)       
 
-            xx = torch.cat((xx[:, step:, :, :], mean), dim=1)
+    #         xx = torch.cat((xx[:, step:, :, :], mean), dim=1)
 
-    val_upper = val_mean + val_std
-    val_lower = val_mean - val_std
+    # val_upper = val_mean + val_std
+    # val_lower = val_mean - val_std
 
-    val_lower = val_lower.numpy()
-    val_upper = val_upper.numpy()
+    # val_lower = val_lower.numpy()
+    # val_upper = val_upper.numpy()
 
-    prediction_sets_uncalibrated = [val_lower, val_upper]
+    # prediction_sets_uncalibrated = [val_lower, val_upper]
     prediction_sets = [val_lower - qhat, val_upper + qhat]
 
     empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
@@ -723,3 +756,19 @@ fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
 
 plt.plot(x_points, y_response[idx, tt][x_id, :], linewidth = 4, color = "black", label = "exact")
 plt.legend()
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['font.size']=45
+mpl.rcParams['figure.figsize']=(16,16)
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['axes.linewidth']= 3
+mpl.rcParams['axes.titlepad'] = 20
+plt.rcParams['xtick.major.size'] =15
+plt.rcParams['ytick.major.size'] =15
+plt.rcParams['xtick.minor.size'] =10
+plt.rcParams['ytick.minor.size'] =10
+plt.rcParams['xtick.major.width'] =5
+plt.rcParams['ytick.major.width'] =5
+plt.rcParams['xtick.minor.width'] =5
+plt.rcParams['ytick.minor.width'] =5
+mpl.rcParams['axes.titlepad'] = 20
+# %%
