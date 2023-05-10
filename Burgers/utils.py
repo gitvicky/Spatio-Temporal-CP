@@ -481,7 +481,7 @@ class UNet1d_dropout(nn.Module):
     
 
 #Estimating the output uncertainties using Dropout. 
-def Dropout_eval(net, x, step, Nrepeat=100):
+def Dropout_eval(net, x, step, Nrepeat=10):
     net.eval()
     preds = torch.zeros(Nrepeat, x.shape[0], step, x.shape[-1])
     for i in range(Nrepeat):

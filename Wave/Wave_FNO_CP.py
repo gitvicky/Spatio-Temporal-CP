@@ -5,7 +5,7 @@ Created on 24 February 2023
 
 @author: vgopakum, agray, lzanisi
 
-U-Net built using PyTorch to model the 2D Wave Equation. 
+FNO built using PyTorch to model the 2D Wave Equation. 
 Dataset buitl by changing by performing a LHS across the x,y pos and amplitude of the initial gaussian distibution
 Code for the spectral solver can be found in : https://github.com/farscape-project/PINNs_Benchmark
 
@@ -26,7 +26,7 @@ Once UQ methodolgies have been demonstrated on each, we can use Conformal Predic
 
 configuration = {"Case": 'Wave',
                  "Field": 'u',
-                 "Type": 'U-Net',
+                 "Type": 'FNO',
                  "Epochs": 500,
                  "Batch Size": 50,
                  "Optimizer": 'Adam',
@@ -42,16 +42,14 @@ configuration = {"Case": 'Wave',
                  "T_out": 60,
                  "Step": 10,
                  "Width": 32, 
-                 "Modes": 'NA',
+                 "Modes": 8,
                  "Variables":1, 
                  "Noise":0.0, 
-                 "Loss Function": 'Quantile Loss',
-                 "UQ": 'None',
-                 "Pinball Gamma": 0.95,
-                 "Dropout Rate": 'NA'
+                 "Loss Function": 'MSE',
+                 "UQ": 'Dropout', #None, Dropout
+                 "Pinball Gamma": 'NA',
+                 "Dropout Rate": 0.1
                  }
-
-
 #%% 
 import os
 import numpy as np
@@ -99,6 +97,7 @@ x = data['x'].astype(np.float32)
 y = data['y'].astype(np.float32)
 t = data['t'].astype(np.float32)
 u = torch.from_numpy(u_sol)
+u = u.permute(0, 2, 3, 1)
 xx, yy = np.meshgrid(x,y)
 
 ntrain = 1000
@@ -113,17 +112,22 @@ batch_size = configuration['Batch Size']
 T_in = configuration['T_in']
 T = configuration['T_out']
 step = configuration['Step']
+modes = configuration['Modes']
+width = configuration['Width']
+output_size = configuration['Step']
+
 
 # %%
 #Chunking the data. 
-train_a = u[:ntrain,:T_in,:]
-train_u = u[:ntrain,T_in:T+T_in,:]
+train_a = u[:ntrain,:,:,:T_in]
+train_u = u[:ntrain,:,:,T_in:T+T_in]
 
-cal_a = u[ntrain:ntrain+ncal,:T_in, :]
-cal_u = u[ntrain:ntrain+ncal,T_in:T+T_in,:]
+cal_a = u[ntrain:ntrain+ncal,:,:,:T_in]
+cal_u = u[ntrain:ntrain+ncal,:,:,T_in:T+T_in]
 
-pred_a = u[ntrain+ncal:ntrain+ncal+npred,:T_in, :]
-pred_u = u[ntrain+ncal:ntrain+ncal+npred,T_in:T+T_in,:]
+pred_a = u[ntrain+ncal:ntrain+ncal+npred,:,:,:T_in]
+pred_u = u[ntrain+ncal:ntrain+ncal+npred,:,:,T_in:T+T_in]
+
 
 print(train_u.shape)
 print(cal_u.shape)
@@ -151,14 +155,14 @@ pred_u = y_normalizer.encode(pred_u)
 
 #Invoking the trained models 
 
-model_05 = UNet2d(T_in, step, width)
-model_05.load_state_dict(torch.load(model_loc + 'Unet_Wave_indigo-reload_QR_05.pth', map_location='cpu'))
+model_05 = FNO2d(modes, modes, width, T_in, step, x, y)
+model_05.load_state_dict(torch.load(model_loc + 'FNO_Wave_central-chickadee_QR_05.pth', map_location='cpu'))
 
-model_95 = UNet2d(T_in, step, width)
-model_95.load_state_dict(torch.load(model_loc + 'Unet_Wave_round-underwriter_QR_95.pth', map_location='cpu'))
+model_95 = FNO2d(modes, modes, width, T_in, step, x, y)
+model_95.load_state_dict(torch.load(model_loc + 'FNO_Wave_hoary-phase_QR_95.pth', map_location='cpu'))
 
-model_50 = UNet2d(T_in, step, width)
-model_50.load_state_dict(torch.load(model_loc + 'Unet_Wave_shy-bevel_QR_50.pth', map_location='cpu'))
+model_50 = FNO2d(modes, modes, width, T_in, step, x, y)
+model_50.load_state_dict(torch.load(model_loc + 'FNO_Wave_proper-baluster_QR_50.pth', map_location='cpu'))
 
 # %%
 t1 = default_timer()
@@ -178,11 +182,11 @@ with torch.no_grad():
             cal_upper = pred_upper
 
         else:
-            cal_lower = torch.cat((cal_lower, pred_lower), 1)       
-            cal_upper = torch.cat((cal_upper, pred_upper), 1)       
+            cal_lower = torch.cat((cal_lower, pred_lower), -1)       
+            cal_upper = torch.cat((cal_upper, pred_upper), -1)       
 
-        xx_lower = torch.cat((xx_lower[:, step:, :, :], pred_lower), dim=1)
-        xx_upper = torch.cat((xx_upper[:, step:, :, :], pred_upper), dim=1)
+        xx_lower = torch.cat((xx_lower[..., step:], pred_lower), dim=-1)
+        xx_upper = torch.cat((xx_upper[..., step:], pred_upper), dim=-1)
 
 
 cal_lower = cal_lower.numpy()
@@ -212,13 +216,13 @@ with torch.no_grad():
             val_upper = pred_upper
             val_mean = pred_mean
         else:
-            val_lower = torch.cat((val_lower, pred_lower), 1)       
-            val_upper = torch.cat((val_upper, pred_upper), 1)       
-            val_mean = torch.cat((val_mean, pred_mean), 1)       
+            val_lower = torch.cat((val_lower, pred_lower), -1)       
+            val_upper = torch.cat((val_upper, pred_upper), -1)       
+            val_mean = torch.cat((val_mean, pred_mean), -1)       
 
-        xx_lower = torch.cat((xx_lower[:, step:, :, :], pred_lower), dim=1)
-        xx_upper = torch.cat((xx_upper[:, step:, :, :], pred_upper), dim=1)
-        xx_mean = torch.cat((xx_mean[:, step:, :, :], pred_mean), dim=1)
+        xx_lower = torch.cat((xx_lower[..., step:], pred_lower), dim=-1)
+        xx_upper = torch.cat((xx_upper[..., step:], pred_upper), dim=-1)
+        xx_mean = torch.cat((xx_mean[..., step:], pred_mean), dim=-1)
 
     val_lower = val_lower.numpy()
     val_upper = val_upper.numpy()
@@ -256,11 +260,11 @@ def calibrate_cqr(alpha):
                 cal_upper = pred_upper
 
             else:
-                cal_lower = torch.cat((cal_lower, pred_lower), 1)       
-                cal_upper = torch.cat((cal_upper, pred_upper), 1)       
+                cal_lower = torch.cat((cal_lower, pred_lower), -1)       
+                cal_upper = torch.cat((cal_upper, pred_upper), -1)       
 
-            xx_lower = torch.cat((xx_lower[:, step:, :, :], pred_lower), dim=1)
-            xx_upper = torch.cat((xx_upper[:, step:, :, :], pred_upper), dim=1)
+            xx_lower = torch.cat((xx_lower[..., step:], pred_lower), dim=-1)
+            xx_upper = torch.cat((xx_upper[..., step:], pred_upper), dim=-1)
 
     cal_lower = cal_lower.numpy()
     cal_upper = cal_upper.numpy()
@@ -305,61 +309,6 @@ plt.rcParams['xtick.minor.width'] =5
 plt.rcParams['ytick.minor.width'] =5
 mpl.rcParams['axes.titlepad'] = 20
 
-# %% 
-#PLots
-
-def get_prediction_sets(alpha):
-    with torch.no_grad():
-        xx_lower = pred_a
-        xx_upper = pred_a
-        xx_mean = pred_a
-
-        for tt in tqdm(range(0, T, step)):
-            pred_lower = model_05(xx_lower)
-            pred_upper = model_95(xx_upper)
-            pred_mean = model_50(xx_mean)
-
-            if tt == 0:
-                val_lower = pred_lower
-                val_upper = pred_upper
-                val_mean = pred_mean
-            else:
-                val_lower = torch.cat((val_lower, pred_lower), 1)       
-                val_upper = torch.cat((val_upper, pred_upper), 1)       
-                val_mean = torch.cat((val_mean, pred_mean), 1)       
-
-            xx_lower = torch.cat((xx_lower[:, step:, :, :], pred_lower), dim=1)
-            xx_upper = torch.cat((xx_upper[:, step:, :, :], pred_upper), dim=1)
-            xx_mean = torch.cat((xx_mean[:, step:, :, :], pred_mean), dim=1)
-
-        val_lower = val_lower.numpy()
-        val_upper = val_upper.numpy()
-
-        prediction_sets = [val_lower - qhat, val_upper + qhat]
-        empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
-        print(empirical_coverage)
-        return  prediction_sets
-
-
-alpha_levels = np.arange(0.05, 0.95, 0.1)
-cols = cm.plasma(alpha_levels)
-pred_sets = [get_prediction_sets(a) for a in alpha_levels] 
-
-# %%
-idx = 0
-tt = -1
-x_id = 16
-
-# x_points = pred_a[idx, tt][x_id, :]
-x_points = np.arange(S)
-
-fig, ax = plt.subplots()
-[plt.fill_between(x_points, pred_sets[i][0][idx, tt][x_id,:], pred_sets[i][1][idx, tt][x_id,:], color = cols[i]) for i in range(len(alpha_levels))]
-fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
-
-plt.plot(x_points, y_response[idx, tt][x_id, :], linewidth = 4, color = "black", label = "exact")
-plt.legend()
-
 # %%
 #Performing the Calibration usign Residuals: https://www.stat.cmu.edu/~larry/=sml/Conformal
 #############################################################
@@ -381,9 +330,9 @@ with torch.no_grad():
             cal_mean = pred
 
         else:
-            cal_mean = torch.cat((cal_mean, pred), 1)       
+            cal_mean = torch.cat((cal_mean, pred), -1)       
 
-        xx = torch.cat((xx[:, step:, :, :], pred), dim=1)
+        xx = torch.cat((xx[..., step:], pred), dim=-1)
 
 
 cal_mean = cal_mean.numpy()
@@ -395,7 +344,7 @@ qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolati
 y_response = pred_u.numpy()
 
 with torch.no_grad():
-    xx_mean = pred_a
+    xx = pred_a
 
     for tt in tqdm(range(0, T, step)):
         pred_mean = model_50(xx_mean)
@@ -403,9 +352,9 @@ with torch.no_grad():
         if tt == 0:
             val_mean = pred_mean
         else:     
-            val_mean = torch.cat((val_mean, pred_mean), 1)       
+            val_mean = torch.cat((val_mean, pred_mean), -1)       
 
-        xx_mean = torch.cat((xx_mean[:, step:, :, :], pred_mean), dim=1)
+        xx = torch.cat((xx[..., step:], pred_mean), dim=-1)
 
 val_mean = val_mean.numpy()
 prediction_sets = [val_mean - qhat, val_mean + qhat]
@@ -434,9 +383,9 @@ def calibrate_residual(alpha):
                 cal_mean = pred_mean
 
             else:
-                cal_mean = torch.cat((cal_mean, pred_mean), 1)       
+                cal_mean = torch.cat((cal_mean, pred_mean), -1)       
 
-            xx = torch.cat((xx[:, step:, :, :], pred_mean), dim=1)
+            xx = torch.cat((xx[..., step:], pred_mean), dim=-1)
 
     cal_mean = cal_mean.numpy()
 
@@ -476,54 +425,10 @@ plt.rcParams['ytick.major.size'] =15
 plt.rcParams['xtick.minor.size'] =10
 plt.rcParams['ytick.minor.size'] =10
 plt.rcParams['xtick.major.width'] =5
-plt.rcParams['ytick.major.width'] =5
+plt.rcParams['ytick.major.width'] =5 
 plt.rcParams['xtick.minor.width'] =5
 plt.rcParams['ytick.minor.width'] =5
 mpl.rcParams['axes.titlepad'] = 20
-
-# %% 
-#PLots
-
-def get_prediction_sets(alpha):
-    with torch.no_grad():
-        qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
-        xx_mean = pred_a
-
-        for tt in tqdm(range(0, T, step)):
-            pred_mean = model_50(xx_mean)
-
-            if tt == 0:
-                val_mean = pred_mean
-            else:     
-                val_mean = torch.cat((val_mean, pred_mean), 1)       
-
-            xx_mean = torch.cat((xx_mean[:, step:, :, :], pred_mean), dim=1)
-
-        val_mean = val_mean.numpy()
-        prediction_sets = [val_mean - qhat, val_mean + qhat]
-        empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
-        print(empirical_coverage)
-        return  prediction_sets
-
-
-alpha_levels = np.arange(0.05, 0.95, 0.1)
-cols = cm.plasma(alpha_levels)
-pred_sets = [get_prediction_sets(a) for a in alpha_levels] 
-
-# %%
-idx = 0
-tt = -1
-x_id = 16
-
-# x_points = pred_a[idx, tt][x_id, :]
-x_points = np.arange(S)
-
-fig, ax = plt.subplots()
-[plt.fill_between(x_points, pred_sets[i][0][idx, tt][x_id,:], pred_sets[i][1][idx, tt][x_id,:], color = cols[i]) for i in range(len(alpha_levels))]
-fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
-
-plt.plot(x_points, y_response[idx, tt][x_id, :], linewidth = 4, color = "black", label = "exact")
-plt.legend()
 
 
 # %%
@@ -531,8 +436,8 @@ plt.legend()
 # Conformal using Dropout 
 ##############################
 
-model_dropout = UNet2d_dropout(T_in, step, width)
-model_dropout.load_state_dict(torch.load(model_loc + 'Unet_Wave_frigid-hill_dropout.pth', map_location='cpu'))
+model_dropout = FNO2d_dropout(modes, modes, width, T_in, step, x, y)
+model_dropout.load_state_dict(torch.load(model_loc + 'FNO_Wave_plastic-serval_dropout.pth', map_location='cpu'))
 
 # %%
 #Performing the Calibration for Dropout
@@ -546,16 +451,16 @@ with torch.no_grad():
     xx = cal_a
 
     for tt in tqdm(range(0, T, step)):
-        mean, std = Dropout_eval(model_dropout, xx, step)
+        mean, std = Dropout_eval_fno(model_dropout, xx, T)
 
         if tt == 0:
             cal_mean = mean
             cal_std = std
         else:
-            cal_mean = torch.cat((cal_mean, mean), 1)       
-            cal_std = torch.cat((cal_std, std), 1)       
+            cal_mean = torch.cat((cal_mean, mean), -1)       
+            cal_std = torch.cat((cal_std, std), -1)       
 
-        xx = torch.cat((xx[:, step:, :, :], mean), dim=1)
+        xx = torch.cat((xx[..., step:], mean), dim=-1)
 
 
 # cal_mean = cal_mean.numpy()
@@ -566,13 +471,27 @@ cal_lower = cal_mean - cal_std
 cal_scores = np.maximum(cal_u.numpy()-cal_upper.numpy(), cal_lower.numpy()-cal_u.numpy())
 qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
 
+
+# %% 
+
+    #Estimating the output uncertainties using Dropout. 
+def Dropout_eval_fno(net, x, T_out, Nrepeat=10):
+    net.eval()
+    # net.enable_dropout()
+    preds = torch.zeros(Nrepeat, x.shape[0], x.shape[1], x.shape[2], T_out)
+    for i in range(Nrepeat):
+        preds[i] = net(x)
+    return torch.mean(preds, axis=0), torch.std(preds, axis=0)
+
+
+
 # %% 
 #Obtaining the Prediction Sets
 with torch.no_grad():
     xx = pred_a
 
     for tt in tqdm(range(0, T, step)):
-        mean, std = Dropout_eval(model_dropout, xx, step)
+        mean, std = Dropout_eval_fno(model_dropout, xx, T)
 
         if tt == 0:
             val_mean = mean
@@ -609,7 +528,7 @@ def calibrate_dropout(alpha):
         xx = cal_a
 
         for tt in tqdm(range(0, T, step)):
-            mean, std = Dropout_eval(model_dropout, xx, step)
+            mean, std = Dropout_eval_fno(model_dropout, xx, T)
 
             if tt == 0:
                 cal_mean = mean
@@ -669,45 +588,35 @@ plt.rcParams['ytick.minor.width'] =5
 mpl.rcParams['axes.titlepad'] = 20
 
 
+# %%
+cal_scores = np.maximum(cal_u.numpy()-cal_upper, cal_lower-cal_u.numpy())           
+qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
 
 
+y_response = pred_u.numpy()
+stacked_x = torch.FloatTensor(pred_a)
+
+with torch.no_grad():
+    val_lower = model_05(stacked_x).numpy()
+    val_upper = model_95(stacked_x).numpy()
+    mean = model_50(stacked_x).numpy()
+
+prediction_sets = [val_lower - qhat, val_upper + qhat]
 
 # %%
-#PLots
+print('Conformal by way Dropout')
+# Calculate empirical coverage (before and after calibration)
+prediction_sets_uncalibrated = [val_lower, val_upper]
+empirical_coverage_uncalibrated = ((y_response >= prediction_sets_uncalibrated[0]) & (y_response <= prediction_sets_uncalibrated[1])).mean()
+print(f"The empirical coverage before calibration is: {empirical_coverage_uncalibrated}")
+empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
+print(f"The empirical coverage after calibration is: {empirical_coverage}")
 
-def get_prediction_sets(alpha):
-    with torch.no_grad():
-        xx = pred_a
-
-        for tt in tqdm(range(0, T, step)):
-            mean, std = Dropout_eval(model_dropout, xx, step)
-
-            if tt == 0:
-                val_mean = mean
-                val_std = std
-            else:
-                val_mean = torch.cat((val_mean, mean), 1)       
-                val_std = torch.cat((val_std, std), 1)       
-
-            xx = torch.cat((xx[:, step:, :, :], mean), dim=1)
-
-    val_upper = val_mean + val_std
-    val_lower = val_mean - val_std
-
-    val_lower = val_lower.numpy()
-    val_upper = val_upper.numpy()
-
-    prediction_sets_uncalibrated = [val_lower, val_upper]
-    prediction_sets = [val_lower - qhat, val_upper + qhat]
-
-    empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
-    print(empirical_coverage)
-    return  prediction_sets
+t2 = default_timer()
+print('Conformalised Quantile Regression, time used:', t2-t1)
+# %%
 
 
-alpha_levels = np.arange(0.05, 0.95, 0.1)
-cols = cm.plasma(alpha_levels)
-pred_sets = [get_prediction_sets(a) for a in alpha_levels] 
 
 # %%
 idx = 0
@@ -723,3 +632,4 @@ fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
 
 plt.plot(x_points, y_response[idx, tt][x_id, :], linewidth = 4, color = "black", label = "exact")
 plt.legend()
+
