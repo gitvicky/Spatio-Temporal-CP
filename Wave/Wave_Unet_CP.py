@@ -567,7 +567,8 @@ mpl.rcParams['axes.titlepad'] = 20
 ##############################
 
 model_dropout = UNet2d_dropout(T_in, step, width)
-model_dropout.load_state_dict(torch.load(model_loc + 'Unet_Wave_frigid-hill_dropout.pth', map_location='cpu'))
+# model_dropout.load_state_dict(torch.load(model_loc + 'Unet_Wave_frigid-hill_dropout.pth', map_location='cpu'))
+model_dropout.load_state_dict(torch.load(model_loc + 'Unet_Wave_dropout.pth', map_location='cpu'))
 
 # %%
 #Performing the Calibration for Dropout
