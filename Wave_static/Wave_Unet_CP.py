@@ -276,16 +276,16 @@ def calibrate(alpha):
     return empirical_coverage
 
 
-# alpha_levels = np.arange(0.05, 0.95, 0.1)
-# emp_cov = []
-# for ii in tqdm(range(len(alpha_levels))):
-#     emp_cov.append(calibrate(alpha_levels[ii]))
+alpha_levels = np.arange(0.05, 0.95, 0.1)
+emp_cov = []
+for ii in tqdm(range(len(alpha_levels))):
+    emp_cov.append(calibrate(alpha_levels[ii]))
 
-# plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal')
-# plt.plot(1-alpha_levels, emp_cov, label='Coverage')
-# plt.xlabel('1-alpha')
-# plt.ylabel('Empirical Coverage')
-# plt.legend()
+plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal')
+plt.plot(1-alpha_levels, emp_cov, label='Coverage')
+plt.xlabel('1-alpha')
+plt.ylabel('Empirical Coverage')
+plt.legend()
 # %%
 
 

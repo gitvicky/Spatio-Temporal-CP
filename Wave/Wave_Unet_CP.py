@@ -39,15 +39,15 @@ configuration = {"Case": 'Wave',
                  "Log Normalisation":  'No',
                  "Physics Normalisation": 'Yes',
                  "T_in": 20,    
-                 "T_out": 60,
-                 "Step": 10,
+                 "T_out": 30,
+                 "Step": 30,
                  "Width": 32, 
                  "Modes": 'NA',
                  "Variables":1, 
                  "Noise":0.0, 
                  "Loss Function": 'Quantile Loss',
                  "UQ": 'None',
-                 "Pinball Gamma": 0.95,
+                 "Pinball Gamma": 0.5,
                  "Dropout Rate": 'NA'
                  }
 
@@ -101,7 +101,7 @@ t = data['t'].astype(np.float32)
 u = torch.from_numpy(u_sol)
 xx, yy = np.meshgrid(x,y)
 
-ntrain = 1000
+ntrain = 500
 ncal = 1000
 npred = 1000
 S = 33 #Grid Size
@@ -152,13 +152,16 @@ pred_u = y_normalizer.encode(pred_u)
 #Invoking the trained models 
 
 model_05 = UNet2d(T_in, step, width)
-model_05.load_state_dict(torch.load(model_loc + 'Unet_Wave_indigo-reload_QR_05.pth', map_location='cpu'))
+# model_05.load_state_dict(torch.load(model_loc + 'Unet_Wave_indigo-reload_QR_05.pth', map_location='cpu'))
+model_05.load_state_dict(torch.load(model_loc + 'Unet_Wave_lower.pth', map_location='cpu'))
 
 model_95 = UNet2d(T_in, step, width)
-model_95.load_state_dict(torch.load(model_loc + 'Unet_Wave_round-underwriter_QR_95.pth', map_location='cpu'))
+# model_95.load_state_dict(torch.load(model_loc + 'Unet_Wave_round-underwriter_QR_95.pth', map_location='cpu'))
+model_95.load_state_dict(torch.load(model_loc + 'Unet_Wave_upper.pth', map_location='cpu'))
 
 model_50 = UNet2d(T_in, step, width)
-model_50.load_state_dict(torch.load(model_loc + 'Unet_Wave_shy-bevel_QR_50.pth', map_location='cpu'))
+# model_50.load_state_dict(torch.load(model_loc + 'Unet_Wave_shy-bevel_QR_50.pth', map_location='cpu'))
+model_50.load_state_dict(torch.load(model_loc + 'Unet_Wave_mean.pth', map_location='cpu'))
 
 # %%
 t1 = default_timer()
@@ -189,7 +192,7 @@ cal_lower = cal_lower.numpy()
 cal_upper = cal_upper.numpy()
 
 cal_scores = np.maximum(cal_u.numpy()-cal_upper, cal_lower-cal_u.numpy())      
-qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
 
 # %% 
@@ -266,7 +269,7 @@ def calibrate_cqr(alpha):
     cal_upper = cal_upper.numpy()
 
     cal_scores = np.maximum(cal_u.numpy()-cal_upper, cal_lower-cal_u.numpy())   
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
     
     prediction_sets = [val_lower - qhat, val_upper + qhat]
     empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
@@ -309,7 +312,7 @@ mpl.rcParams['axes.titlepad'] = 20
 #PLots
 
 def get_prediction_sets(alpha):
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
     # with torch.no_grad():
     #     xx_lower = pred_a
@@ -381,6 +384,8 @@ mpl.rcParams['axes.titlepad'] = 20
 #############################################################
 # Conformal Prediction Residuals
 #############################################################
+model_50 = UNet2d(T_in, step, width)
+model_50.load_state_dict(torch.load(model_loc + 'Unet_Wave_mean.pth', map_location='cpu'))
 
 t1 = default_timer()
 
@@ -404,7 +409,7 @@ with torch.no_grad():
 
 cal_mean = cal_mean.numpy()
 cal_scores = np.abs(cal_u.numpy()-cal_mean)           
-qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
 # %% 
 #Obtaining the Prediction Sets
@@ -457,7 +462,7 @@ def calibrate_residual(alpha):
     cal_mean = cal_mean.numpy()
 
     cal_scores = np.abs(cal_u.numpy()-cal_mean)           
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
     
     prediction_sets = [val_mean - qhat, val_mean + qhat]
@@ -501,7 +506,7 @@ mpl.rcParams['axes.titlepad'] = 20
 #PLots
 
 def get_prediction_sets(alpha):
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
     # with torch.no_grad():
         # xx_mean = pred_a
@@ -594,7 +599,7 @@ cal_upper = cal_mean + cal_std
 cal_lower = cal_mean - cal_std
 
 cal_scores = np.maximum(cal_u.numpy()-cal_upper.numpy(), cal_lower.numpy()-cal_u.numpy())
-qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
 # %% 
 #Obtaining the Prediction Sets
@@ -659,7 +664,7 @@ def calibrate_dropout(alpha):
     cal_lower = cal_mean - cal_std
 
     cal_scores = np.maximum(cal_u.numpy()-cal_upper.numpy(), cal_lower.numpy()-cal_u.numpy())
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
         
     prediction_sets = [val_mean - qhat, val_mean + qhat]
@@ -708,7 +713,7 @@ mpl.rcParams['axes.titlepad'] = 20
 #PLots
 
 def get_prediction_sets(alpha):
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
     # with torch.no_grad():
     #     xx = pred_a
 
