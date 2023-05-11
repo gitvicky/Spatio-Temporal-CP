@@ -25,7 +25,7 @@ configuration = {"Case": 'Burgers',
                  "Instance Norm": 'No',
                  "Log Normalisation":  'No',
                  "Physics Normalisation": 'No',
-                 "T_in": 20,    
+                 "T_in": 10,    
                  "T_out": 10,
                  "Step": 10,
                  "Width": 32, 
@@ -91,7 +91,7 @@ u_sol = data.astype(np.float32)
 u = torch.from_numpy(u_sol)
 x_range = np.linspace(-1,1,1000)[::5]
 
-ntrain = 3000
+ntrain = 2000
 ncal = 1000
 npred = 1000
 S = 200 #Grid Size
@@ -152,7 +152,7 @@ model_95.load_state_dict(torch.load(model_loc + 'Unet_Burgers_upper_0.95.pth', m
 
 model_50 = UNet1d(T_in, step, width)
 # model_50.load_state_dict(torch.load(model_loc + 'Unet_Burgers_immature-estuary_QR_50.pth', map_location='cpu'))
-model_50.load_state_dict(torch.load(model_loc + 'Unet_Burgers_mean_0.5.pth', map_location='cpu'))
+model_50.load_state_dict(torch.load(model_loc + 'Unet_Burgers_mean_0.5_new.pth', map_location='cpu'))
 
 
 # %%
@@ -168,7 +168,7 @@ with torch.no_grad():
 
 # %%
 cal_scores = np.maximum(cal_u.numpy()-cal_upper, cal_lower-cal_u.numpy())           
-qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
 # %% 
 #Obtaining the Prediction Sets
@@ -243,7 +243,7 @@ def calibrate_cqr(alpha):
         cal_upper = model_95(torch.Tensor(cal_a)).numpy()
 
     cal_scores = np.maximum(cal_u.numpy()-cal_upper, cal_lower-cal_u.numpy())           
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
     prediction_sets = [val_lower - qhat, val_upper + qhat]
     empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
@@ -288,16 +288,22 @@ mpl.rcParams['axes.titlepad'] = 20
 #Conformalising using Residuals (MAE)
 #Performing the Calibration using Residuals: https://www.stat.cmu.edu/~larry/=sml/Conformal
 #####################################
+
+model_50 = UNet1d(T_in, step, width)
+# model_50.load_state_dict(torch.load(model_loc + 'Unet_Burgers_immature-estuary_QR_50.pth', map_location='cpu'))
+model_50.load_state_dict(torch.load(model_loc + 'Unet_Burgers_mean_0.5_new.pth', map_location='cpu'))
+
+
 t1 = default_timer()
 
 n = ncal
-alpha = 0.5 #Coverage will be 1- alpha 
+alpha = 0.1 #Coverage will be 1- alpha 
 
 with torch.no_grad():
     cal_mean = model_50(torch.Tensor(cal_a)).numpy()
 
 cal_scores = np.abs(cal_u.numpy()-cal_mean)           
-qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
 # %% 
 #Obtaining the Prediction Sets
@@ -364,7 +370,7 @@ def calibrate_res(alpha):
         cal_mean = model_50(torch.Tensor(cal_a)).numpy()
         
     cal_scores = np.abs(cal_u-cal_mean)     
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
     prediction_sets =  [mean - qhat, mean + qhat]
     empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
@@ -441,7 +447,7 @@ cal_upper = cal_mean + cal_std
 cal_lower = cal_mean - cal_std
 
 cal_scores = np.maximum(cal_u-cal_upper, cal_lower-cal_u)
-qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
 # %% 
 #Obtaining the Prediction Sets
@@ -544,7 +550,7 @@ def calibrate_dropout(alpha):
     cal_lower = cal_mean - cal_std
 
     cal_scores = np.maximum(cal_u-cal_upper, cal_lower-cal_u)
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
     prediction_sets = [val_lower - qhat, val_upper + qhat]
     empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
     return empirical_coverage

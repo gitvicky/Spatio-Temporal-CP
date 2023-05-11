@@ -63,6 +63,7 @@ import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from matplotlib import cm 
 import matplotlib as mpl 
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import operator
 from functools import reduce
@@ -94,6 +95,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 t1 = default_timer()
 
 data =  np.load(data_loc + '/Data/Spectral_Wave_data_LHS_5K.npz')
+
 u_sol = data['u'].astype(np.float32)
 x = data['x'].astype(np.float32)
 y = data['y'].astype(np.float32)
@@ -777,4 +779,114 @@ plt.rcParams['ytick.major.width'] =5
 plt.rcParams['xtick.minor.width'] =5
 plt.rcParams['ytick.minor.width'] =5
 mpl.rcParams['axes.titlepad'] = 20
+# %%
+
+
+
+plt.figure()
+plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='mediumblue', ls='dotted',  alpha=0.8, linewidth=3.0)
+plt.xlabel('1-alpha')
+plt.ylabel('Empirical Coverage')
+plt.legend()
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['font.size']=45
+mpl.rcParams['figure.figsize']=(16,16)
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['axes.linewidth']= 3
+mpl.rcParams['axes.titlepad'] = 20
+plt.rcParams['xtick.major.size'] =15
+plt.rcParams['ytick.major.size'] =15
+plt.rcParams['xtick.minor.size'] =10
+plt.rcParams['ytick.minor.size'] =10
+plt.rcParams['xtick.major.width'] =5
+plt.rcParams['ytick.major.width'] =5
+plt.rcParams['xtick.minor.width'] =5
+plt.rcParams['ytick.minor.width'] =5
+mpl.rcParams['axes.titlepad'] = 20
+
+
+
+
+# %%
+
+idx = np.random.randint(0, ncal) 
+
+
+cal_u_decoded = y_normalizer.decode(cal_u)
+cal_mean_decoded = y_normalizer.decode(torch.Tensor(cal_mean))
+
+u_field = cal_u[idx]
+
+v_min_1 = torch.min(u_field[0])
+v_max_1 = torch.max(u_field[0])
+
+v_min_2 = torch.min(u_field[int(T/2)])
+v_max_2 = torch.max(u_field[int(T/2)])
+
+v_min_3 = torch.min(u_field[-1])
+v_max_3 = torch.max(u_field[-1])
+
+fig = plt.figure(figsize=plt.figaspect(0.5))
+ax = fig.add_subplot(2,3,1)
+pcm =ax.imshow(u_field[0], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_1, vmax=v_max_1)
+# ax.title.set_text('Initial')
+ax.title.set_text('t='+ str(T_in))
+ax.set_ylabel('Solution')
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.formatter.set_powerlimits((0, 0))
+
+ax = fig.add_subplot(2,3,2)
+pcm = ax.imshow(u_field[int(T/2)], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_2, vmax=v_max_2)
+# ax.title.set_text('Middle')
+ax.title.set_text('t='+ str(int((T/2+T_in))))
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.formatter.set_powerlimits((0, 0))
+
+ax = fig.add_subplot(2,3,3)
+pcm = ax.imshow(u_field[-1], cmap=cm.coolwarm,  extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_3, vmax=v_max_3)
+# ax.title.set_text('Final')
+ax.title.set_text('t='+str(T+T_in))
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.formatter.set_powerlimits((0, 0))
+
+u_field = cal_mean[idx]
+
+ax = fig.add_subplot(2,3,4)
+pcm = ax.imshow(u_field[0], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_1, vmax=v_max_1)
+ax.set_ylabel('FNO')
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.formatter.set_powerlimits((0, 0))
+
+ax = fig.add_subplot(2,3,5)
+pcm = ax.imshow(u_field[int(T/2)], cmap=cm.coolwarm,  extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_2, vmax=v_max_2)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.formatter.set_powerlimits((0, 0))
+
+ax = fig.add_subplot(2,3,6)
+pcm = ax.imshow(u_field[-1], cmap=cm.coolwarm,  extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_3, vmax=v_max_3)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.formatter.set_powerlimits((0, 0))
 # %%
