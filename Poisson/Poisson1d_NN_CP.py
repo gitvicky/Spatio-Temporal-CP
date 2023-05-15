@@ -19,6 +19,29 @@ from tqdm import tqdm
 from timeit import default_timer
 import matplotlib as mpl 
 from matplotlib import pyplot as plt 
+
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+plt.rcParams['text.usetex'] = True
+
+plt.rcParams['grid.linewidth'] = 1.0
+plt.rcParams['grid.alpha'] = 0.5
+plt.rcParams['grid.linestyle'] = '-'
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['font.size']=45
+mpl.rcParams['figure.figsize']=(16,12)
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['axes.linewidth']= 1
+mpl.rcParams['axes.titlepad'] = 30
+plt.rcParams['xtick.major.size'] = 20
+plt.rcParams['ytick.major.size'] = 20
+plt.rcParams['xtick.minor.size'] = 10.0
+plt.rcParams['ytick.minor.size'] = 10.0
+plt.rcParams['xtick.major.width'] = 0.8
+plt.rcParams['ytick.major.width'] = 0.8
+plt.rcParams['xtick.minor.width'] = 0.6
+plt.rcParams['ytick.minor.width'] = 0.6
+mpl.rcParams['lines.linewidth'] = 1
+
 import torch 
 import torch.nn as nn
 
@@ -47,7 +70,7 @@ Y = data['y'].astype(np.float32)
 train_split = 5000
 cal_split = 1000
 pred_split = 1000
-
+x_range = np.linspace(0, 1, 32)
 ##Training data from the same distribution 
 # train_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(X[:train_split], Y[:train_split]), batch_size=batch_size, shuffle=True)
 
@@ -122,7 +145,7 @@ X_pred, Y_pred = X[train_split+cal_split:train_split+cal_split+pred_split], Y[tr
 #Loading the Trained Model
 nn_lower = MLP(32, 32, 3, 64) #Input Features, Output Features, Number of Layers, Number of Neurons
 nn_lower = nn_lower.to(device)
-nn_lower.load_state_dict(torch.load(model_loc + 'poisson_nn_lower.pth', map_location='cpu'))
+nn_lower.load_state_dict(torch.load(model_loc + 'poisson_nn_lower_1.pth', map_location='cpu'))
 
 # # %% 
 
@@ -175,7 +198,7 @@ nn_lower.load_state_dict(torch.load(model_loc + 'poisson_nn_lower.pth', map_loca
 #Loading the Trained Model
 nn_upper = MLP(32, 32, 3, 64) #Input Features, Output Features, Number of Layers, Number of Neurons
 nn_upper =  nn_upper.to(device)
-nn_upper.load_state_dict(torch.load(model_loc + 'poisson_nn_upper.pth', map_location='cpu'))
+nn_upper.load_state_dict(torch.load(model_loc + 'poisson_nn_upper_1.pth', map_location='cpu'))
 
 # %% 
 
@@ -229,7 +252,7 @@ nn_upper.load_state_dict(torch.load(model_loc + 'poisson_nn_upper.pth', map_loca
 #Loading the Trained Model
 nn_mean = MLP(32, 32, 3, 64) #Input Features, Output Features, Number of Layers, Number of Neurons
 nn_mean = nn_mean.to(device)
-nn_mean.load_state_dict(torch.load(model_loc + 'poisson_nn_mean.pth', map_location='cpu'))
+nn_mean.load_state_dict(torch.load(model_loc + 'poisson_nn_mean_1.pth', map_location='cpu'))
 
 # %% 
 #Performing the Calibration
@@ -242,12 +265,12 @@ with torch.no_grad():
 
 cal_scores = np.maximum(Y_cal-cal_upper, cal_lower-Y_cal)           
 
-qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis=0, interpolation='higher')
+qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis=0, method='higher')
 
-plt.figure()
-plt.hist(cal_scores, 50)
-plt.xlabel("Calibration scores")
-plt.ylabel("Frequency")
+# plt.figure()
+# plt.hist(cal_scores, 50)
+# plt.xlabel("Calibration scores")
+# plt.ylabel("Frequency")
 
 # %%
 def get_prediction_sets(x, alpha = 0.1):
@@ -260,7 +283,7 @@ def get_prediction_sets(x, alpha = 0.1):
         val_upper = nn_upper(stacked_x).numpy()
 
     n = len(cal_scores)
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
     return [val_lower - qhat, val_upper + qhat]
 
@@ -287,40 +310,43 @@ prediction_sets_uncalibrated = [val_lower_viz, val_upper_viz]
 pred_qr = mean_viz
 prediction_sets_qr = prediction_sets
 
-plt.figure()
-plt.title(f"Conformalised Quantile Regression, alpha = {alpha}")
-plt.plot(Y_pred_viz, label='Analytical', color='black')
-plt.plot(mean_viz, label='Mean', color='firebrick')
-plt.plot(prediction_sets[0], label='lower-cal', color='teal')
-plt.plot(prediction_sets_uncalibrated[0], label='lower - uncal', color='darkorange')
-plt.plot(prediction_sets[1], label='upper-cal', color='navy')
-plt.plot(prediction_sets_uncalibrated[1], label='upper - uncal', color='gold')
-plt.xlabel("x")
-plt.ylabel("y")
-plt.legend()
+# plt.figure()
+# plt.title(rf"CQR, $\alpha$ = {alpha}")
+# plt.plot(Y_pred_viz, label='Exact', color='black')
+# plt.plot(mean_viz, label='Mean', color='firebrick')
+# plt.plot(prediction_sets[0], label='lower-cal', color='teal')
+# plt.plot(prediction_sets_uncalibrated[0], label='lower - uncal', color='darkorange')
+# plt.plot(prediction_sets[1], label='upper-cal', color='navy')
+# plt.plot(prediction_sets_uncalibrated[1], label='upper - uncal', color='gold')
+# plt.xlabel("x")
+# plt.ylabel("u")
+# plt.legend()
 
 # %% 
 # plt.figure()
-# plt.title(f"Conformalised Quantile Regression, alpha = {alpha}")
-# plt.scatter(Y_pred_viz, label = 'Analytical', color='black', s=10)
+# plt.title(rf"CQR, $\alpha$ = {alpha}")
+# plt.scatter(Y_pred_viz, label = 'Exact', color='black', s=10)
 # plt.scatter(mean_viz.flatten(), label='Prediction', color='firebrick', s=10)
 # plt.plot(prediction_sets[0], label='lower-cal', color='teal')
 # plt.plot(prediction_sets_uncalibrated[0], label='lower - uncal', color='darkorange')
 # plt.plot(prediction_sets[1], label='upper-cal', color='navy')
 # plt.plot(prediction_sets_uncalibrated[1], label='upper - uncal', color='gold')
 # plt.xlabel("x")
-# plt.ylabel("y")
+# plt.ylabel("u")
 # plt.legend()
 
 # %% 
 
 plt.figure()
-plt.title(f"Conformalised Quantile Regression, alpha = {alpha}")
-plt.errorbar(np.arange(0, 32, 1), mean_viz.flatten(), yerr=(prediction_sets[1] - prediction_sets[0]).flatten(), label='Prediction', color='firebrick', fmt='o', alpha=0.5)
-plt.scatter(np.arange(0, 32, 1), Y_pred_viz, label = 'Analytical')
+plt.title(rf"CQR, $\alpha$ = {alpha}")
+plt.errorbar(x_range, mean_viz.flatten(), yerr=(prediction_sets[1] - prediction_sets[0]).flatten(), label='Prediction', color='firebrick', fmt='o', alpha=0.5)
+plt.scatter(x_range, Y_pred_viz, label = 'Exact', color='black', alpha=0.8)
 plt.xlabel("x")
-plt.ylabel("y")
+plt.ylabel("u")
 plt.legend()
+plt.grid() #Comment out if you dont want grids.
+plt.savefig("poisson_cqr.svg", format="svg", bbox_inches='tight', transparent='True')
+plt.show()
 # %% 
 # Calculate empirical coverage (before and after calibration)
 
@@ -350,7 +376,7 @@ def calibrate(alpha):
         cal_upper = nn_upper(torch.Tensor(X_cal)).numpy()
 
     cal_scores = np.maximum(Y_cal-cal_upper, cal_lower-Y_cal)
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
     prediction_sets = [val_lower - qhat, val_upper + qhat]
     empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
@@ -362,29 +388,14 @@ for ii in tqdm(range(len(alpha_levels))):
     emp_cov_cqr.append(calibrate(alpha_levels[ii]))
 
 # %%
-plt.figure()
-plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
-# plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
-# plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='mediumblue', ls='dotted',  alpha=0.8, linewidth=3.0)
-plt.xlabel('1-alpha')
-plt.ylabel('Empirical Coverage')
-plt.legend()
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['font.size']=45
-mpl.rcParams['figure.figsize']=(16,16)
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['axes.linewidth']= 3
-mpl.rcParams['axes.titlepad'] = 20
-plt.rcParams['xtick.major.size'] =15
-plt.rcParams['ytick.major.size'] =15
-plt.rcParams['xtick.minor.size'] =10
-plt.rcParams['ytick.minor.size'] =10
-plt.rcParams['xtick.major.width'] =5
-plt.rcParams['ytick.major.width'] =5
-plt.rcParams['xtick.minor.width'] =5
-plt.rcParams['ytick.minor.width'] =5
-mpl.rcParams['axes.titlepad'] = 20
+# plt.figure()
+# plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
+# plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
+# # plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
+# # plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='navy', ls='dotted',  alpha=0.8, linewidth=3.0)
+# plt.xlabel('1-alpha')
+# plt.ylabel('Empirical Coverage')
+# plt.legend()
 
 
 # %% 
@@ -426,7 +437,7 @@ with torch.no_grad():
     prediction = nn_mean(stacked_x).numpy()
 
 n = len(cal_scores)
-qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
 prediction_sets =  [prediction - qhat, prediction + qhat]
 
@@ -436,10 +447,10 @@ print(f"alpha is: {alpha}")
 print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
 
 # %% 
-plt.figure()
-plt.hist(cal_scores, 50)
-plt.xlabel("Calibration scores")
-plt.ylabel("Frequency")
+# plt.figure()
+# plt.hist(cal_scores, 50)
+# plt.xlabel("Calibration scores")
+# plt.ylabel("Frequency")
 
 # %%
 # Plot residuals conformal predictor
@@ -450,48 +461,51 @@ stacked_x = torch.FloatTensor(X_pred_viz)
 with torch.no_grad():
     prediction = nn_mean(stacked_x).numpy()
 n = len(cal_scores)
-qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
 prediction_sets =  [prediction - qhat, prediction + qhat]
 
 pred_residual = prediction
 prediction_sets_residual = prediction_sets
 
-plt.figure()
-plt.title(f"Residual conformal, alpha = {alpha}")
-plt.plot(Y_pred_viz, label='Analytical', color='black')
-plt.plot(prediction, label='Mean', color='firebrick')
-plt.plot(prediction_sets[0], label='lower-cal', color='teal')
-plt.plot(prediction_sets[1], label='upper-cal', color='navy')
-plt.xlabel("x")
-plt.ylabel("y")
-plt.legend()
+# plt.figure()
+# plt.title(rf"Residual, $\alpha$ = {alpha}")
+# plt.plot(Y_pred_viz, label='Exact', color='black')
+# plt.plot(prediction, label='Mean', color='firebrick')
+# plt.plot(prediction_sets[0], label='lower-cal', color='teal')
+# plt.plot(prediction_sets[1], label='upper-cal', color='navy')
+# plt.xlabel("x")
+# plt.ylabel("u")
+# plt.legend()
 
 # %%
 plt.figure()
-plt.title(f"Residual conformal, alpha = {alpha}")
-plt.errorbar(np.arange(0, 32, 1), prediction.flatten(), yerr=(prediction_sets[1] - prediction_sets[0]).flatten(), label='Prediction', color='firebrick', fmt='o', alpha=0.5)
-plt.scatter(np.arange(0, 32, 1), Y_pred_viz, label = 'Analytical')
+plt.title(rf"Residual, $\alpha$ = {alpha}")
+plt.errorbar(x_range, prediction.flatten(), yerr=(prediction_sets[1] - prediction_sets[0]).flatten(), label='Prediction', color='teal', fmt='o', alpha=0.5)
+plt.scatter(x_range, Y_pred_viz, label = 'Exact', color='black', alpha=0.8)
 plt.xlabel("x")
-plt.ylabel("y")
+plt.ylabel("u")
 plt.legend()
+plt.grid() #Comment out if you dont want grids.
+plt.savefig("poisson_residual.svg", format="svg", bbox_inches='tight')
+plt.show()
 # %%
-plt.figure()
-plt.title(f"Residual conformal, alpha = {alpha}")
-plt.scatter(np.arange(0, 32, 1), prediction.flatten(), label='Prediction', color='firebrick', s=10)
-plt.scatter(np.arange(0, 32, 1), Y_pred_viz, label = 'Analytical', color='black', s=10)
-plt.plot(prediction_sets[0], label='lower-cal', color='teal')
-plt.plot(prediction_sets[1], label='upper-cal', color='navy')
-plt.xlabel("x")
-plt.ylabel("y")
-plt.legend()
+# plt.figure()
+# plt.title(rf"Residual, $\alpha$ = {alpha}")
+# plt.scatter(x_range, prediction.flatten(), label='Prediction', color='firebrick', s=10)
+# plt.scatter(x_range, Y_pred_viz, label = 'Exact', color='black', s=10)
+# plt.plot(prediction_sets[0], label='lower-cal', color='teal')
+# plt.plot(prediction_sets[1], label='upper-cal', color='navy')
+# plt.xlabel("x")
+# plt.ylabel("u")
+# plt.legend()
 # %%
 
 def calibrate_res(alpha):
     n = cal_split
 
     cal_scores = conf_metric(X_cal, Y_cal)
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
     with torch.no_grad():
         prediction = nn_mean(stacked_x).numpy()
@@ -507,31 +521,14 @@ for ii in tqdm(range(len(alpha_levels))):
     emp_cov_res.append(calibrate_res(alpha_levels[ii]))
 
 # %%
-plt.figure()
-plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
-# plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
-# plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='mediumblue', ls='dotted',  alpha=0.8, linewidth=3.0)
-plt.xlabel('1-alpha')
-plt.ylabel('Empirical Coverage')
-plt.legend()
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['font.size']=45
-mpl.rcParams['figure.figsize']=(16,16)
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['axes.linewidth']= 3
-mpl.rcParams['axes.titlepad'] = 20
-plt.rcParams['xtick.major.size'] =15
-plt.rcParams['ytick.major.size'] =15
-plt.rcParams['xtick.minor.size'] =10
-plt.rcParams['ytick.minor.size'] =10
-plt.rcParams['xtick.major.width'] =5
-plt.rcParams['ytick.major.width'] =5
-plt.rcParams['xtick.minor.width'] =5
-plt.rcParams['ytick.minor.width'] =5
-mpl.rcParams['axes.titlepad'] = 20
-plt.savefig("poisson_cqr.svg", format="svg", bbox_inches='tight')
-plt.show()
+# plt.figure()
+# plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
+# # plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
+# plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
+# # plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='navy', ls='dotted',  alpha=0.8, linewidth=3.0)
+# plt.xlabel('1-alpha')
+# plt.ylabel('Empirical Coverage')
+# plt.legend()
 # %% 
 
 # %%
@@ -607,12 +604,12 @@ cal_lower = mean_cal - std_cal
 
 cal_scores = np.maximum(Y_cal-cal_upper, cal_lower-Y_cal)           
 
-qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
-plt.figure()
-plt.hist(cal_scores, 50)
-plt.xlabel("Calibration scores")
-plt.ylabel("Frequency")
+# plt.figure()
+# plt.hist(cal_scores, 50)
+# plt.xlabel("Calibration scores")
+# plt.ylabel("Frequency")
 
 # %%
 def get_prediction_sets(x, alpha = 0.1):
@@ -627,7 +624,7 @@ def get_prediction_sets(x, alpha = 0.1):
     val_lower = val_mean - val_std
 
     n = len(cal_scores)
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
     return [val_lower - qhat, val_upper + qhat]
 
@@ -655,40 +652,42 @@ pred_dropout = val_mean_viz
 prediction_sets_dropout = prediction_sets
 #%%
 
-plt.figure()
-plt.title(f"Conformal using dropout, alpha = {alpha}")
-plt.plot(Y_pred_viz, label='Analytical', color='black')
-plt.plot(val_mean_viz, label='Mean', color='firebrick')
-plt.plot(prediction_sets[0], label='lower-cal', color='teal')
-plt.plot(prediction_sets_uncalibrated[0], label='lower - uncal', color='darkorange')
-plt.plot(prediction_sets[1], label='upper-cal', color='navy')
-plt.plot(prediction_sets_uncalibrated[1], label='upper - uncal', color='gold')
-plt.xlabel("x")
-plt.ylabel("y")
-plt.legend()
+# plt.figure()
+# plt.title(rf"Dropout, $\alpha$ = {alpha}")
+# plt.plot(Y_pred_viz, label='Exact', color='black')
+# plt.plot(val_mean_viz, label='Mean', color='firebrick')
+# plt.plot(prediction_sets[0], label='lower-cal', color='teal')
+# plt.plot(prediction_sets_uncalibrated[0], label='lower - uncal', color='darkorange')
+# plt.plot(prediction_sets[1], label='upper-cal', color='navy')
+# plt.plot(prediction_sets_uncalibrated[1], label='upper - uncal', color='gold')
+# plt.xlabel("x")
+# plt.ylabel("u")
+# plt.legend()
+
+# %% 
+# plt.figure()
+# plt.title(rf"Dropout, $\alpha$ = {alpha}")
+# plt.scatter(x_range, Y_pred_viz, label = 'Exact', color='black', s=10)
+# plt.scatter(x_range, val_mean_viz.flatten(), label='Prediction', color='firebrick', s=10)
+# plt.plot(prediction_sets[0], label='lower-cal', color='teal')
+# plt.plot(prediction_sets_uncalibrated[0], label='lower - uncal', color='darkorange')
+# plt.plot(prediction_sets[1], label='upper-cal', color='navy')
+# plt.plot(prediction_sets_uncalibrated[1], label='upper - uncal', color='gold')
+# plt.xlabel("x")
+# plt.ylabel("u")
+# plt.legend()
 
 # %% 
 plt.figure()
-plt.title(f"Conformal using dropout, alpha = {alpha}")
-plt.scatter(np.arange(0, 32, 1), Y_pred_viz, label = 'Analytical', color='black', s=10)
-plt.scatter(np.arange(0, 32, 1), val_mean_viz.flatten(), label='Prediction', color='firebrick', s=10)
-plt.plot(prediction_sets[0], label='lower-cal', color='teal')
-plt.plot(prediction_sets_uncalibrated[0], label='lower - uncal', color='darkorange')
-plt.plot(prediction_sets[1], label='upper-cal', color='navy')
-plt.plot(prediction_sets_uncalibrated[1], label='upper - uncal', color='gold')
+plt.title(rf"Dropout, $\alpha$ = {alpha}")
+plt.errorbar(x_range, val_mean_viz.flatten(), yerr=(prediction_sets[1] - prediction_sets[0]).flatten(), label='Prediction', color='navy', fmt='o', alpha=0.5)
+plt.scatter(x_range, Y_pred_viz, label = 'Exact', color='black', alpha=0.8)
 plt.xlabel("x")
-plt.ylabel("y")
+plt.ylabel("u")
 plt.legend()
-
-# %% 
-plt.figure()
-plt.title(f"Conformal using Dropout, alpha = {alpha}")
-plt.errorbar(np.arange(0, 32, 1), val_mean_viz.flatten(), yerr=(prediction_sets[1] - prediction_sets[0]).flatten(), label='Prediction', color='firebrick', fmt='o', alpha=0.5)
-plt.scatter(np.arange(0, 32, 1), Y_pred_viz, label = 'Analytical')
-plt.xlabel("x")
-plt.ylabel("y")
-plt.legend()
-
+plt.grid() #Comment out if you dont want grids.
+plt.savefig("poisson_dropout.svg", format="svg", bbox_inches='tight', transparent='True')
+plt.show()
 # %% 
 # Calculate empirical coverage (before and after calibration)
 
@@ -723,7 +722,7 @@ def calibrate(alpha):
     cal_lower = cal_mean - cal_std
 
     cal_scores = np.maximum(Y_cal-cal_upper, cal_lower-Y_cal)
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
     prediction_sets = [val_lower - qhat, val_upper + qhat]
     empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
@@ -737,43 +736,45 @@ for ii in tqdm(range(len(alpha_levels))):
 # %%
 plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal')
 plt.plot(1-alpha_levels, emp_cov_dropout, label='Coverage')
-plt.xlabel('1-alpha')
+plt.xlabel(r'1-$\alpha$')
 plt.ylabel('Empirical Coverage')
 plt.title('Conformal using Dropout')
 plt.legend()
 
 # %% 
 
-plt.figure()
-plt.title(f"Prediction Sets, alpha = {alpha}")
-plt.errorbar(np.arange(0, 32, 1), pred_residual.flatten(), yerr=(prediction_sets_residual[1] - prediction_sets_residual[0]).flatten(), label='Prediction', color='firebrick', fmt='o', alpha=0.5)
-plt.errorbar(np.arange(0, 32, 1), pred_dropout.flatten(), yerr=(prediction_sets_dropout[1] - prediction_sets_dropout[0]).flatten(), label='Prediction', color='firebrick', fmt='o', alpha=0.5)
-plt.scatter(np.arange(0, 32, 1), Y_pred_viz, label = 'Analytical')
-plt.xlabel("x")
-plt.ylabel("y")
-plt.legend()
+# plt.figure()
+# plt.title(f"Prediction Sets, alpha = {alpha}")
+# plt.errorbar(x_range, pred_residual.flatten(), yerr=(prediction_sets_residual[1] - prediction_sets_residual[0]).flatten(), label='Prediction', color='firebrick', fmt='o', alpha=0.5)
+# plt.errorbar(x_range, pred_dropout.flatten(), yerr=(prediction_sets_dropout[1] - prediction_sets_dropout[0]).flatten(), label='Prediction', color='firebrick', fmt='o', alpha=0.5)
+# plt.scatter(x_range, Y_pred_viz, label = 'Exact')
+# plt.xlabel("x")
+# plt.ylabel("u")
+# plt.legend()
 # %% 
 
-plt.figure()
-plt.title(f"Prediction Sets, alpha = {alpha}")
-# plt.errorbar(np.arange(0, 32, 1), pred_qr.flatten(), yerr=(prediction_sets_qr[1] - prediction_sets_qr[0]).flatten(), label='CQR', color='maroon', fmt='o', alpha=0.5, linewidth=3.0)
-# plt.errorbar(np.arange(0, 32, 1), pred_residual.flatten(), yerr=(prediction_sets_residual[1] - prediction_sets_residual[0]).flatten(), label='Residual', color='teal', fmt='o', alpha=0.5, linewidth=3.0)
-plt.errorbar(np.arange(0, 32, 1), pred_dropout.flatten(), yerr=(prediction_sets_dropout[1] - prediction_sets_dropout[0]).flatten(), label='Dropout', color='mediumblue', fmt='o', alpha=0.5, linewidth=3.0)
-plt.scatter(np.arange(0, 32, 1), Y_pred_viz, label = 'Analytical', color='black')
-plt.xlabel("x")
-plt.ylabel("y")
-plt.legend()
+# plt.figure()
+# plt.title(f"Prediction Sets, alpha = {alpha}")
+# # plt.errorbar(x_range, pred_qr.flatten(), yerr=(prediction_sets_qr[1] - prediction_sets_qr[0]).flatten(), label='CQR', color='maroon', fmt='o', alpha=0.5, linewidth=3.0)
+# # plt.errorbar(x_range, pred_residual.flatten(), yerr=(prediction_sets_residual[1] - prediction_sets_residual[0]).flatten(), label='Residual', color='teal', fmt='o', alpha=0.5, linewidth=3.0)
+# plt.errorbar(x_range, pred_dropout.flatten(), yerr=(prediction_sets_dropout[1] - prediction_sets_dropout[0]).flatten(), label='Dropout', color='navy', fmt='o', alpha=0.5, linewidth=3.0)
+# plt.scatter(x_range, Y_pred_viz, label = 'Exact', color='black')
+# plt.xlabel("x")
+# plt.ylabel("u")
+# plt.legend()
 
 # %% 
-plt.figure()
-plt.title(f"Prediction Sets, alpha = {alpha}")
-# plt.plot(np.arange(0, 32, 1), pred_qr.flatten(), label='CQR', color='maroon', alpha=0.8, linewidth=3.0)
-plt.plot(np.arange(0, 32, 1), pred_residual.flatten(), label='Residual', color='teal',  alpha=0.8, linewidth=3.0)
-# plt.plot(np.arange(0, 32, 1), pred_dropout.flatten(), label='Dropout', color='mediumblue',  alpha=0.8, linewidth=3.0)
-plt.plot(np.arange(0, 32, 1), Y_pred_viz, label = 'Analytical', color='black', linewidth=3.0)
-plt.xlabel("x")
-plt.ylabel("y")
-plt.legend()
+# plt.figure()
+# plt.title(f"Prediction Sets, alpha = {alpha}")
+# plt.plot(x_range, pred_qr.flatten(), label='CQR', color='maroon', alpha=0.8, linewidth=3.0)
+# plt.plot(x_range, pred_residual.flatten(), label='Residual', color='teal',  alpha=0.8, linewidth=3.0)
+# plt.plot(x_range, pred_dropout.flatten(), label='Dropout', color='navy',  alpha=0.8, linewidth=3.0)
+# plt.plot(x_range, Y_pred_viz, label = 'Exact', color='black', linewidth=3.0)
+# plt.xlabel("x")
+# plt.ylabel("u")
+# plt.legend()
+
+# %%
 mpl.rcParams['xtick.minor.visible']=True
 mpl.rcParams['font.size']=45
 mpl.rcParams['figure.figsize']=(16,16)
@@ -789,30 +790,18 @@ plt.rcParams['ytick.major.width'] =5
 plt.rcParams['xtick.minor.width'] =5
 plt.rcParams['ytick.minor.width'] =5
 mpl.rcParams['axes.titlepad'] = 20
-# %%
 
-plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='mediumblue', ls='dotted',  alpha=0.8, linewidth=3.0)
-plt.xlabel('1-alpha')
+plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.75, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.75, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.75, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='navy', ls='dotted',  alpha=0.8, linewidth=3.0)
+plt.xlabel(r'1-$\alpha$')
 plt.ylabel('Empirical Coverage')
 plt.legend()
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['font.size']=45
-mpl.rcParams['figure.figsize']=(16,16)
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['axes.linewidth']= 3
-mpl.rcParams['axes.titlepad'] = 20
-plt.rcParams['xtick.major.size'] =15
-plt.rcParams['ytick.major.size'] =15
-plt.rcParams['xtick.minor.size'] =10
-plt.rcParams['ytick.minor.size'] =10
-plt.rcParams['xtick.major.width'] =5
-plt.rcParams['ytick.major.width'] =5
-plt.rcParams['xtick.minor.width'] =5
-plt.rcParams['ytick.minor.width'] =5
-mpl.rcParams['axes.titlepad'] = 20
+plt.grid() #Comment out if you dont want grids.
+plt.savefig("poisson_comparison.svg", format="svg", bbox_inches='tight')
+plt.show()
+
 # %%
 # from matplotlib import cm 
 

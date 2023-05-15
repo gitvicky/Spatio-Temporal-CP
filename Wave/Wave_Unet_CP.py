@@ -746,7 +746,7 @@ plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.
 plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.75, linewidth=3.0)
 plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.75, linewidth=3.0)
 plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='navy', ls='dotted',  alpha=0.75, linewidth=3.0)
-plt.xlabel('1-alpha')
+plt.xlabel(r'1-$\alpha$')
 plt.ylabel('Empirical Coverage')
 plt.legend()
 plt.grid() #Comment out if you dont want grids.
