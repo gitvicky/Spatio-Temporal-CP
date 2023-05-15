@@ -706,10 +706,10 @@ class FNO2d_dropout(nn.Module):
     
 
     #Estimating the output uncertainties using Dropout. 
-def Dropout_eval_fno(net, x, T_out, Nrepeat=10):
+def Dropout_eval_fno(net, x, step, Nrepeat=10):
     net.eval()
     # net.enable_dropout()
-    preds = torch.zeros(Nrepeat, x.shape[1], x.shape[2], T_out)
-    for i in range(Nrepeat):
+    preds = torch.zeros(Nrepeat,x.shape[0], x.shape[1], x.shape[2], step)
+    for i in range(Nrepeat):    
         preds[i] = net(x)
     return torch.mean(preds, axis=0), torch.std(preds, axis=0)

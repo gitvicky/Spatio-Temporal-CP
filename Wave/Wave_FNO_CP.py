@@ -23,7 +23,6 @@ Once UQ methodolgies have been demonstrated on each, we can use Conformal Predic
 """
 
 # %%
-
 configuration = {"Case": 'Wave',
                  "Field": 'u',
                  "Type": 'FNO',
@@ -149,166 +148,6 @@ cal_u = y_normalizer.encode(cal_u)
 pred_u = y_normalizer.encode(pred_u)
 
 
-# # %%
-# #####################################
-# #Conformalised Quantile Regression
-# #####################################
-
-# #Invoking the trained models 
-
-# model_05 = FNO2d(modes, modes, width, T_in, step, x, y)
-# model_05.load_state_dict(torch.load(model_loc + 'FNO_Wave_central-chickadee_QR_05.pth', map_location='cpu'))
-
-# model_95 = FNO2d(modes, modes, width, T_in, step, x, y)
-# model_95.load_state_dict(torch.load(model_loc + 'FNO_Wave_hoary-phase_QR_95.pth', map_location='cpu'))
-
-# model_50 = FNO2d(modes, modes, width, T_in, step, x, y)
-# model_50.load_state_dict(torch.load(model_loc + 'FNO_Wave_proper-baluster_QR_50.pth', map_location='cpu'))
-
-# # %%
-# t1 = default_timer()
-
-# n = ncal
-# alpha = 0.1 #Coverage will be 1- alpha 
-
-# with torch.no_grad():
-#     xx_lower = cal_a
-#     xx_upper = cal_a
-#     for tt in tqdm(range(0, T, step)):
-#         pred_lower = model_05(xx_lower)
-#         pred_upper = model_95(xx_upper)
-
-#         if tt == 0:
-#             cal_lower = pred_lower
-#             cal_upper = pred_upper
-
-#         else:
-#             cal_lower = torch.cat((cal_lower, pred_lower), -1)       
-#             cal_upper = torch.cat((cal_upper, pred_upper), -1)       
-
-#         xx_lower = torch.cat((xx_lower[..., step:], pred_lower), dim=-1)
-#         xx_upper = torch.cat((xx_upper[..., step:], pred_upper), dim=-1)
-
-
-# cal_lower = cal_lower.numpy()
-# cal_upper = cal_upper.numpy()
-
-# cal_scores = np.maximum(cal_u.numpy()-cal_upper, cal_lower-cal_u.numpy())      
-# qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
-
-
-# # %% 
-# #Obtaining the Prediction Sets
-
-# y_response = pred_u.numpy()
-
-# with torch.no_grad():
-#     xx_lower = pred_a
-#     xx_upper = pred_a
-#     xx_mean = pred_a
-
-#     for tt in tqdm(range(0, T, step)):
-#         pred_lower = model_05(xx_lower)
-#         pred_upper = model_95(xx_upper)
-#         pred_mean = model_50(xx_mean)
-
-#         if tt == 0:
-#             val_lower = pred_lower
-#             val_upper = pred_upper
-#             val_mean = pred_mean
-#         else:
-#             val_lower = torch.cat((val_lower, pred_lower), -1)       
-#             val_upper = torch.cat((val_upper, pred_upper), -1)       
-#             val_mean = torch.cat((val_mean, pred_mean), -1)       
-
-#         xx_lower = torch.cat((xx_lower[..., step:], pred_lower), dim=-1)
-#         xx_upper = torch.cat((xx_upper[..., step:], pred_upper), dim=-1)
-#         xx_mean = torch.cat((xx_mean[..., step:], pred_mean), dim=-1)
-
-#     val_lower = val_lower.numpy()
-#     val_upper = val_upper.numpy()
-
-#     prediction_sets = [val_lower - qhat, val_upper + qhat]
-
-# # %% 
-# print('Conformal by way QCR')
-# # Calculate empirical coverage (before and after calibration)
-# prediction_sets_uncalibrated = [val_lower, val_upper]
-# empirical_coverage_uncalibrated = ((y_response >= prediction_sets_uncalibrated[0]) & (y_response <= prediction_sets_uncalibrated[1])).mean()
-# print(f"The empirical coverage before calibration is: {empirical_coverage_uncalibrated}")
-# empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
-# print(f"The empirical coverage after calibration is: {empirical_coverage}")
-
-# t2 = default_timer()
-# print('Conformalised Quantile Regression, time used:', t2-t1)
-
-
-# # %%
-# #Testing calibration across range of Alpha for CQR
-# def calibrate_cqr(alpha):
-#     n = ncal
-#     y_response = pred_u.numpy()
-
-#     with torch.no_grad():
-#         xx_lower = cal_a
-#         xx_upper = cal_a
-#         for tt in tqdm(range(0, T, step)):
-#             pred_lower = model_05(xx_lower)
-#             pred_upper = model_95(xx_upper)
-
-#             if tt == 0:
-#                 cal_lower = pred_lower
-#                 cal_upper = pred_upper
-
-#             else:
-#                 cal_lower = torch.cat((cal_lower, pred_lower), -1)       
-#                 cal_upper = torch.cat((cal_upper, pred_upper), -1)       
-
-#             xx_lower = torch.cat((xx_lower[..., step:], pred_lower), dim=-1)
-#             xx_upper = torch.cat((xx_upper[..., step:], pred_upper), dim=-1)
-
-#     cal_lower = cal_lower.numpy()
-#     cal_upper = cal_upper.numpy()
-
-#     cal_scores = np.maximum(cal_u.numpy()-cal_upper, cal_lower-cal_u.numpy())   
-#     qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
-    
-#     prediction_sets = [val_lower - qhat, val_upper + qhat]
-#     empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
-
-#     return empirical_coverage
-
-
-# alpha_levels = np.arange(0.05, 0.95, 0.1)
-# emp_cov_cqr = []
-
-# for ii in tqdm(range(len(alpha_levels))):
-#     emp_cov_cqr.append(calibrate_cqr(alpha_levels[ii]))
-
-# # %% 
-# plt.figure()
-# plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
-# plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
-# # plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
-# # plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='mediumblue', ls='dotted',  alpha=0.8, linewidth=3.0)
-# plt.xlabel('1-alpha')
-# plt.ylabel('Empirical Coverage')
-# plt.legend()
-# mpl.rcParams['xtick.minor.visible']=True
-# mpl.rcParams['font.size']=45
-# mpl.rcParams['figure.figsize']=(16,16)
-# mpl.rcParams['xtick.minor.visible']=True
-# mpl.rcParams['axes.linewidth']= 3
-# mpl.rcParams['axes.titlepad'] = 20
-# plt.rcParams['xtick.major.size'] =15
-# plt.rcParams['ytick.major.size'] =15
-# plt.rcParams['xtick.minor.size'] =10
-# plt.rcParams['ytick.minor.size'] =10
-# plt.rcParams['xtick.major.width'] =5
-# plt.rcParams['ytick.major.width'] =5
-# plt.rcParams['xtick.minor.width'] =5
-# plt.rcParams['ytick.minor.width'] =5
-# mpl.rcParams['axes.titlepad'] = 20
 
 # %%
 #Performing the Calibration usign Residuals: https://www.stat.cmu.edu/~larry/=sml/Conformal
@@ -342,7 +181,7 @@ with torch.no_grad():
 
 cal_mean = cal_mean.numpy()
 cal_scores = np.abs(cal_u.numpy()-cal_mean)           
-qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
 # %% 
 #Obtaining the Prediction Sets
@@ -374,6 +213,16 @@ print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
 
 t2 = default_timer()
 print('Conformal by Residual, time used:', t2-t1)
+
+# %% 
+
+idx = 25
+tt = -1
+num_levels = 5
+plt.contour(pred_u[idx, :, :, tt], levels = num_levels, cmap = 'Reds', linewidths=1)
+plt.contour(prediction_sets[0][idx, :, :, tt], levels = num_levels, cmap = 'Greens',  linewidths=1)
+plt.contour(prediction_sets[1][idx, :, :, tt], levels = num_levels, cmap = 'Blues',  linewidths=1)
+
 # %%
 def calibrate_residual(alpha):
     n = ncal
@@ -395,7 +244,7 @@ def calibrate_residual(alpha):
     cal_mean = cal_mean.numpy()
 
     cal_scores = np.abs(cal_u.numpy()-cal_mean)           
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
     
     prediction_sets = [val_mean - qhat, val_mean + qhat]
@@ -436,212 +285,212 @@ plt.rcParams['ytick.minor.width'] =5
 mpl.rcParams['axes.titlepad'] = 20
 
 
-# # %%
+# %%
 # ##############################
 # # Conformal using Dropout 
 # ##############################
 
-# model_dropout = FNO2d_dropout(modes, modes, width, T_in, step, x, y)
-# model_dropout.load_state_dict(torch.load(model_loc + 'FNO_Wave_plastic-serval_dropout.pth', map_location='cpu'))
-
-# # %%
-# #Performing the Calibration for Dropout
-
-# t1 = default_timer()
-
-# n = ncal
-# alpha = 0.1 #Coverage will be 1- alpha 
-
-# with torch.no_grad():
-#     xx = cal_a
-
-#     for tt in tqdm(range(0, T, step)):
-#         mean, std = Dropout_eval_fno(model_dropout, xx, T)
-
-#         if tt == 0:
-#             cal_mean = mean
-#             cal_std = std
-#         else:
-#             cal_mean = torch.cat((cal_mean, mean), -1)       
-#             cal_std = torch.cat((cal_std, std), -1)       
-
-#         xx = torch.cat((xx[..., step:], mean), dim=-1)
+model_dropout = FNO2d_dropout(modes, modes, width, T_in, step, x, y)
+model_dropout.load_state_dict(torch.load(model_loc + 'FNO_Wave_plastic-serval_dropout.pth', map_location='cpu'))
 
 
-# # cal_mean = cal_mean.numpy()
+# %%
+#Performing the Calibration for Dropout
 
-# cal_upper = cal_mean + cal_std
-# cal_lower = cal_mean - cal_std
+t1 = default_timer()
 
-# cal_scores = np.maximum(cal_u.numpy()-cal_upper.numpy(), cal_lower.numpy()-cal_u.numpy())
-# qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+n = ncal
+alpha = 0.1 #Coverage will be 1- alpha 
 
+with torch.no_grad():
+    xx = cal_a
 
-# # %% 
+    for tt in tqdm(range(0, T, step)):
+        mean, std = Dropout_eval_fno(model_dropout, xx, step)
 
-#     #Estimating the output uncertainties using Dropout. 
-# def Dropout_eval_fno(net, x, T_out, Nrepeat=10):
-#     net.eval()
-#     # net.enable_dropout()
-#     preds = torch.zeros(Nrepeat, x.shape[0], x.shape[1], x.shape[2], T_out)
-#     for i in range(Nrepeat):
-#         preds[i] = net(x)
-#     return torch.mean(preds, axis=0), torch.std(preds, axis=0)
+        if tt == 0:
+            cal_mean = mean
+            cal_std = std
+        else:
+            cal_mean = torch.cat((cal_mean, mean), -1)       
+            cal_std = torch.cat((cal_std, std), -1)       
 
-
-
-# # %% 
-# #Obtaining the Prediction Sets
-# with torch.no_grad():
-#     xx = pred_a
-
-#     for tt in tqdm(range(0, T, step)):
-#         mean, std = Dropout_eval_fno(model_dropout, xx, T)
-
-#         if tt == 0:
-#             val_mean = mean
-#             val_std = std
-#         else:
-#             val_mean = torch.cat((val_mean, mean), 1)       
-#             val_std = torch.cat((val_std, std), 1)       
-
-#         xx = torch.cat((xx[:, step:, :, :], mean), dim=1)
-
-# val_upper = val_mean + val_std
-# val_lower = val_mean - val_std
-
-# val_lower = val_lower.numpy()
-# val_upper = val_upper.numpy()
-
-# prediction_sets_uncalibrated = [val_lower, val_upper]
-# prediction_sets = [val_lower - qhat, val_upper + qhat]
-
-# # %% 
-# y_response = pred_u.numpy()
-
-# print('Conformal by way Dropout')
-# # Calculate empirical coverage (before and after calibration)
-# prediction_sets_uncalibrated = [val_lower, val_upper]
-# empirical_coverage_uncalibrated = ((y_response >= prediction_sets_uncalibrated[0]) & (y_response <= prediction_sets_uncalibrated[1])).mean()
-# print(f"The empirical coverage before calibration is: {empirical_coverage_uncalibrated}")
-# empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
-# print(f"The empirical coverage after calibration is: {empirical_coverage}")
-
-# # %% 
-# def calibrate_dropout(alpha):
-#     with torch.no_grad():
-#         xx = cal_a
-
-#         for tt in tqdm(range(0, T, step)):
-#             mean, std = Dropout_eval_fno(model_dropout, xx, T)
-
-#             if tt == 0:
-#                 cal_mean = mean
-#                 cal_std = std
-#             else:
-#                 cal_mean = torch.cat((cal_mean, mean), 1)       
-#                 cal_std = torch.cat((cal_std, std), 1)       
-
-#             xx = torch.cat((xx[:, step:, :, :], mean), dim=1)
+        xx = torch.cat((xx[..., step:], mean), dim=-1)
 
 
-#     # cal_mean = cal_mean.numpy()
+# cal_mean = cal_mean.numpy()
 
-#     cal_upper = cal_mean + cal_std
-#     cal_lower = cal_mean - cal_std
+cal_upper = cal_mean + cal_std
+cal_lower = cal_mean - cal_std
 
-#     cal_scores = np.maximum(cal_u.numpy()-cal_upper.numpy(), cal_lower.numpy()-cal_u.numpy())
-#     qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+cal_scores = np.maximum(cal_u.numpy()-cal_upper.numpy(), cal_lower.numpy()-cal_u.numpy())
+qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
+
+
+# %% 
+#Obtaining the Prediction Sets
+with torch.no_grad():
+    xx = pred_a
+
+    for tt in tqdm(range(0, T, step)):
+        mean, std = Dropout_eval_fno(model_dropout, xx, step)
+
+        if tt == 0:
+            val_mean = mean
+            val_std = std
+        else:
+            val_mean = torch.cat((val_mean, mean), -1)       
+            val_std = torch.cat((val_std, std), -1)       
+
+        xx = torch.cat((xx[..., step:], mean), dim=-1)
+
+val_upper = val_mean + val_std
+val_lower = val_mean - val_std
+
+val_lower = val_lower.numpy()
+val_upper = val_upper.numpy()
+
+prediction_sets_uncalibrated = [val_lower, val_upper]
+prediction_sets = [val_lower - qhat, val_upper + qhat]
+
+# %% 
+y_response = pred_u.numpy()
+
+print('Conformal by way Dropout')
+# Calculate empirical coverage (before and after calibration)
+prediction_sets_uncalibrated = [val_lower, val_upper]
+empirical_coverage_uncalibrated = ((y_response >= prediction_sets_uncalibrated[0]) & (y_response <= prediction_sets_uncalibrated[1])).mean()
+print(f"The empirical coverage before calibration is: {empirical_coverage_uncalibrated}")
+empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
+print(f"The empirical coverage after calibration is: {empirical_coverage}")
+
+# %% 
+def calibrate_dropout(alpha):
+    with torch.no_grad():
+        xx = cal_a
+
+        for tt in tqdm(range(0, T, step)):
+            mean, std = Dropout_eval_fno(model_dropout, xx, step)
+
+            if tt == 0:
+                cal_mean = mean
+                cal_std = std
+            else:
+                cal_mean = torch.cat((cal_mean, mean), -1)       
+                cal_std = torch.cat((cal_std, std), -1)       
+
+            xx = torch.cat((xx[..., step:], mean), dim=-1)
+
+
+    # cal_mean = cal_mean.numpy()
+
+    cal_upper = cal_mean + cal_std
+    cal_lower = cal_mean - cal_std
+
+    cal_scores = np.maximum(cal_u.numpy()-cal_upper.numpy(), cal_lower.numpy()-cal_u.numpy())
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
         
-#     prediction_sets = [val_mean - qhat, val_mean + qhat]
-#     empirical_coverage = ((y_response >= prediction_sets[0].numpy()) & (y_response <= prediction_sets[1].numpy())).mean()
+    prediction_sets = [val_mean - qhat, val_mean + qhat]
+    empirical_coverage = ((y_response >= prediction_sets[0].numpy()) & (y_response <= prediction_sets[1].numpy())).mean()
 
-#     return empirical_coverage
+    return empirical_coverage
 
-# # %%
-# alpha_levels = np.arange(0.05, 0.95, 0.1)
-# emp_cov_dropout = []
+# %%
+alpha_levels = np.arange(0.05, 0.95, 0.1)
+emp_cov_dropout = []
 
-# for ii in tqdm(range(len(alpha_levels))):
-#     emp_cov_dropout.append(calibrate_dropout(alpha_levels[ii]))
+for ii in tqdm(range(len(alpha_levels))):
+    emp_cov_dropout.append(calibrate_dropout(alpha_levels[ii]))
 
-# # %% 
+# %% 
 
-# plt.figure()
-# plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
-# # plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
-# # plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
-# plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='mediumblue', ls='dotted',  alpha=0.8, linewidth=3.0)
-# plt.xlabel('1-alpha')
-# plt.ylabel('Empirical Coverage')
-# plt.legend()
-# mpl.rcParams['xtick.minor.visible']=True
-# mpl.rcParams['font.size']=45
-# mpl.rcParams['figure.figsize']=(16,16)
-# mpl.rcParams['xtick.minor.visible']=True
-# mpl.rcParams['axes.linewidth']= 3
-# mpl.rcParams['axes.titlepad'] = 20
-# plt.rcParams['xtick.major.size'] =15
-# plt.rcParams['ytick.major.size'] =15
-# plt.rcParams['xtick.minor.size'] =10
-# plt.rcParams['ytick.minor.size'] =10
-# plt.rcParams['xtick.major.width'] =5
-# plt.rcParams['ytick.major.width'] =5
-# plt.rcParams['xtick.minor.width'] =5
-# plt.rcParams['ytick.minor.width'] =5
-# mpl.rcParams['axes.titlepad'] = 20
-
-
-# # %%
-# cal_scores = np.maximum(cal_u.numpy()-cal_upper, cal_lower-cal_u.numpy())           
-# qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+plt.figure()
+plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
+# plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
+# plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='mediumblue', ls='dotted',  alpha=0.8, linewidth=3.0)
+plt.xlabel('1-alpha')
+plt.ylabel('Empirical Coverage')
+plt.legend()
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['font.size']=45
+mpl.rcParams['figure.figsize']=(16,16)
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['axes.linewidth']= 3
+mpl.rcParams['axes.titlepad'] = 20
+plt.rcParams['xtick.major.size'] =15
+plt.rcParams['ytick.major.size'] =15
+plt.rcParams['xtick.minor.size'] =10
+plt.rcParams['ytick.minor.size'] =10
+plt.rcParams['xtick.major.width'] =5
+plt.rcParams['ytick.major.width'] =5
+plt.rcParams['xtick.minor.width'] =5
+plt.rcParams['ytick.minor.width'] =5
+mpl.rcParams['axes.titlepad'] = 20
 
 
-# y_response = pred_u.numpy()
-# stacked_x = torch.FloatTensor(pred_a)
+# %%
 
-# with torch.no_grad():
-#     val_lower = model_05(stacked_x).numpy()
-#     val_upper = model_95(stacked_x).numpy()
-#     mean = model_50(stacked_x).numpy()
+plt.figure()
+plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
+# plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='mediumblue', ls='dotted',  alpha=0.8, linewidth=3.0)
+plt.xlabel('1-alpha')
+plt.ylabel('Empirical Coverage')
+plt.legend()
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['font.size']=45
+mpl.rcParams['figure.figsize']=(16,16)
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['axes.linewidth']= 3
+mpl.rcParams['axes.titlepad'] = 20
+plt.rcParams['xtick.major.size'] =15
+plt.rcParams['ytick.major.size'] =15
+plt.rcParams['xtick.minor.size'] =10
+plt.rcParams['ytick.minor.size'] =10
+plt.rcParams['xtick.major.width'] =5
+plt.rcParams['ytick.major.width'] =5
+plt.rcParams['xtick.minor.width'] =5
+plt.rcParams['ytick.minor.width'] =5
+mpl.rcParams['axes.titlepad'] = 20
 
-# prediction_sets = [val_lower - qhat, val_upper + qhat]
 
-# # %%
-# print('Conformal by way Dropout')
-# # Calculate empirical coverage (before and after calibration)
-# prediction_sets_uncalibrated = [val_lower, val_upper]
-# empirical_coverage_uncalibrated = ((y_response >= prediction_sets_uncalibrated[0]) & (y_response <= prediction_sets_uncalibrated[1])).mean()
-# print(f"The empirical coverage before calibration is: {empirical_coverage_uncalibrated}")
-# empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
-# print(f"The empirical coverage after calibration is: {empirical_coverage}")
+# %%
 
-# t2 = default_timer()
-# print('Conformalised Quantile Regression, time used:', t2-t1)
-# # %%
+def get_prediction_sets(alpha):
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
+    prediction_sets = [val_mean - qhat, val_mean + qhat]
 
 
+# cols = cm.plasma(alpha_levels)
+# pred_sets = [get_prediction_sets(a) for a in alpha_levels] 
 
-# # %%
+
 # idx = 0
 # tt = -1
 # x_id = 16
 
 # # x_points = pred_a[idx, tt][x_id, :]
 # x_points = np.arange(S)
-
+# pred_sets = prediction_sets
 # fig, ax = plt.subplots()
-# [plt.fill_between(x_points, pred_sets[i][0][idx, tt][x_id,:], pred_sets[i][1][idx, tt][x_id,:], color = cols[i]) for i in range(len(alpha_levels))]
+# [plt.fill_between(x_points, pred_sets[i][0][idx,:, :, tt][x_id,:], pred_sets[i][1][idx,:,:, tt][x_id,:], color = cols[i]) for i in range(len(alpha_levels))]
 # fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
 
 # plt.plot(x_points, y_response[idx, tt][x_id, :], linewidth = 4, color = "black", label = "exact")
 # plt.legend()
 
 
-
 # %% 
 #Testing on the data  with half speed
+model_50 = FNO2d(modes, modes, width, T_in, step, x, y)
+model_50.load_state_dict(torch.load(model_loc + 'FNO_Wave_fno.pth', map_location='cpu'))
+
+# %% 
+t1 = default_timer()
+
 data =  np.load(data_loc + '/Data/Spectral_Wave_data_LHS_5K.npz')
 data_halfspeed =  np.load(data_loc + '/Data/Spectral_Wave_data_LHS_halfspeed.npz')
 u_sol = data['u'].astype(np.float32)
@@ -722,7 +571,7 @@ with torch.no_grad():
 
 cal_mean = cal_mean.numpy()
 cal_scores = np.abs(cal_u.numpy()-cal_mean)           
-qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
 # %% 
 #Obtaining the Prediction Sets
@@ -775,29 +624,33 @@ def calibrate_residual(alpha):
     cal_mean = cal_mean.numpy()
 
     cal_scores = np.abs(cal_u.numpy()-cal_mean)           
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
     
     prediction_sets = [val_mean - qhat, val_mean + qhat]
     empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
 
-    return empirical_coverage
+    return prediction_sets, empirical_coverage
 
 
 alpha_levels = np.arange(0.05, 0.95, 0.1)
-emp_cov_res = []
-
+emp_cov_res_hs = []
+pred_sets_res_hs = []
 for ii in tqdm(range(len(alpha_levels))):
-    emp_cov_res.append(calibrate_residual(alpha_levels[ii]))
+    a, b = calibrate_residual(alpha_levels[ii])
+    pred_sets_res_hs.append(a)
+    emp_cov_res_hs.append(b)
+    # emp_cov_res_hs.append(calibrate_residual(alpha_levels[ii]))
 
 # %% 
 plt.figure()
 plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
 # plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
+# plt.plot(1-alpha_levels, emp_cov_res, label='Normal Speed' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_res_hs, label='Half Speed' ,ls='--', color='firebrick', alpha=0.8, linewidth=3.0)
 # plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='mediumblue', ls='dotted',  alpha=0.8, linewidth=3.0)
 plt.xlabel('1-alpha')
-plt.ylabel('Empirical Coverage for Half Speed Wave')
+plt.ylabel('Empirical Coverage')
 plt.legend()
 mpl.rcParams['xtick.minor.visible']=True
 mpl.rcParams['font.size']=45
@@ -814,5 +667,216 @@ plt.rcParams['ytick.major.width'] =5
 plt.rcParams['xtick.minor.width'] =5
 plt.rcParams['ytick.minor.width'] =5
 mpl.rcParams['axes.titlepad'] = 20
+
+# %% 
+alpha_levels = np.arange(0.05, 0.95, 0.1)
+cols = cm.plasma(alpha_levels)
+
+idx = 23
+tt = -1
+x_id = 16
+
+i = 2
+# x_points = pred_a[idx, tt][x_id, :]
+x_points = np.arange(S)
+
+fig, ax = plt.subplots()
+# [plt.fill_between(x_points, pred_sets_res_hs[i][0][idx, :,:,tt][x_id,:], pred_sets_res_hs[i][1][idx, :,:, tt][x_id,:], color = cols[i], alpha=0.5) for i in range(len(alpha_levels))]
+plt.fill_between(x_points, pred_sets_res_hs[i][0][idx, :,:,tt][x_id,:], pred_sets_res_hs[i][1][idx, :,:, tt][x_id,:], color = cols[i], alpha=0.5)
+# fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
+
+plt.plot(x_points, y_response[idx,:,:, tt][x_id, :], linewidth = 4, color = "black", label = "exact")
+plt.legend()
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['font.size']=45
+mpl.rcParams['figure.figsize']=(16,16)
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['axes.linewidth']= 3
+mpl.rcParams['axes.titlepad'] = 20
+plt.rcParams['ytick.major.size'] =15
+plt.rcParams['xtick.minor.size'] =10
+plt.rcParams['ytick.minor.size'] =10
+plt.rcParams['xtick.major.width'] =5
+plt.rcParams['ytick.major.width'] =5
+plt.rcParams['xtick.minor.width'] =5
+plt.rcParams['ytick.minor.width'] =5
+mpl.rcParams['axes.titlepad'] = 20
+
+# %% 
+#With Dropout on Half Speed
+model_dropout = FNO2d_dropout(modes, modes, width, T_in, step, x, y)
+model_dropout.load_state_dict(torch.load(model_loc + 'FNO_Wave_plastic-serval_dropout.pth', map_location='cpu'))
+
+# %% 
+#Performing the Calibration for Dropout
+t1 = default_timer()
+
+n = ncal
+alpha = 0.1 #Coverage will be 1- alpha 
+
+with torch.no_grad():
+    xx = cal_a
+
+    for tt in tqdm(range(0, T, step)):
+        mean, std = Dropout_eval_fno(model_dropout, xx, step)
+
+        if tt == 0:
+            cal_mean = mean
+            cal_std = std
+        else:
+            cal_mean = torch.cat((cal_mean, mean), -1)       
+            cal_std = torch.cat((cal_std, std), -1)       
+
+        xx = torch.cat((xx[..., step:], mean), dim=-1)
+
+# cal_mean = cal_mean.numpy()
+
+cal_upper = cal_mean + cal_std
+cal_lower = cal_mean - cal_std
+
+cal_scores = np.maximum(cal_u.numpy()-cal_upper.numpy(), cal_lower.numpy()-cal_u.numpy())
+qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
+
+# %% 
+#Obtaining the Prediction Sets
+with torch.no_grad():
+    xx = pred_a
+
+    for tt in tqdm(range(0, T, step)):
+        mean, std = Dropout_eval_fno(model_dropout, xx, step)
+
+        if tt == 0:
+            val_mean = mean
+            val_std = std
+        else:
+            val_mean = torch.cat((val_mean, mean), -1)       
+            val_std = torch.cat((val_std, std), -1)       
+
+        xx = torch.cat((xx[..., step:], mean), dim=-1)
+
+val_upper = val_mean + val_std
+val_lower = val_mean - val_std
+
+val_lower = val_lower.numpy()
+val_upper = val_upper.numpy()
+
+prediction_sets_uncalibrated = [val_lower, val_upper]
+prediction_sets = [val_lower - qhat, val_upper + qhat]
+
+# %% 
+y_response = pred_u.numpy()
+
+print('Conformal by way Dropout')
+# Calculate empirical coverage (before and after calibration)
+prediction_sets_uncalibrated = [val_lower, val_upper]
+empirical_coverage_uncalibrated = ((y_response >= prediction_sets_uncalibrated[0]) & (y_response <= prediction_sets_uncalibrated[1])).mean()
+print(f"The empirical coverage before calibration is: {empirical_coverage_uncalibrated}")
+empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
+print(f"The empirical coverage after calibration is: {empirical_coverage}")
+
+# %% 
+def calibrate_dropout(alpha):
+    with torch.no_grad():
+        xx = cal_a
+
+        for tt in tqdm(range(0, T, step)):
+            mean, std = Dropout_eval_fno(model_dropout, xx, step)
+
+            if tt == 0:
+                cal_mean = mean
+                cal_std = std
+            else:
+                cal_mean = torch.cat((cal_mean, mean), -1)       
+                cal_std = torch.cat((cal_std, std), -1)       
+
+            xx = torch.cat((xx[..., step:], mean), dim=-1)
+
+
+    # cal_mean = cal_mean.numpy()
+
+    cal_upper = cal_mean + cal_std
+    cal_lower = cal_mean - cal_std
+
+    cal_scores = np.maximum(cal_u.numpy()-cal_upper.numpy(), cal_lower.numpy()-cal_u.numpy())
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
+
+        
+    prediction_sets = [val_mean - qhat, val_mean + qhat]
+    empirical_coverage = ((y_response >= prediction_sets[0].numpy()) & (y_response <= prediction_sets[1].numpy())).mean()
+
+    return prediction_sets, empirical_coverage
+
+# %%
+alpha_levels = np.arange(0.05, 0.95, 0.1)
+emp_cov_dropout_hs = []
+pred_sets_dropout_hs = []
+for ii in tqdm(range(len(alpha_levels))):
+    a, b = calibrate_dropout(alpha_levels[ii])
+    pred_sets_dropout_hs.append(a)
+    emp_cov_dropout_hs.append(b)
+
+# %% 
+
+plt.figure()
+plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
+# plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
+# plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_dropout_hs, label='Dropout',  color='mediumblue', ls='dotted',  alpha=0.8, linewidth=3.0)
+plt.xlabel('1-alpha')
+plt.ylabel('Empirical Coverage')
+plt.legend()
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['font.size']=45
+mpl.rcParams['figure.figsize']=(16,16)
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['axes.linewidth']= 3
+mpl.rcParams['axes.titlepad'] = 20
+plt.rcParams['xtick.major.size'] =15
+plt.rcParams['ytick.major.size'] =15
+plt.rcParams['xtick.minor.size'] =10
+plt.rcParams['ytick.minor.size'] =10
+plt.rcParams['xtick.major.width'] =5
+plt.rcParams['ytick.major.width'] =5
+plt.rcParams['xtick.minor.width'] =5
+plt.rcParams['ytick.minor.width'] =5
+mpl.rcParams['axes.titlepad'] = 20
+
+
+# %% 
+
+alpha_levels = np.arange(0.05, 0.95, 0.1)
+cols = cm.plasma(alpha_levels)
+
+idx = 23
+tt = -1
+x_id = 16
+
+i = 2
+# x_points = pred_a[idx, tt][x_id, :]
+x_points = np.arange(S)
+
+fig, ax = plt.subplots()
+# [plt.fill_between(x_points, pred_sets_dropout_hs[i][0][idx, :,:,tt][x_id,:], pred_sets_res_hs[i][1][idx, :,:, tt][x_id,:], color = cols[i], alpha=0.8) for i in range(len(alpha_levels))]
+plt.fill_between(x_points, pred_sets_res_hs[i][0][idx, :,:,tt][x_id,:], pred_sets_res_hs[i][1][idx, :,:, tt][x_id,:], color = cols[4], alpha=0.7, label='Residual')
+plt.fill_between(x_points, pred_sets_dropout_hs[i][0][idx, :,:,tt][x_id,:], pred_sets_res_hs[i][1][idx, :,:, tt][x_id,:], color = cols[-1], alpha=1.0, label='Dropout')
+
+# fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
+
+plt.plot(x_points, y_response[idx,:,:, tt][x_id, :], linewidth = 4, color = "black", label = "exact")
+plt.legend()
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['font.size']=45
+mpl.rcParams['figure.figsize']=(16,16)
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['axes.linewidth']= 3
+mpl.rcParams['axes.titlepad'] = 20
+plt.rcParams['ytick.major.size'] =15
+plt.rcParams['xtick.minor.size'] =10
+plt.rcParams['ytick.minor.size'] =10
+plt.rcParams['xtick.major.width'] =5
+plt.rcParams['ytick.major.width'] =5
+plt.rcParams['xtick.minor.width'] =5
+plt.rcParams['ytick.minor.width'] =5
+# %%
 
 # %%
