@@ -530,7 +530,8 @@ plt.rcParams['ytick.major.width'] =5
 plt.rcParams['xtick.minor.width'] =5
 plt.rcParams['ytick.minor.width'] =5
 mpl.rcParams['axes.titlepad'] = 20
-
+plt.savefig("poisson_cqr.svg", format="svg", bbox_inches='tight')
+plt.show()
 # %% 
 
 # %%

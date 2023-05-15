@@ -64,6 +64,26 @@ import matplotlib.pyplot as plt
 from matplotlib import cm 
 import matplotlib as mpl 
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+plt.rcParams['text.usetex'] = True
+
+plt.rcParams['grid.linewidth'] = 1.0
+plt.rcParams['grid.alpha'] = 0.5
+plt.rcParams['grid.linestyle'] = '-'
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['font.size']=45
+mpl.rcParams['figure.figsize']=(16,12)
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['axes.linewidth']= 1
+mpl.rcParams['axes.titlepad'] = 30
+plt.rcParams['xtick.major.size'] = 20
+plt.rcParams['ytick.major.size'] = 20
+plt.rcParams['xtick.minor.size'] = 10.0
+plt.rcParams['ytick.minor.size'] = 10.0
+plt.rcParams['xtick.major.width'] = 0.8
+plt.rcParams['ytick.major.width'] = 0.8
+plt.rcParams['xtick.minor.width'] = 0.6
+plt.rcParams['ytick.minor.width'] = 0.6
+mpl.rcParams['lines.linewidth'] = 1
 
 import operator
 from functools import reduce
@@ -290,25 +310,11 @@ plt.figure()
 plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
 plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
 # plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
-# plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='mediumblue', ls='dotted',  alpha=0.8, linewidth=3.0)
+# plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='navy', ls='dotted',  alpha=0.8, linewidth=3.0)
 plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['font.size']=45
-mpl.rcParams['figure.figsize']=(16,16)
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['axes.linewidth']= 3
-mpl.rcParams['axes.titlepad'] = 20
-plt.rcParams['xtick.major.size'] =15
-plt.rcParams['ytick.major.size'] =15
-plt.rcParams['xtick.minor.size'] =10
-plt.rcParams['ytick.minor.size'] =10
-plt.rcParams['xtick.major.width'] =5
-plt.rcParams['ytick.major.width'] =5
-plt.rcParams['xtick.minor.width'] =5
-plt.rcParams['ytick.minor.width'] =5
-mpl.rcParams['axes.titlepad'] = 20
+
 
 # %% 
 #PLots
@@ -349,7 +355,8 @@ def get_prediction_sets(alpha):
 
 
 alpha_levels = np.arange(0.05, 0.95, 0.1)
-cols = cm.plasma(alpha_levels)
+coverage_levels = (1 - alpha_levels)
+cols = cm.plasma_r(coverage_levels)
 pred_sets = [get_prediction_sets(a) for a in alpha_levels] 
 
 # %%
@@ -358,29 +365,19 @@ tt = -1
 x_id = 16
 
 # x_points = pred_a[idx, tt][x_id, :]
-x_points = np.arange(S)
+# x_points = np.arange(S)
+x_points = np.linspace(-1, 1, 33)
 
 fig, ax = plt.subplots()
-[plt.fill_between(x_points, pred_sets[i][0][idx, tt][x_id,:], pred_sets[i][1][idx, tt][x_id,:], color = cols[i]) for i in range(len(alpha_levels))]
-fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
-
-plt.plot(x_points, y_response[idx, tt][x_id, :], linewidth = 4, color = "black", label = "exact")
+plt.title("CQR", fontsize=72)
+[plt.fill_between(x_points, pred_sets[i][0][idx, tt][x_id,:], pred_sets[i][1][idx, tt][x_id,:], color = cols[i], alpha=0.7) for i in range(len(alpha_levels))]
+fig.colorbar(cm.ScalarMappable(cmap="plasma_r"), ax=ax)
+plt.plot(x_points, y_response[idx, tt][x_id, :], linewidth = 1, color = "black", label = "exact", marker='o', ms=2, mec = 'white')
+plt.xlabel(r"\textbf{y}")
+plt.ylabel(r"\textbf{u}")
 plt.legend()
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['font.size']=45
-mpl.rcParams['figure.figsize']=(16,16)
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['axes.linewidth']= 3
-mpl.rcParams['axes.titlepad'] = 20
-plt.rcParams['xtick.major.size'] =15
-plt.rcParams['ytick.major.size'] =15
-plt.rcParams['xtick.minor.size'] =10
-plt.rcParams['ytick.minor.size'] =10
-plt.rcParams['xtick.major.width'] =5
-plt.rcParams['ytick.major.width'] =5
-plt.rcParams['xtick.minor.width'] =5
-plt.rcParams['ytick.minor.width'] =5
-mpl.rcParams['axes.titlepad'] = 20
+plt.savefig("wave_unet_cqr.svg", format="svg", bbox_inches='tight', transparent='True')
+plt.show()
 # %%
 #Performing the Calibration usign Residuals: https://www.stat.cmu.edu/~larry/=sml/Conformal
 #############################################################
@@ -484,25 +481,10 @@ plt.figure()
 plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
 # plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
 plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
-# plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='mediumblue', ls='dotted',  alpha=0.8, linewidth=3.0)
+# plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='navy', ls='dotted',  alpha=0.8, linewidth=3.0)
 plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['font.size']=45
-mpl.rcParams['figure.figsize']=(16,16)
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['axes.linewidth']= 3
-mpl.rcParams['axes.titlepad'] = 20
-plt.rcParams['xtick.major.size'] =15
-plt.rcParams['ytick.major.size'] =15
-plt.rcParams['xtick.minor.size'] =10
-plt.rcParams['ytick.minor.size'] =10
-plt.rcParams['xtick.major.width'] =5
-plt.rcParams['ytick.major.width'] =5
-plt.rcParams['xtick.minor.width'] =5
-plt.rcParams['ytick.minor.width'] =5
-mpl.rcParams['axes.titlepad'] = 20
 
 # %% 
 #PLots
@@ -531,9 +513,9 @@ def get_prediction_sets(alpha):
 
 
 alpha_levels = np.arange(0.05, 0.95, 0.1)
-cols = cm.plasma(alpha_levels)
+coverage_levels = (1 - alpha_levels)
+cols = cm.plasma_r(coverage_levels)
 pred_sets = [get_prediction_sets(a) for a in alpha_levels] 
-
 # %%
 idx = 0
 tt = -1
@@ -541,28 +523,18 @@ x_id = 16
 
 # x_points = pred_a[idx, tt][x_id, :]
 x_points = np.arange(S)
+x_points = np.linspace(-1, 1, 33)
 
 fig, ax = plt.subplots()
-[plt.fill_between(x_points, pred_sets[i][0][idx, tt][x_id,:], pred_sets[i][1][idx, tt][x_id,:], color = cols[i]) for i in range(len(alpha_levels))]
-fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
-
-plt.plot(x_points, y_response[idx, tt][x_id, :], linewidth = 4, color = "black", label = "exact")
+plt.title("Residuals", fontsize=72)
+[plt.fill_between(x_points, pred_sets[i][0][idx, tt][x_id,:], pred_sets[i][1][idx, tt][x_id,:], color = cols[i], alpha=0.7) for i in range(len(alpha_levels))]
+fig.colorbar(cm.ScalarMappable(cmap="plasma_r"), ax=ax)
+plt.plot(x_points, y_response[idx, tt][x_id, :], linewidth = 1, color = "black", label = "exact", marker='o', ms=2, mec = 'white')
+plt.xlabel(r"\textbf{y}")
+plt.ylabel(r"\textbf{u}")
 plt.legend()
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['font.size']=45
-mpl.rcParams['figure.figsize']=(16,16)
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['axes.linewidth']= 3
-mpl.rcParams['axes.titlepad'] = 20
-plt.rcParams['xtick.major.size'] =15
-plt.rcParams['ytick.major.size'] =15
-plt.rcParams['xtick.minor.size'] =10
-plt.rcParams['ytick.minor.size'] =10
-plt.rcParams['xtick.major.width'] =5
-plt.rcParams['ytick.major.width'] =5
-plt.rcParams['xtick.minor.width'] =5
-plt.rcParams['ytick.minor.width'] =5
-mpl.rcParams['axes.titlepad'] = 20
+plt.savefig("wave_unet_residual.svg", format="svg", bbox_inches='tight', transparent='True')
+plt.show()
 # %%
 ##############################
 # Conformal using Dropout 
@@ -688,29 +660,10 @@ plt.figure()
 plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
 # plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
 # plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='mediumblue', ls='dotted',  alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='navy', ls='dotted',  alpha=0.8, linewidth=3.0)
 plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['font.size']=45
-mpl.rcParams['figure.figsize']=(16,16)
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['axes.linewidth']= 3
-mpl.rcParams['axes.titlepad'] = 20
-plt.rcParams['xtick.major.size'] =15
-plt.rcParams['ytick.major.size'] =15
-plt.rcParams['xtick.minor.size'] =10
-plt.rcParams['ytick.minor.size'] =10
-plt.rcParams['xtick.major.width'] =5
-plt.rcParams['ytick.major.width'] =5
-plt.rcParams['xtick.minor.width'] =5
-plt.rcParams['ytick.minor.width'] =5
-mpl.rcParams['axes.titlepad'] = 20
-
-
-
-
 
 # %%
 #PLots
@@ -747,9 +700,9 @@ def get_prediction_sets(alpha):
 
 
 alpha_levels = np.arange(0.05, 0.95, 0.1)
-cols = cm.plasma(alpha_levels)
+coverage_levels = (1 - alpha_levels)
+cols = cm.plasma_r(coverage_levels)
 pred_sets = [get_prediction_sets(a) for a in alpha_levels] 
-
 # %%
 idx = 0
 tt = -1
@@ -757,13 +710,21 @@ x_id = 16
 
 # x_points = pred_a[idx, tt][x_id, :]
 x_points = np.arange(S)
+x_points = np.linspace(-1, 1, 33)
 
 fig, ax = plt.subplots()
-[plt.fill_between(x_points, pred_sets[i][0][idx, tt][x_id,:], pred_sets[i][1][idx, tt][x_id,:], color = cols[i]) for i in range(len(alpha_levels))]
-fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
-
-plt.plot(x_points, y_response[idx, tt][x_id, :], linewidth = 4, color = "black", label = "exact")
+plt.title("Dropout", fontsize=72)
+[plt.fill_between(x_points, pred_sets[i][0][idx, tt][x_id,:], pred_sets[i][1][idx, tt][x_id,:], color = cols[i], alpha=0.7) for i in range(len(alpha_levels))]
+fig.colorbar(cm.ScalarMappable(cmap="plasma_r"), ax=ax)
+plt.plot(x_points, y_response[idx, tt][x_id, :], linewidth = 1, color = "black", label = "exact", marker='o', ms=2, mec = 'white')
+plt.xlabel(r"\textbf{y}")
+plt.ylabel(r"\textbf{u}")
 plt.legend()
+plt.savefig("wave_unet_dropout.svg", format="svg", bbox_inches='tight', transparent='True')
+plt.show()
+
+# %%
+
 mpl.rcParams['xtick.minor.visible']=True
 mpl.rcParams['font.size']=45
 mpl.rcParams['figure.figsize']=(16,16)
@@ -779,34 +740,18 @@ plt.rcParams['ytick.major.width'] =5
 plt.rcParams['xtick.minor.width'] =5
 plt.rcParams['ytick.minor.width'] =5
 mpl.rcParams['axes.titlepad'] = 20
-# %%
-
-
 
 plt.figure()
-plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='mediumblue', ls='dotted',  alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.75, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.75, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.75, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='navy', ls='dotted',  alpha=0.75, linewidth=3.0)
 plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['font.size']=45
-mpl.rcParams['figure.figsize']=(16,16)
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['axes.linewidth']= 3
-mpl.rcParams['axes.titlepad'] = 20
-plt.rcParams['xtick.major.size'] =15
-plt.rcParams['ytick.major.size'] =15
-plt.rcParams['xtick.minor.size'] =10
-plt.rcParams['ytick.minor.size'] =10
-plt.rcParams['xtick.major.width'] =5
-plt.rcParams['ytick.major.width'] =5
-plt.rcParams['xtick.minor.width'] =5
-plt.rcParams['ytick.minor.width'] =5
-mpl.rcParams['axes.titlepad'] = 20
-
+plt.grid() #Comment out if you dont want grids.
+plt.savefig("wave_unet_comparison.svg", format="svg", bbox_inches='tight')
+plt.show()
 
 
 

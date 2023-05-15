@@ -4,6 +4,11 @@ simvue.ini
 #Saved Models
 MHD/Models/
 
+#Vector Graphics Files
+/Vector_Graphics
+*.svg
+*.pdf
+
 *.pyc
 
 #Saved Plot
