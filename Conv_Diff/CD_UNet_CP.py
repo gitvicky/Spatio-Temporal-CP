@@ -56,7 +56,7 @@ plt.rcParams['grid.alpha'] = 0.5
 plt.rcParams['grid.linestyle'] = '-'
 mpl.rcParams['xtick.minor.visible']=True
 mpl.rcParams['font.size']=45
-mpl.rcParams['figure.figsize']=(16,16)
+mpl.rcParams['figure.figsize']=(16,12)
 mpl.rcParams['xtick.minor.visible']=True
 mpl.rcParams['axes.linewidth']= 1
 mpl.rcParams['axes.titlepad'] = 30
@@ -227,7 +227,7 @@ pred_set_uncal_1_viz = prediction_sets_uncalibrated[1][idx, t_val]
 
 plt.figure()
 plt.title(rf"CQR, $\alpha$ = {alpha}", fontsize=72)
-plt.plot(x_range, Y_pred_viz, label='Analytical', color='black', alpha = 0.7)
+plt.plot(x_range, Y_pred_viz, label='Exact', color='black', alpha = 0.7)
 plt.plot(x_range, mean_viz, label='Mean', color='firebrick', alpha = 0.7)
 plt.plot(x_range, pred_set_0_viz, label='Lower - Calibrated', color='teal', alpha = 0.7)
 plt.plot(x_range, pred_set_uncal_0_viz, label='Lower - Uncalibrated', color='teal', alpha = 0.5, ls='--')
@@ -332,7 +332,7 @@ pred_set_1_viz = prediction_sets[1][idx, t_val]
 plt.figure()
 # plt.title(f"Residuals, alpha = {alpha}")
 plt.title(rf"Residuals, $\alpha$ = {alpha}", fontsize=72)
-plt.plot(x_range, Y_pred_viz, label='Analytical', color='black', alpha = 0.7)
+plt.plot(x_range, Y_pred_viz, label='Exact', color='black', alpha = 0.7)
 plt.plot(x_range, mean_viz, label='Mean', color='firebrick', alpha = 0.7)
 plt.plot(x_range, pred_set_0_viz, label='lower-cal', color='teal', alpha = 0.7)
 plt.plot(x_range, pred_set_1_viz, label='upper-cal', color='navy', alpha = 0.7)
@@ -471,7 +471,7 @@ pred_set_uncal_1_viz = prediction_sets_uncalibrated[1][idx, t_val]
 plt.figure()
 # plt.title(f"Conformal by Dropout, alpha = {alpha}")
 plt.title(rf"Dropout, $\alpha$ = {alpha}", fontsize=72)
-plt.plot(x_range, Y_pred_viz, label='Analytical', color='black', alpha = 0.7)
+plt.plot(x_range, Y_pred_viz, label='Exact', color='black', alpha = 0.7)
 plt.plot(x_range, mean_viz, label='Mean', color='firebrick', alpha = 0.7)
 plt.plot(x_range, pred_set_0_viz, label='lower-cal', color='teal', alpha = 0.7)
 plt.plot(x_range, pred_set_uncal_0_viz, label='lower - uncal', color='teal', alpha = 0.5, ls='--')
@@ -535,32 +535,32 @@ plt.legend()
 plt.grid() #Comment out if you dont want grids.
 
 # %%
-plt.rcParams['grid.linewidth'] = 1.0
-plt.rcParams['grid.alpha'] = 0.5
-plt.rcParams['grid.linestyle'] = '-'
 mpl.rcParams['xtick.minor.visible']=True
 mpl.rcParams['font.size']=45
 mpl.rcParams['figure.figsize']=(16,16)
 mpl.rcParams['xtick.minor.visible']=True
 mpl.rcParams['axes.linewidth']= 1
 mpl.rcParams['axes.titlepad'] = 20
-plt.rcParams['xtick.major.size'] =15
-plt.rcParams['ytick.major.size'] =15
-plt.rcParams['xtick.minor.size'] =10
-plt.rcParams['ytick.minor.size'] =10
-plt.rcParams['xtick.major.width'] =5
-plt.rcParams['ytick.major.width'] =5
-plt.rcParams['xtick.minor.width'] =5
-plt.rcParams['ytick.minor.width'] =5
-mpl.rcParams['axes.titlepad'] = 2
-mpl.rcParams['lines.linewidth'] = 3
-plt.figure()
-plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.75, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.75, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.75, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='navy', ls='dotted',  alpha=0.75, linewidth=3.0)
+plt.rcParams['xtick.major.size'] = 20
+plt.rcParams['ytick.major.size'] = 20
+plt.rcParams['xtick.minor.size'] = 10.0
+plt.rcParams['ytick.minor.size'] = 10.0
+plt.rcParams['xtick.major.width'] = 0.8
+plt.rcParams['ytick.major.width'] = 0.8
+plt.rcParams['xtick.minor.width'] = 0.6
+plt.rcParams['ytick.minor.width'] = 0.6
+mpl.rcParams['axes.titlepad'] = 20
+plt.rcParams['grid.linewidth'] = 0.5
+plt.rcParams['grid.alpha'] = 0.5
+plt.rcParams['grid.linestyle'] = '-'
+
+plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.75)
+plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.75)
+plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.75)
+plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='navy', ls='dotted',  alpha=0.75)
 plt.xlabel(r'1-$\alpha$')
 plt.ylabel('Empirical Coverage')
+plt.title("Convection-Diffusion", fontsize=72)
 plt.legend()
 plt.grid() #Comment out if you dont want grids.
 plt.savefig("convdiff_comparison.svg", format="svg", bbox_inches='tight')

@@ -60,6 +60,26 @@ import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from matplotlib import cm 
 import matplotlib as mpl 
+plt.rcParams['text.usetex'] = True
+
+plt.rcParams['grid.linewidth'] = 1.0
+plt.rcParams['grid.alpha'] = 0.5
+plt.rcParams['grid.linestyle'] = '-'
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['font.size']=45
+mpl.rcParams['figure.figsize']=(16,12)
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['axes.linewidth']= 1
+mpl.rcParams['axes.titlepad'] = 30
+plt.rcParams['xtick.major.size'] = 20
+plt.rcParams['ytick.major.size'] = 20
+plt.rcParams['xtick.minor.size'] = 10.0
+plt.rcParams['ytick.minor.size'] = 10.0
+plt.rcParams['xtick.major.width'] = 0.8
+plt.rcParams['ytick.major.width'] = 0.8
+plt.rcParams['xtick.minor.width'] = 0.6
+plt.rcParams['ytick.minor.width'] = 0.6
+mpl.rcParams['lines.linewidth'] = 1
 
 import operator
 from functools import reduce
@@ -264,7 +284,7 @@ plt.figure()
 plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
 # plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
 plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
-# plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='mediumblue', ls='dotted',  alpha=0.8, linewidth=3.0)
+# plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='navy', ls='dotted',  alpha=0.8, linewidth=3.0)
 plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()
@@ -363,7 +383,8 @@ empirical_coverage_uncalibrated = ((y_response >= prediction_sets_uncalibrated[0
 print(f"The empirical coverage before calibration is: {empirical_coverage_uncalibrated}")
 empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
 print(f"The empirical coverage after calibration is: {empirical_coverage}")
-
+t2 = default_timer()
+print('Conformal using Dropout, time used:', t2-t1)
 # %% 
 def calibrate_dropout(alpha):
     with torch.no_grad():
@@ -409,7 +430,7 @@ plt.figure()
 plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
 # plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
 # plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='mediumblue', ls='dotted',  alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='navy', ls='dotted',  alpha=0.8, linewidth=3.0)
 plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()
@@ -436,7 +457,7 @@ plt.figure()
 plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
 # plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
 plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='mediumblue', ls='dotted',  alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='navy', ls='dotted',  alpha=0.8, linewidth=3.0)
 plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()
@@ -648,7 +669,7 @@ plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.
 # plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
 # plt.plot(1-alpha_levels, emp_cov_res, label='Normal Speed' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
 plt.plot(1-alpha_levels, emp_cov_res_hs, label='Half Speed' ,ls='--', color='firebrick', alpha=0.8, linewidth=3.0)
-# plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='mediumblue', ls='dotted',  alpha=0.8, linewidth=3.0)
+# plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='navy', ls='dotted',  alpha=0.8, linewidth=3.0)
 plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()
@@ -773,7 +794,8 @@ empirical_coverage_uncalibrated = ((y_response >= prediction_sets_uncalibrated[0
 print(f"The empirical coverage before calibration is: {empirical_coverage_uncalibrated}")
 empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
 print(f"The empirical coverage after calibration is: {empirical_coverage}")
-
+t2 = default_timer()
+print('Conformal using Dropout, time used:', t2-t1)
 # %% 
 def calibrate_dropout(alpha):
     with torch.no_grad():
@@ -821,7 +843,7 @@ plt.figure()
 plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
 # plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
 # plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_dropout_hs, label='Dropout',  color='mediumblue', ls='dotted',  alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_dropout_hs, label='Dropout',  color='navy', ls='dotted',  alpha=0.8, linewidth=3.0)
 plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()
@@ -841,7 +863,43 @@ plt.rcParams['xtick.minor.width'] =5
 plt.rcParams['ytick.minor.width'] =5
 mpl.rcParams['axes.titlepad'] = 20
 
+# %% 
 
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['font.size']=45
+mpl.rcParams['figure.figsize']=(16,16)
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['axes.linewidth']= 0.5
+mpl.rcParams['axes.titlepad'] = 20
+plt.rcParams['xtick.major.size'] = 20
+plt.rcParams['ytick.major.size'] = 20
+plt.rcParams['xtick.minor.size'] = 10.0
+plt.rcParams['ytick.minor.size'] = 10.0
+plt.rcParams['xtick.major.width'] = 0.8
+plt.rcParams['ytick.major.width'] = 0.8
+plt.rcParams['xtick.minor.width'] = 0.6
+plt.rcParams['ytick.minor.width'] = 0.6
+mpl.rcParams['axes.titlepad'] = 20
+plt.rcParams['grid.linewidth'] = 0.5
+plt.rcParams['grid.alpha'] = 0.5
+plt.rcParams['grid.linestyle'] = '-'
+
+lw = 0.5
+plt.figure()
+plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.75, linewidth=lw)
+plt.plot(1-alpha_levels, emp_cov_res, label='Normal Speed - Residual' ,ls='-', color='chocolate', alpha=0.75, linewidth=lw)
+plt.plot(1-alpha_levels, emp_cov_dropout, label='Normal Speed - Dropout',  color='firebrick', ls='-',  alpha=0.75, linewidth=lw)
+plt.plot(1-alpha_levels, emp_cov_res_hs, label='Half Speed - Residual' ,ls='-.', color='navy', alpha=0.75, linewidth=lw, marker='^')
+plt.plot(1-alpha_levels, emp_cov_dropout_hs, label='Half Speed Dropout',  color='teal', ls='--',  alpha=0.75, linewidth=lw, marker='>')
+plt.xlabel(r'1-$\alpha$')
+plt.ylabel('Empirical Coverage')
+plt.title("Wave - FNO", fontsize=72)
+plt.grid()
+plt.xlabel('1-alpha')
+plt.ylabel('Empirical Coverage')
+plt.legend()
+plt.savefig("wave_hs_validation.svg", format="svg", bbox_inches='tight')
+plt.show()
 # %% 
 
 alpha_levels = np.arange(0.05, 0.95, 0.1)
@@ -862,21 +920,15 @@ plt.fill_between(x_points, pred_sets_dropout_hs[i][0][idx, :,:,tt][x_id,:], pred
 
 # fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
 
-plt.plot(x_points, y_response[idx,:,:, tt][x_id, :], linewidth = 4, color = "black", label = "exact")
+plt.plot(x_points, y_response[idx,:,:, tt][x_id, :], linewidth = 1, color = "black", label = "exact",  marker='o', ms=2, mec = 'white')
+plt.xlabel(r"\textbf{y}")
+plt.ylabel(r"\textbf{u}")
 plt.legend()
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['font.size']=45
-mpl.rcParams['figure.figsize']=(16,16)
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['axes.linewidth']= 3
-mpl.rcParams['axes.titlepad'] = 20
-plt.rcParams['ytick.major.size'] =15
-plt.rcParams['xtick.minor.size'] =10
-plt.rcParams['ytick.minor.size'] =10
-plt.rcParams['xtick.major.width'] =5
-plt.rcParams['ytick.major.width'] =5
-plt.rcParams['xtick.minor.width'] =5
-plt.rcParams['ytick.minor.width'] =5
+# plt.grid()
+plt.savefig("wave_hs_comparison.pdf", format="pdf", bbox_inches='tight')
+plt.show()
+
+
 # %%
 
 # %%
