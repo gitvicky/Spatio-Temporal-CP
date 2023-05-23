@@ -174,15 +174,12 @@ pred_u = y_normalizer.encode(pred_u)
 #Invoking the trained models 
 
 model_05 = UNet2d(T_in, step, width)
-# model_05.load_state_dict(torch.load(model_loc + 'Unet_Wave_indigo-reload_QR_05.pth', map_location='cpu'))
 model_05.load_state_dict(torch.load(model_loc + 'Unet_Wave_lower.pth', map_location='cpu'))
 
 model_95 = UNet2d(T_in, step, width)
-# model_95.load_state_dict(torch.load(model_loc + 'Unet_Wave_round-underwriter_QR_95.pth', map_location='cpu'))
 model_95.load_state_dict(torch.load(model_loc + 'Unet_Wave_upper.pth', map_location='cpu'))
 
 model_50 = UNet2d(T_in, step, width)
-# model_50.load_state_dict(torch.load(model_loc + 'Unet_Wave_shy-bevel_QR_50.pth', map_location='cpu'))
 model_50.load_state_dict(torch.load(model_loc + 'Unet_Wave_mean.pth', map_location='cpu'))
 
 # %%

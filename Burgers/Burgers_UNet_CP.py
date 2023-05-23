@@ -143,15 +143,12 @@ pred_u = y_normalizer.encode(pred_u)
 #Conformalised Quantile Regression
 
 model_05 = UNet1d(T_in, step, width)
-# model_05.load_state_dict(torch.load(model_loc + 'Unet_Burgers_QR_05.pth', map_location='cpu'))
 model_05.load_state_dict(torch.load(model_loc + 'Unet_Burgers_lower_0.05.pth', map_location='cpu'))
 
 model_95 = UNet1d(T_in, step, width)
-# model_95.load_state_dict(torch.load(model_loc + 'Unet_Burgers_vivid-mall_QR_95.pth', map_location='cpu'))
 model_95.load_state_dict(torch.load(model_loc + 'Unet_Burgers_upper_0.95.pth', map_location='cpu'))
 
 model_50 = UNet1d(T_in, step, width)
-# model_50.load_state_dict(torch.load(model_loc + 'Unet_Burgers_immature-estuary_QR_50.pth', map_location='cpu'))
 model_50.load_state_dict(torch.load(model_loc + 'Unet_Burgers_mean_0.5_new.pth', map_location='cpu'))
 
 
@@ -290,7 +287,6 @@ mpl.rcParams['axes.titlepad'] = 20
 #####################################
 
 model_50 = UNet1d(T_in, step, width)
-# model_50.load_state_dict(torch.load(model_loc + 'Unet_Burgers_immature-estuary_QR_50.pth', map_location='cpu'))
 model_50.load_state_dict(torch.load(model_loc + 'Unet_Burgers_mean_0.5_new.pth', map_location='cpu'))
 
 
