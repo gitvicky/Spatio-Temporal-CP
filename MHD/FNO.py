@@ -7,12 +7,12 @@ FNO modelled over the MHD data built using JOREK for multi-blob diffusion.
 """
 # %%
 configuration = {"Case": 'Multi-Blobs', #Specifying the Simulation Scenario
-                 "Field": 'rho', #Variable we are modelling - Phi, rho, T
+                 "Field": 'Phi', #Variable we are modelling - Phi, rho, T
                  "Type": '2D Time', #FNO Architecture
                  "Epochs": 500, 
-                 "Batch Size": 20,
+                 "Batch Size": 10,
                  "Optimizer": 'Adam',
-                 "Learning Rate": 0.001,
+                 "Learning Rate": 0.005,
                  "Scheduler Step": 100,
                  "Scheduler Gamma": 0.5,
                  "Activation": 'GELU',
@@ -21,13 +21,13 @@ configuration = {"Case": 'Multi-Blobs', #Specifying the Simulation Scenario
                  "Log Normalisation":  'No',
                  "Physics Normalisation": 'Yes', #Normalising the Variable 
                  "T_in": 10, #Input time steps
-                 "T_out": 10, #Max simulation time
-                 "Step": 10, #Time steps output in each forward call
-                 "Modes":32, #Number of Fourier Modes
-                 "Width": 64, #Features of the Convolutional Kernel
-                 "Variables":1, 
-                 "Noise":0.0, 
-                 "Loss Function": 'LP Loss' #Choice of Loss Fucnction
+                 "T_out": 40, #Max simulation time
+                 "Step": 5, #Time steps output in each forward call
+                 "Modes": 16, #Number of Fourier Modes
+                 "Width": 32, #Features of the Convolutional Kernel
+                 "Variables": 1, 
+                 "Noise": 0.0, 
+                 "Loss Function": 'LP Loss' #Choice of Loss Function
                  }
 
 # %% 
@@ -36,6 +36,18 @@ from simvue import Run
 run = Run()
 run.init(folder="/FNO_MHD", tags=['FNO', 'MHD', 'JOREK', 'Multi-Blobs'], metadata=configuration)
 
+# %% 
+import os 
+CODE = ['FNO.py']
+
+# Save code files
+for code_file in CODE:
+    if os.path.isfile(code_file):
+        run.save(code_file, 'code')
+    elif os.path.isdir(code_file):
+        run.save_directory(code_file, 'code', 'text/plain', preserve_path=True)
+    else:
+        print('ERROR: code file %s does not exist' % code_file)
 
 # %%
 #Importing the necessary packages. 
@@ -61,7 +73,6 @@ np.random.seed(0)
 
 # %% 
 #Setting up the directories - data location, model location and plots. 
-import os 
 path = os.getcwd()
 data_loc = os.path.dirname(os.path.dirname(os.path.dirname(os.getcwd())))
 # model_loc = os.path.dirname(os.path.dirname(os.getcwd()))
@@ -448,7 +459,7 @@ data = data_loc + '/Data/MHD_multi_blobs.npz'
 # %%
 field = configuration['Field']
 if field == 'Phi':
-    u_sol = np.load(data)['Phi'].astype(np.float32)   / 1e3
+    u_sol = np.load(data)['Phi'].astype(np.float32)   / 1e5
 elif field == 'T':
     u_sol = np.load(data)['T'].astype(np.float32)     / 1e6
 elif field == 'rho':
@@ -463,8 +474,8 @@ x_grid = np.load(data)['Rgrid'][0,:].astype(np.float32)
 y_grid = np.load(data)['Zgrid'][:,0].astype(np.float32)
 t_grid = np.load(data)['time'].astype(np.float32)
 
-ntrain = 100
-ntest = 20
+ntrain = 240
+ntest = 38
 S = 106 #Grid Size 
 
 #Extracting hyperparameters from the config dict
@@ -506,7 +517,7 @@ if norm_strategy == 'Range':
     a_normalizer = RangeNormalizer(train_a)
     y_normalizer = RangeNormalizer(train_u)
 
-if norm_strategy == 'Min-Max':
+if norm_strategy == 'Gaussian':
     a_normalizer = GaussianNormalizer(train_a)
     y_normalizer = GaussianNormalizer(train_u)
 
@@ -686,7 +697,7 @@ pred_set = y_normalizer.decode(pred_set.to(device)).cpu()
 #Plotting the comparison plots
 
 idx = np.random.randint(0,ntest) 
-# idx = 5
+idx = 5
 
 if configuration['Log Normalisation'] == 'Yes':
     test_u = torch.exp(test_u)
@@ -758,18 +769,8 @@ plt.savefig(output_plot)
 
 # %%
 #Simvue Artifact storage
-CODE = ['FNO.py']
 INPUTS = []
 OUTPUTS = [model_loc, output_plot]
-
-# Save code files
-for code_file in CODE:
-    if os.path.isfile(code_file):
-        run.save(code_file, 'code')
-    elif os.path.isdir(code_file):
-        run.save_directory(code_file, 'code', 'text/plain', preserve_path=True)
-    else:
-        print('ERROR: code file %s does not exist' % code_file)
 
 
 # Save input files

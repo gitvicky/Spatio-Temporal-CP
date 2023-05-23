@@ -339,7 +339,7 @@ plt.plot(1-alpha_levels, emp_cov_res[2], label='750',  color='mediumblue', ls=':
 plt.plot(1-alpha_levels, emp_cov_res[3], label='1000',  color='purple', ls='--',  alpha=0.8)
 plt.xlabel(r'1-$\alpha$')
 plt.ylabel('Empirical Coverage')
-plt.title('Residual')
+plt.title('Dropout')
 plt.legend()
 plt.grid() #Comment out if you dont want grids.
 plt.savefig("Wave_FNO_cal_size_dropout.svg", format="svg", bbox_inches='tight')

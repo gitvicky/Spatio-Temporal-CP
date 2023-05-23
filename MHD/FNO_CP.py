@@ -48,7 +48,28 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import matplotlib.pyplot as plt
+import matplotlib as mpl 
 from matplotlib import cm 
+plt.rcParams['text.usetex'] = True
+
+plt.rcParams['grid.linewidth'] = 0.5
+plt.rcParams['grid.alpha'] = 0.5
+plt.rcParams['grid.linestyle'] = '-'
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['font.size']=45
+mpl.rcParams['figure.figsize']=(16,12)
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['axes.linewidth']= 1
+mpl.rcParams['axes.titlepad'] = 30
+plt.rcParams['xtick.major.size'] = 20
+plt.rcParams['ytick.major.size'] = 20
+plt.rcParams['xtick.minor.size'] = 10.0
+plt.rcParams['ytick.minor.size'] = 10.0
+plt.rcParams['xtick.major.width'] = 0.8
+plt.rcParams['ytick.major.width'] = 0.8
+plt.rcParams['xtick.minor.width'] = 0.6
+plt.rcParams['ytick.minor.width'] = 0.6
+mpl.rcParams['lines.linewidth'] = 1
 
 import time 
 from timeit import default_timer
@@ -556,82 +577,136 @@ for ii in tqdm(range(len(alpha_levels))):
 
 # %% 
 import matplotlib as mpl
-plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', linewidth = 5, color='firebrick')
-plt.plot(1-alpha_levels, emp_cov, label='Coverage', linewidth=5, color='teal')
-plt.xlabel('1-alpha')
-plt.ylabel('Empirical Coverage')
-plt.legend()
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['font.size']=45
 mpl.rcParams['figure.figsize']=(16,16)
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['axes.linewidth']= 3
-mpl.rcParams['axes.titlepad'] = 20
-plt.rcParams['xtick.major.size'] =15
-plt.rcParams['ytick.major.size'] =15
-plt.rcParams['xtick.minor.size'] =10
-plt.rcParams['ytick.minor.size'] =10
-plt.rcParams['xtick.major.width'] =5
-plt.rcParams['ytick.major.width'] =5
-plt.rcParams['xtick.minor.width'] =5
-plt.rcParams['ytick.minor.width'] =5
-mpl.rcParams['axes.titlepad'] = 20
+plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.75)
+plt.plot(1-alpha_levels, emp_cov, label='Residual' ,ls='-.', color='teal', alpha=0.75)
+plt.xlabel(r'1-$\alpha$')
+plt.ylabel('Empirical Coverage')
+plt.title("MHD", fontsize=72)
+plt.legend()
+plt.grid() #Comment out if you dont want grids.
+plt.savefig("MHD_comparison.svg", format="svg", bbox_inches='tight')
+plt.show()
+# mpl.rcParams['xtick.minor.visible']=True
+# mpl.rcParams['font.size']=45
+# mpl.rcParams['figure.figsize']=(16,16)
+# mpl.rcParams['xtick.minor.visible']=True
+# mpl.rcParams['axes.linewidth']= 3
+# mpl.rcParams['axes.titlepad'] = 20
+# plt.rcParams['xtick.major.size'] =15
+# plt.rcParams['ytick.major.size'] =15
+# plt.rcParams['xtick.minor.size'] =10
+# plt.rcParams['ytick.minor.size'] =10
+# plt.rcParams['xtick.major.width'] =5
+# plt.rcParams['ytick.major.width'] =5
+# plt.rcParams['xtick.minor.width'] =5
+# plt.rcParams['ytick.minor.width'] =5
+# mpl.rcParams['axes.titlepad'] = 20
 
 plt.savefig('CP_coverage.png')
 # %% 
-x_pos = 5
-time = 20
+idx = 10
+x_pos = 70
+time = 10
 var = 0 
 plt.figure()
-plt.plot(y_grid,mean_vals[idx, var, x_pos, :, time], label='Prediction', alpha=0.8,  color = 'tab:blue', linewidth=5)
-plt.plot(y_grid,lower_vals[idx, var, x_pos, :, time], label='Lower', alpha=0.8,  color = 'tab:orange', ls='--', linewidth=5)
-plt.plot(y_grid, upper_vals[idx, var, x_pos, :, time], label='Upper', alpha=0.8,  color = 'tab:green', ls='--', linewidth=5)
-plt.plot(y_grid, soln_vals[idx, var, x_pos, :, time], label='Solution', alpha=0.8,  color = 'tab:red', linewidth=5)
+plt.plot(y_grid,mean_vals[idx, var, x_pos, :, time], label='Prediction', alpha=0.8,  color = 'firebrick')
+plt.plot(y_grid,lower_vals[idx, var, x_pos, :, time], label='Lower', alpha=0.8,  color = 'teal', ls='--')
+plt.plot(y_grid, upper_vals[idx, var, x_pos, :, time], label='Upper', alpha=0.8,  color = 'navy', ls='--')
+plt.plot(y_grid, soln_vals[idx, var, x_pos, :, time], label='Solution', alpha=0.8,  color = 'black')
 plt.legend()
-plt.xlabel('Z-Axis')
-plt.ylabel('Density')
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['font.size']=45
-mpl.rcParams['figure.figsize']=(16,16)
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['axes.linewidth']= 3
-mpl.rcParams['axes.titlepad'] = 20
-plt.rcParams['xtick.major.size'] =15
-plt.rcParams['ytick.major.size'] =15
-plt.rcParams['xtick.minor.size'] =10
-plt.rcParams['ytick.minor.size'] =10
-plt.rcParams['xtick.major.width'] =5
-plt.rcParams['ytick.major.width'] =5
-plt.rcParams['xtick.minor.width'] =5
-plt.rcParams['ytick.minor.width'] =5
-mpl.rcParams['axes.titlepad'] = 20
+plt.xlabel(r'\textbf{$Z$}')
+plt.ylabel(r'\textbf{$\rho$}')
+plt.grid() #Comment out if you dont want grids.
+
+plt.savefig("rho_Z.svg", format="svg", bbox_inches='tight', transparent='True')
+plt.show()
 # %%
-y_pos = 40
-time = 20
+idx = 10
+y_pos = 20
+time = 10
 var = 0 
 plt.figure()
-plt.plot(x_grid,mean_vals[idx, var, :, y_pos, time], label='Prediction', alpha=0.8,  color = 'tab:blue', linewidth=5)
-plt.plot(x_grid,lower_vals[idx, var, :, y_pos, time], label='Lower', alpha=0.8,  color = 'tab:orange', ls='--', linewidth=5)
-plt.plot(x_grid, upper_vals[idx, var,:, y_pos, time], label='Upper', alpha=0.8,  color = 'teal', ls='--', linewidth=5)
-plt.plot(x_grid, soln_vals[idx, var,:, y_pos, time], label='Solution', alpha=0.8,  color = 'firebrick', linewidth=5)
+plt.plot(x_grid, mean_vals[idx, var, :, y_pos, time], label='Prediction', alpha=0.8,  color = 'firebrick')
+plt.plot(x_grid,lower_vals[idx, var, :, y_pos, time], label='Lower', alpha=0.8,  color = 'teal', ls='--')
+plt.plot(x_grid, upper_vals[idx, var,:, y_pos, time], label='Upper', alpha=0.8,  color = 'navy', ls='--')
+plt.plot(x_grid, soln_vals[idx, var,:, y_pos, time], label='Solution', alpha=0.8,  color = 'black')
 plt.legend()
+plt.xlabel(r'\textbf{$R$}')
+plt.ylabel(r'\textbf{$\rho$}')
+plt.grid() #Comment out if you dont want grids.
+
+plt.savefig("rho_R.svg", format="svg", bbox_inches='tight', transparent='True')
+plt.show()
+
+plt.figure()
+plt.imshow(soln_vals[idx, var, :, :, time], cmap=cm.coolwarm, extent=[x_grid[0], x_grid[-1], y_grid[0], y_grid[-1]])
 plt.xlabel('R-Axis')
-plt.ylabel('Density')# %%
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['font.size']=45
-mpl.rcParams['figure.figsize']=(16,16)
-mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['axes.linewidth']= 3
-mpl.rcParams['axes.titlepad'] = 20
-plt.rcParams['xtick.major.size'] =15
-plt.rcParams['ytick.major.size'] =15
-plt.rcParams['xtick.minor.size'] =10
-plt.rcParams['ytick.minor.size'] =10
-plt.rcParams['xtick.major.width'] =5
-plt.rcParams['ytick.major.width'] =5
-plt.rcParams['xtick.minor.width'] =5
-plt.rcParams['ytick.minor.width'] =5
-mpl.rcParams['axes.titlepad'] = 20
+plt.ylabel('Z-Axis')
+plt.title('Plasma Density at t=10')
+plt.plot(x_grid, np.ones(106)*y_grid[y_pos], linewidth = 4, color='black')
+# %% 
+var = 1
+plt.figure()
+plt.plot(y_grid,mean_vals[idx, var, x_pos, :, time], label='Prediction', alpha=0.8,  color = 'firebrick')
+plt.plot(y_grid,lower_vals[idx, var, x_pos, :, time], label='Lower', alpha=0.8,  color = 'teal', ls='--')
+plt.plot(y_grid, upper_vals[idx, var, x_pos, :, time], label='Upper', alpha=0.8,  color = 'navy', ls='--')
+plt.plot(y_grid, soln_vals[idx, var, x_pos, :, time], label='Solution', alpha=0.8,  color = 'black')
+plt.legend()
+plt.xlabel(r'\textbf{$Z$}')
+plt.ylabel(r'\textbf{$\Phi$}')
+plt.grid() #Comment out if you dont want grids.
+
+plt.savefig("phi_Z.svg", format="svg", bbox_inches='tight', transparent='True')
+plt.show()
+
+
+plt.figure()
+plt.plot(x_grid,mean_vals[idx, var, :, y_pos, time], label='Prediction', alpha=0.8,  color = 'firebrick')
+plt.plot(x_grid,lower_vals[idx, var, :, y_pos, time], label='Lower', alpha=0.8,  color = 'teal', ls='--')
+plt.plot(x_grid, upper_vals[idx, var,:, y_pos, time], label='Upper', alpha=0.8,  color = 'navy', ls='--')
+plt.plot(x_grid, soln_vals[idx, var,:, y_pos, time], label='Solution', alpha=0.8,  color = 'black')
+plt.legend()
+plt.xlabel(r'\textbf{$R$}')
+plt.ylabel(r'\textbf{$\Phi$}')
+plt.grid() #Comment out if you dont want grids.
+
+plt.savefig("phi_R.svg", format="svg", bbox_inches='tight', transparent='True')
+plt.show()
+
+
+# %% 
+
+var = 2
+plt.figure()
+plt.plot(y_grid,mean_vals[idx, var, x_pos, :, time], label='Prediction', alpha=0.8,  color = 'firebrick')
+plt.plot(y_grid,lower_vals[idx, var, x_pos, :, time], label='Lower', alpha=0.8,  color = 'teal', ls='--')
+plt.plot(y_grid, upper_vals[idx, var, x_pos, :, time], label='Upper', alpha=0.8,  color = 'navy', ls='--')
+plt.plot(y_grid, soln_vals[idx, var, x_pos, :, time], label='Solution', alpha=0.8,  color = 'black')
+plt.legend()
+plt.xlabel(r'\textbf{$Z$}')
+plt.ylabel(r'\textbf{$T$}')
+plt.grid() #Comment out if you dont want grids.
+
+plt.savefig("T_Z.svg", format="svg", bbox_inches='tight', transparent='True')
+plt.show()
+
+
+plt.figure()
+plt.plot(x_grid,mean_vals[idx, var, :, y_pos, time], label='Prediction', alpha=0.8,  color = 'firebrick')
+plt.plot(x_grid,lower_vals[idx, var, :, y_pos, time], label='Lower', alpha=0.8,  color = 'teal', ls='--')
+plt.plot(x_grid, upper_vals[idx, var,:, y_pos, time], label='Upper', alpha=0.8,  color = 'navy', ls='--')
+plt.plot(x_grid, soln_vals[idx, var,:, y_pos, time], label='Solution', alpha=0.8,  color = 'black')
+plt.legend()
+plt.xlabel(r'\textbf{$R$}')
+plt.ylabel(r'\textbf{$T$}')
+plt.grid() #Comment out if you dont want grids.
+
+plt.savefig("T_R.svg", format="svg", bbox_inches='tight', transparent='True')
+plt.show()
+
+
+
 # %%
 # %% 
 idx = 10
@@ -645,26 +720,37 @@ mean_plot = ax.contour(X, Y, mean_vals[idx, var, :, :, time], levels, colors='k'
 lower_plot = ax.contour(X, Y, lower_vals[idx, var, :, :, time], levels, colors='red') 
 upper_plot = ax.contour(X, Y, upper_vals[idx, var, :, :, time], levels, colors='blue') 
 
+
+
 # %% 
-#3D Plotly contour plots 
-import plotly.graph_objects as go
-import plotly.io as pio
-pio.renderers.default = "notebook_connected"
 
-idx = 25
-var = 0
-time = 24
 
-fig = go.Figure(data=[
-    go.Surface(x = x_grid, y = y_grid, z= mean_vals[idx, var, :, :, time], opacity=0.9, colorscale='tealrose'),
-    go.Surface(x = x_grid, y = y_grid, z=lower_vals[idx, var, :, :, time], colorscale = 'turbid', showscale=False, opacity=0.6),
-    go.Surface(x = x_grid, y = y_grid, z=upper_vals[idx, var, :, :, time], colorscale = 'Electric',showscale=False, opacity=0.3)
+# # %% 
+# #3D Plotly contour plots 
+# import plotly.graph_objects as go
+# import plotly.io as pio
+# pio.renderers.default = "notebook_connected"
 
-])
-fig.update_traces(showscale=False)
+# idx = 25
+# var = 0
+# time = 24
 
-# fig.update_traces(contours_z=dict(show=True, usecolormap=True,
-#                                   highlightcolor="limegreen", project_z=True))
-fig.show()
+# fig = go.Figure(data=[
+#     go.Surface(x = x_grid, y = y_grid, z= mean_vals[idx, var, :, :, time], opacity=0.9, colorscale='tealrose'),
+#     go.Surface(x = x_grid, y = y_grid, z=lower_vals[idx, var, :, :, time], colorscale = 'turbid', showscale=False, opacity=0.6),
+#     go.Surface(x = x_grid, y = y_grid, z=upper_vals[idx, var, :, :, time], colorscale = 'Electric',showscale=False, opacity=0.3)
+
+# ])
+# fig.update_traces(showscale=False)
+
+# # fig.update_traces(contours_z=dict(show=True, usecolormap=True,
+# #                                   highlightcolor="limegreen", project_z=True))
+# fig.show()
+
+# %%
+
+
+# plt.plot(np.ones(106)*x_grid[x_pos], y_grid, linewidth = 4, color='black')
+# %%
 
 # %%
