@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on 24 February 2023
-
-@author: vgopakum, agray, lzanisi
-
 Simple conformal example for y =  sin(x) + cos(2x)
 """
 #%% Import required

@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Aug 23 15:24:08 2022
 
-@author: vgopakum
+Data Generation of the Convection-Diffusion PDE Solutions
 """
 
 # %%

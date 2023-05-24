@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on 11 March 2022
 
-
-@author: vgopakum
 
 U-Net modelled over the 2D Wave Equation. 
 Code inspired from this paper : https://sciencedirect.com/science/article/abs/pii/S0010482519301520?via%3Dihub

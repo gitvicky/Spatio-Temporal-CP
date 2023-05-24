@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on 31 October 2022
-
-@author: vgopakum, agray, lzanisi
 
 Convection - Diffusion Equation 
 

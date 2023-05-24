@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on 24 February 2023
-
-@author: vgopakum, agray, lzanisi
 
 U-Net built using PyTorch to model the 2D Wave Equation. -- Testing out CP for dataset with half the speed on which the model was trained on. 
 Dataset buitl by changing by performing a LHS across the x,y pos and amplitude of the initial gaussian distibution
-Code for the spectral solver can be found in : https://github.com/farscape-project/PINNs_Benchmark
 
 ----------------------------------------------------------------------------------------------------------------------------------------
 

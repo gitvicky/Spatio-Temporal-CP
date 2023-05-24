@@ -1,10 +1,6 @@
 """
 Created on Sat Aug 20, 2022
 
-@author: vgopakum
-
-Demonstration of SimTrack
-
 Surrogate Model for the 1D Burgers Reimann Problem developed using a 1D U-Net Model deployed in a autoregressive framework. 
 """
 

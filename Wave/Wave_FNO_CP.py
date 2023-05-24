@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on 24 February 2023
-
-@author: vgopakum, agray, lzanisi
 
 FNO built using PyTorch to model the 2D Wave Equation. 
 Dataset buitl by changing by performing a LHS across the x,y pos and amplitude of the initial gaussian distibution

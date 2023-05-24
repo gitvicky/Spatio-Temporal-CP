@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on 1st March 2023
 
-@author: vgopakum 
 
 ---------------------------------------------------------------------------------------
 1D Burgers' Equation using the spectral method in Python 

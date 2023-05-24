@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on 6 Jan 2023
-@author: vgopakum
+
 FNO modelled over the MHD data built using JOREK for multi-blob diffusion. Conformal Prediction over it
 """
 # %%

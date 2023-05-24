@@ -1,12 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed May 20 13:42:56 2020
-
-@author: vgopakum
-"""
-
-"""
 2D wave equation via FFT 
 
 u_tt = c^2 * (u_xx + u_yy)
@@ -14,7 +8,7 @@ u_tt = c^2 * (u_xx + u_yy)
 on [-1, 1]x[-1, 1], t > 0 and Dirichlet BC u=0
 
 
-Sopurce : http://people.bu.edu/andasari/courses/numericalpython/python.html
+Source : http://people.bu.edu/andasari/courses/numericalpython/python.html
 """
 # %%
 import numpy as np

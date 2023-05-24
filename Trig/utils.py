@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on 2 November 2022
-
-@author: vgopakum, agray, lzanisi
-
 Utilities for working with uncertainty in machine learning models
 
 """

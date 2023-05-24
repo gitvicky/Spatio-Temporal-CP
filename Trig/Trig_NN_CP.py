@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on 31 October 2022
-
-@author: vgopakum, agray, lzanisi
-
 Neural Network (MLP) built using PyTorch to model the 1D regression function sin(2.pi.x) + cos(2.pi.x)
 Conformal Prediction using various Conformal Score estimates
 

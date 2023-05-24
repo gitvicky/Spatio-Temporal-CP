@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on 1st March 2023
-
-@author: vgopakum 
 
 ---------------------------------------------------------------------------------------
 Data Generation for 1D Burgers Surrogate
