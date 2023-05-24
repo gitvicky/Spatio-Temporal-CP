@@ -3,7 +3,6 @@
 """
 Created on 2 November 2022
 
-@author: vgopakum, agray, lzanisi
 
 Utilities for working with uncertainty in machine learning models
 
