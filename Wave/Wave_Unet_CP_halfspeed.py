@@ -706,8 +706,88 @@ plt.rcParams['ytick.minor.width'] =5
 mpl.rcParams['axes.titlepad'] = 20
 
 
+# %% 
+#Plotting the cell-wise CP estimation
+
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+import numpy as np
 
 
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['font.size']=45
+mpl.rcParams['figure.figsize']=(16,16)
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['axes.linewidth']= 0.5
+mpl.rcParams['axes.titlepad'] = 20
+plt.rcParams['xtick.major.size'] = 20
+plt.rcParams['ytick.major.size'] = 20
+plt.rcParams['xtick.minor.size'] = 10.0
+plt.rcParams['ytick.minor.size'] = 10.0
+plt.rcParams['xtick.major.width'] = 0.8
+plt.rcParams['ytick.major.width'] = 0.8
+plt.rcParams['xtick.minor.width'] = 0.6
+plt.rcParams['ytick.minor.width'] = 0.6
+mpl.rcParams['axes.titlepad'] = 20
+plt.rcParams['grid.linewidth'] = 0.5
+plt.rcParams['grid.alpha'] = 0.25
+plt.rcParams['grid.linestyle'] = '-'
+
+
+idx = 10
+t_idx = -1
+
+x_len = 8
+y_len = 8
+x_slice = int(y_response.shape[2] / x_len)
+y_slice = x_slice
+
+y_response_slice = y_response[idx, t_idx, ::x_slice, ::x_slice]
+mean_slice = val_mean[idx, t_idx, ::x_slice, ::x_slice]
+uncalib_lb_slice = prediction_sets_uncalibrated[0][idx, t_idx, ::x_slice, ::x_slice]
+uncalib_ub_slice = prediction_sets_uncalibrated[1][idx, t_idx, ::x_slice, ::x_slice]
+calib_lb_slice = prediction_sets[0][idx, t_idx, ::x_slice, ::x_slice]
+calib_ub_slice = prediction_sets[1][idx, t_idx, ::x_slice, ::x_slice]
+
+# Create a t_len x x_len grid of cells using gridspec
+plt.figure()
+gs = gridspec.GridSpec(x_len, y_len, wspace=0, hspace=0, width_ratios=list(np.ones((x_len))), height_ratios=list(np.ones((x_len))))
+
+# y_max = np.max(calib_ub_slice)
+# y_min = np.min(calib_lb_slice)
+
+for aa in range(x_len):
+    for bb in range(y_len):
+        ax = plt.subplot(gs[aa, bb])
+        # ax.scatter(x[::x_slice][bb], y_response_slice[aa, bb], color='darkgreen', alpha=0.8, marker='o')
+        ax.errorbar(x[::x_slice][bb], mean_slice[aa, bb].flatten(), yerr=(uncalib_ub_slice[aa, bb] - uncalib_lb_slice[aa, bb]).flatten(), label='Prediction', color='darkgreen', fmt='o', alpha=1.0, ms =5, elinewidth=0.5) #Uncalibrated
+        # ax.errorbar(x[::x_slice][bb], mean_slice[aa, bb].flatten(), yerr=(calib_ub_slice[aa, bb] - calib_lb_slice[aa, bb]).flatten(), label='Prediction', color='darkgreen', fmt='o', alpha=1.0, ecolor='firebrick', ms= 5, elinewidth=0.5) #Calibrated 
+        # y_max = np.max(calib_ub_slice[aa, bb])
+        # y_min = np.min(calib_lb_slice[aa, bb])
+        # ax.set_ylim(bottom=y_min, top=y_max)
+
+        ax.set(xticks=[], yticks=[])
+
+# Remove space between subplots
+plt.subplots_adjust(wspace=0, hspace=0)
+
+plt.tight_layout()
+
+
+# plt.savefig('wave_unet_hs_cells_calibrated.svg', format="svg", bbox_inches='tight', transparent='True')
+
+# %% 
+plt.figure()
+# plt.imshow(y_response[idx, t_idx], cmap=cm.coolwarm)
+plt.imshow(val_mean[idx, t_idx], cmap=cm.coolwarm)
+# plt.imshow(y_response[idx,:,:, t_idx], cmap=cm.coolwarm)
+# plt.imshow()
+plt.xticks([])
+plt.yticks([])
+plt.colorbar()
+plt.tight_layout()
+plt.savefig('wave_unet_hs_cells_predicted.svg', format="svg", bbox_inches='tight', transparent='True')
+# plt.savefig('wave_unet_hs_cells_actual.svg', format="svg", bbox_inches='tight', transparent='True')
 
 # %%
 #PLots

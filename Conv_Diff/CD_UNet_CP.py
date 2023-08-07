@@ -563,3 +563,75 @@ plt.grid() #Comment out if you dont want grids.
 plt.savefig("convdiff_comparison.svg", format="svg", bbox_inches='tight')
 plt.show()
 # %%
+outer_grid = fig.add_gridspec(2, 5, wspace=0, hspace=0)
+
+for a in range(2):
+    for b in range(5):
+        # gridspec inside gridspec
+        inner_grid = outer_grid[a, b].subgridspec(3, 3, wspace=0, hspace=0)
+        axs = inner_grid.subplots()  # Create all subplots for the inner grid.
+        for (c, d), ax in np.ndenumerate(axs):
+            print(c, d, ax)
+            # ax.plot(*squiggle_xy(a + 1, b + 1, c + 1, d + 1))
+            ax.plot(that[0])
+            ax.set(xticks=[], yticks=[])
+
+# show only the outside spines
+for ax in fig.get_axes():
+    ss = ax.get_subplotspec()
+    ax.spines.top.set_visible(ss.is_first_row())
+    ax.spines.bottom.set_visible(ss.is_last_row())
+    ax.spines.left.set_visible(ss.is_first_col())
+    ax.spines.right.set_visible(ss.is_last_col())
+
+plt.show()
+# %%
+#Plotting the cell-wise CP estimation. 
+
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+import numpy as np
+
+idx = 12
+
+t_len = 4
+x_len = 4
+t_slice = int(y_response.shape[1] / t_len)
+x_slice = int(y_response.shape[2] / x_len)
+
+y_response_slice = y_response[idx, ::t_slice, ::x_slice]
+mean_slice = mean[idx, ::t_slice, ::x_slice]
+uncalib_lb_slice = prediction_sets_uncalibrated[0][idx, ::t_slice, ::x_slice]
+uncalib_ub_slice = prediction_sets_uncalibrated[1][idx, ::t_slice, ::x_slice]
+calib_lb_slice = prediction_sets[0][idx, ::t_slice, ::x_slice]
+calib_ub_slice = prediction_sets[1][idx, ::t_slice, ::x_slice]
+
+# Create a t_len x x_len grid of cells using gridspec
+plt.figure()
+gs = gridspec.GridSpec(t_len, x_len, wspace=0, hspace=0, width_ratios=list(np.ones((x_len))), height_ratios=list(np.ones((t_len))))
+
+y_max = np.max(calib_ub_slice)
+y_min = np.min(calib_lb_slice)
+
+for aa in range(t_len):
+    for bb in range(x_len):
+        ax = plt.subplot(gs[aa, bb])
+        ax.scatter(x_range[::x_slice][bb], y_response_slice[aa, bb])
+        # ax.errorbar(x_range[::x_slice][bb], mean_slice[aa, bb].flatten(), yerr=(uncalib_ub_slice[aa, bb] - uncalib_lb_slice[aa, bb]).flatten(), label='Prediction', color='navy', fmt='o', alpha=0.5) #Uncalibrated
+        ax.errorbar(x_range[::x_slice][bb], mean_slice[aa, bb].flatten(), yerr=(calib_ub_slice[aa, bb] - calib_lb_slice[aa, bb]).flatten(), label='Prediction', color='navy', fmt='o', alpha=0.5) #Calibrated 
+        ax.set_ylim(bottom=y_min, top=y_max)
+
+        ax.set(xticks=[], yticks=[])
+
+# Remove space between subplots
+plt.subplots_adjust(wspace=0, hspace=0)
+
+plt.tight_layout()
+
+# Show the plot
+plt.show()
+
+
+# %%
+plt.plot(mean_slice.T)
+# %%

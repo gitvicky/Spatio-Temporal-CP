@@ -542,7 +542,7 @@ model_dropout.load_state_dict(torch.load(model_loc + 'Unet_Wave_dropout.pth', ma
 t1 = default_timer()
 
 n = ncal
-alpha = 0.1 #Coverage will be 1- alpha 
+alpha = 1 #Coverage will be 1- alpha 
 
 with torch.no_grad():
     xx = cal_a
@@ -828,4 +828,90 @@ divider = make_axes_locatable(ax)
 cax = divider.append_axes("right", size="5%", pad=0.1)
 cbar = fig.colorbar(pcm, cax=cax)
 cbar.formatter.set_powerlimits((0, 0))
+
+# %%
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['font.size']=45
+mpl.rcParams['figure.figsize']=(16,16)
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['axes.linewidth']= 1
+mpl.rcParams['axes.titlepad'] = 20
+plt.rcParams['xtick.major.size'] = 20
+plt.rcParams['ytick.major.size'] = 20
+plt.rcParams['xtick.minor.size'] = 10.0
+plt.rcParams['ytick.minor.size'] = 10.0
+plt.rcParams['xtick.major.width'] = 0.8
+plt.rcParams['ytick.major.width'] = 0.8
+plt.rcParams['xtick.minor.width'] = 0.6
+plt.rcParams['ytick.minor.width'] = 0.6
+mpl.rcParams['axes.titlepad'] = 20
+plt.rcParams['grid.linewidth'] = 0.5
+plt.rcParams['grid.alpha'] = 0.5
+plt.rcParams['grid.linestyle'] = '-'
+
+#Plotting the cell-wise CP estimation
+
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+import numpy as np
+
+idx = 10
+t_idx = -1
+
+x_len = 5
+y_len = 5
+x_slice = int(y_response.shape[2] / x_len)
+y_slice = x_slice
+
+y_response_slice = y_response[idx, t_idx, ::x_slice, ::x_slice]
+mean_slice = mean[idx, t_idx, ::x_slice, ::x_slice]
+uncalib_lb_slice = prediction_sets_uncalibrated[0][idx, t_idx, ::x_slice, ::x_slice]
+uncalib_ub_slice = prediction_sets_uncalibrated[1][idx, t_idx, ::x_slice, ::x_slice]
+calib_lb_slice = prediction_sets[0][idx, t_idx, ::x_slice, ::x_slice]
+calib_ub_slice = prediction_sets[1][idx, t_idx, ::x_slice, ::x_slice]
+
+# Create a t_len x x_len grid of cells using gridspec
+plt.figure()
+gs = gridspec.GridSpec(x_len, y_len, wspace=0, hspace=0, width_ratios=list(np.ones((x_len))), height_ratios=list(np.ones((x_len))))
+
+y_max = np.max(calib_ub_slice)
+y_min = np.min(calib_lb_slice)
+
+for aa in range(x_len):
+    for bb in range(y_len):
+        ax = plt.subplot(gs[aa, bb])
+        # ax.scatter(x[::x_slice][bb], mean_slice[aa, bb], color='navy', alpha=0.8, marker='o')
+        # ax.errorbar(x[::x_slice][bb], mean_slice[aa, bb].flatten(), yerr=(uncalib_ub_slice[aa, bb] - uncalib_lb_slice[aa, bb]).flatten(), label='Prediction', color='navy', fmt='o', alpha=0.8) #Uncalibrated
+        ax.errorbar(x[::x_slice][bb], mean_slice[aa, bb].flatten(), yerr=(calib_ub_slice[aa, bb] - calib_lb_slice[aa, bb]).flatten(), label='Prediction', color='navy', fmt='o', alpha=0.8, ecolor='firebrick', ms= 2, elinewidth=2) #Calibrated 
+        ax.set_ylim(bottom=y_min, top=y_max)
+
+        ax.set(xticks=[], yticks=[])
+
+# Remove space between subplots
+plt.subplots_adjust(wspace=0, hspace=0)
+
+# # show only the outside spines
+# for ax in fig.get_axes():
+#     ss = ax.get_subplotspec()
+#     ax.spines.top.set_visible(ss.is_first_row())
+#     ax.spines.bottom.set_visible(ss.is_last_row())
+#     ax.spines.left.set_visible(ss.is_first_col())
+#     ax.spines.right.set_visible(ss.is_last_col())
+
+plt.tight_layout()
+
+
+# plt.savefig('wave_unet_marginal_cells_calibrated.svg', format="svg", bbox_inches='tight', transparent='True')
+
+# %%
+# %%
+plt.figure()
+plt.imshow(mean_slice, cmap='plasma_r')
+# plt.imshow( val_mean[idx, t_idx], cmap=cm.coolwarm,)
+# plt.imshow()
+plt.xticks([])
+plt.yticks([])
+plt.colorbar()
+plt.tight_layout()
+# plt.savefig('wave_unet_marginal_cells_slice.svg', format="svg", bbox_inches='tight', transparent='True')
 # %%
