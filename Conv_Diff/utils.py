@@ -475,11 +475,20 @@ class UNet1d_dropout(nn.Module):
             c += reduce(operator.mul, list(p.size()))
 
         return c
+    
+    
+    def enable_dropout(self):
+            """Function to enable the dropout layers during test-time"""
+            self.dropout.train()
+            # for m in self.dropout_layers:
+            #     if m.__class__.__name__.startswith("Dropout"):
+            #         m.train()       
 
 
 #Estimating the output uncertainties using Dropout. 
 def Dropout_eval(net, x, step, Nrepeat=10):
     net.eval()
+    net.enable_dropout()
     preds = torch.zeros(Nrepeat, x.shape[0], step, x.shape[-1])
     for i in range(Nrepeat):
         preds[i] = net(x)

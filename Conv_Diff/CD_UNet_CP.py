@@ -212,6 +212,13 @@ print(f"The empirical coverage after calibration is: {empirical_coverage}")
 t2 = default_timer()
 print('CQR, time used:', t2-t1)
 
+#Estimating the tightness of fit
+cov = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1]))
+cov_idx = cov.nonzero()
+
+tightness_metric = ((prediction_sets[1][cov_idx]  - y_response[cov_idx]) +  (y_response[cov_idx] - prediction_sets[0][cov_idx])).mean()
+print(f"Tightness of the coverage : Average of the distance between error bars {tightness_metric}")
+
 # %%% 
 idx = 12
 t_val = -1
@@ -316,8 +323,14 @@ print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
 t2 = default_timer()
 print('Residuals, time used:', t2-t1)
 
+#Estimating the tightness of fit
+cov = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1]))
+cov_idx = cov.nonzero()
 
-# %% 
+tightness_metric = ((prediction_sets[1][cov_idx]  - y_response[cov_idx]) +  (y_response[cov_idx] - prediction_sets[0][cov_idx])).mean()
+print(f"Tightness of the coverage : Average of the distance between error bars {tightness_metric}")
+
+    # %% 
 
 idx = 12 
 t_val = -1
@@ -452,7 +465,16 @@ print(f"The empirical coverage before calibration is: {empirical_coverage_uncali
 empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
 print(f"The empirical coverage after calibration is: {empirical_coverage}")
 t2 = default_timer()
-print('CQR, time used:', t2-t1)
+print('Dropout, time used:', t2-t1)
+
+
+#Estimating the tightness of fit
+cov = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1]))
+cov_idx = cov.nonzero()
+
+tightness_metric = ((prediction_sets[1][cov_idx]  - y_response[cov_idx]) +  (y_response[cov_idx] - prediction_sets[0][cov_idx])).mean()
+print(f"Tightness of the coverage : Average of the distance between error bars {tightness_metric}")
+
 
 # %% 
 

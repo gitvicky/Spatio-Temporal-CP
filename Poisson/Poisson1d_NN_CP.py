@@ -364,6 +364,15 @@ print(f"The empirical coverage after calibration is: {empirical_coverage}")
 print(f"alpha is: {alpha}")
 print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
 
+
+#Estimating the tightness of fit
+cov = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1]))
+cov_idx = cov.nonzero()
+
+tightness_metric = ((prediction_sets[1][cov_idx[0], cov_idx[1]]  - y_response[cov_idx[0], cov_idx[1]]) +  (y_response[cov_idx[0], cov_idx[1]] - prediction_sets[0][cov_idx[0], cov_idx[1]])).mean()
+print(f"Tightness of the coverage : Average of the distance between error bars {tightness_metric}")
+
+
 # %%
 def calibrate(alpha):
     n = cal_split
@@ -442,6 +451,13 @@ empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= predic
 print(f"The empirical coverage after calibration is: {empirical_coverage}")
 print(f"alpha is: {alpha}")
 print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
+
+#Estimating the tightness of fit
+cov = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1]))
+cov_idx = cov.nonzero()
+
+tightness_metric = ((prediction_sets[1][cov_idx[0], cov_idx[1]]  - y_response[cov_idx[0], cov_idx[1]]) +  (y_response[cov_idx[0], cov_idx[1]] - prediction_sets[0][cov_idx[0], cov_idx[1]])).mean()
+print(f"Tightness of the coverage : Average of the distance between error bars {tightness_metric}")
 
 # %% 
 # plt.figure()
@@ -649,17 +665,17 @@ pred_dropout = val_mean_viz
 prediction_sets_dropout = prediction_sets
 #%%
 
-# plt.figure()
-# plt.title(rf"Dropout, $\alpha$ = {alpha}")
-# plt.plot(Y_pred_viz, label='Exact', color='black')
-# plt.plot(val_mean_viz, label='Mean', color='firebrick')
-# plt.plot(prediction_sets[0], label='lower-cal', color='teal')
-# plt.plot(prediction_sets_uncalibrated[0], label='lower - uncal', color='darkorange')
-# plt.plot(prediction_sets[1], label='upper-cal', color='navy')
-# plt.plot(prediction_sets_uncalibrated[1], label='upper - uncal', color='gold')
-# plt.xlabel("x")
-# plt.ylabel("u")
-# plt.legend()
+plt.figure()
+plt.title(rf"Dropout, $\alpha$ = {alpha}")
+plt.plot(Y_pred_viz, label='Exact', color='black')
+plt.plot(val_mean_viz, label='Mean', color='firebrick')
+plt.plot(prediction_sets[0], label='lower-cal', color='teal')
+plt.plot(prediction_sets_uncalibrated[0], label='lower - uncal', color='darkorange')
+plt.plot(prediction_sets[1], label='upper-cal', color='navy')
+plt.plot(prediction_sets_uncalibrated[1], label='upper - uncal', color='gold')
+plt.xlabel("x")
+plt.ylabel("u")
+plt.legend()
 
 # %% 
 # plt.figure()
@@ -707,6 +723,13 @@ empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= predic
 print(f"The empirical coverage after calibration is: {empirical_coverage}")
 print(f"alpha is: {alpha}")
 print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
+
+#Estimating the tightness of fit
+cov = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1]))
+cov_idx = cov.nonzero()
+
+tightness_metric = ((prediction_sets[1][cov_idx[0], cov_idx[1]]  - y_response[cov_idx[0], cov_idx[1]]) +  (y_response[cov_idx[0], cov_idx[1]] - prediction_sets[0][cov_idx[0], cov_idx[1]])).mean()
+print(f"Tightness of the coverage : Average of the distance between error bars {tightness_metric}")
 
 # %%
 def calibrate(alpha):

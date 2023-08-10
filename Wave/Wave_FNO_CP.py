@@ -230,6 +230,15 @@ print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
 t2 = default_timer()
 print('Conformal by Residual, time used:', t2-t1)
 
+
+#Estimating the tightness of fit
+cov = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1]))
+cov_idx = cov.nonzero()
+
+tightness_metric = ((prediction_sets[1][cov_idx]  - y_response[cov_idx]) +  (y_response[cov_idx] - prediction_sets[0][cov_idx])).mean()
+
+print(f"Tightness of the coverage : Average of the distance between error bars {tightness_metric}")
+
 # %% 
 
 idx = 25
@@ -381,6 +390,15 @@ empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= predic
 print(f"The empirical coverage after calibration is: {empirical_coverage}")
 t2 = default_timer()
 print('Conformal using Dropout, time used:', t2-t1)
+
+#Estimating the tightness of fit
+cov = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1]))
+cov_idx = cov.nonzero()
+
+tightness_metric = ((prediction_sets[1][cov_idx]  - y_response[cov_idx]) +  (y_response[cov_idx] - prediction_sets[0][cov_idx])).mean()
+
+print(f"Tightness of the coverage : Average of the distance between error bars {tightness_metric}")
+
 # %% 
 def calibrate_dropout(alpha):
     with torch.no_grad():
@@ -501,7 +519,10 @@ def get_prediction_sets(alpha):
 
 
 # %% 
+################################################################################################################
 #Testing on the data  with half speed
+################################################################################################################
+
 model_50 = FNO2d(modes, modes, width, T_in, step, x, y)
 model_50.load_state_dict(torch.load(model_loc + 'FNO_Wave_fno.pth', map_location='cpu'))
 
@@ -620,6 +641,15 @@ print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
 
 t2 = default_timer()
 print('Conformal by Residual, time used:', t2-t1)
+
+
+#Estimating the tightness of fit
+cov = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1]))
+cov_idx = cov.nonzero()
+
+tightness_metric = ((prediction_sets[1][cov_idx]  - y_response[cov_idx]) +  (y_response[cov_idx] - prediction_sets[0][cov_idx])).mean()
+
+print(f"Tightness of the coverage : Average of the distance between error bars {tightness_metric}")
 # %%
 def calibrate_residual(alpha):
     n = ncal
@@ -792,6 +822,15 @@ empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= predic
 print(f"The empirical coverage after calibration is: {empirical_coverage}")
 t2 = default_timer()
 print('Conformal using Dropout, time used:', t2-t1)
+
+
+#Estimating the tightness of fit
+cov = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1]))
+cov_idx = cov.nonzero()
+
+tightness_metric = ((prediction_sets[1][cov_idx]  - y_response[cov_idx]) +  (y_response[cov_idx] - prediction_sets[0][cov_idx])).mean()
+
+print(f"Tightness of the coverage : Average of the distance between error bars {tightness_metric}")
 # %% 
 def calibrate_dropout(alpha):
     with torch.no_grad():

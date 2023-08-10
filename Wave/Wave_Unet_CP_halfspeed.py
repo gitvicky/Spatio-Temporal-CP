@@ -567,7 +567,8 @@ mpl.rcParams['axes.titlepad'] = 20
 
 model_dropout = UNet2d_dropout(T_in, step, width)
 # model_dropout.load_state_dict(torch.load(model_loc + 'Unet_Wave_frigid-hill_dropout.pth', map_location='cpu'))
-model_dropout.load_state_dict(torch.load(model_loc + 'Unet_Wave_dropout.pth', map_location='cpu'))
+# model_dropout.load_state_dict(torch.load(model_loc + 'Unet_Wave_dropout.pth', map_location='cpu')) #Marconi Run 
+model_dropout.load_state_dict(torch.load(model_loc + 'Unet_Wave_piercing-body.pth', map_location='cpu'))
 
 # %%
 #Performing the Calibration for Dropout
@@ -575,7 +576,7 @@ model_dropout.load_state_dict(torch.load(model_loc + 'Unet_Wave_dropout.pth', ma
 t1 = default_timer()
 
 n = ncal
-alpha = 0.1 #Coverage will be 1- alpha 
+alpha = 0.05 #Coverage will be 1- alpha 
 
 with torch.no_grad():
     xx = cal_a
@@ -632,7 +633,7 @@ y_response = pred_u.numpy()
 
 print('Conformal by way Dropout')
 # Calculate empirical coverage (before and after calibration)
-prediction_sets_uncalibrated = [val_lower, val_upper]
+prediction_sets_uncalibrated = 2 * [val_lower, val_upper] #2 sigma
 empirical_coverage_uncalibrated = ((y_response >= prediction_sets_uncalibrated[0]) & (y_response <= prediction_sets_uncalibrated[1])).mean()
 print(f"The empirical coverage before calibration is: {empirical_coverage_uncalibrated}")
 empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
@@ -753,18 +754,16 @@ calib_ub_slice = prediction_sets[1][idx, t_idx, ::x_slice, ::x_slice]
 plt.figure()
 gs = gridspec.GridSpec(x_len, y_len, wspace=0, hspace=0, width_ratios=list(np.ones((x_len))), height_ratios=list(np.ones((x_len))))
 
-# y_max = np.max(calib_ub_slice)
-# y_min = np.min(calib_lb_slice)
+y_max = np.max(calib_ub_slice)
+y_min = np.min(calib_lb_slice)
 
 for aa in range(x_len):
     for bb in range(y_len):
         ax = plt.subplot(gs[aa, bb])
         # ax.scatter(x[::x_slice][bb], y_response_slice[aa, bb], color='darkgreen', alpha=0.8, marker='o')
-        ax.errorbar(x[::x_slice][bb], mean_slice[aa, bb].flatten(), yerr=(uncalib_ub_slice[aa, bb] - uncalib_lb_slice[aa, bb]).flatten(), label='Prediction', color='darkgreen', fmt='o', alpha=1.0, ms =5, elinewidth=0.5) #Uncalibrated
-        # ax.errorbar(x[::x_slice][bb], mean_slice[aa, bb].flatten(), yerr=(calib_ub_slice[aa, bb] - calib_lb_slice[aa, bb]).flatten(), label='Prediction', color='darkgreen', fmt='o', alpha=1.0, ecolor='firebrick', ms= 5, elinewidth=0.5) #Calibrated 
-        # y_max = np.max(calib_ub_slice[aa, bb])
-        # y_min = np.min(calib_lb_slice[aa, bb])
-        # ax.set_ylim(bottom=y_min, top=y_max)
+        # ax.errorbar(x[::x_slice][bb], mean_slice[aa, bb].flatten(), yerr=(uncalib_ub_slice[aa, bb] - uncalib_lb_slice[aa, bb]).flatten(), label='Prediction', color='darkgreen', fmt='o', alpha=1.0, ms =5, ecolor='firebrick', elinewidth=0.5) #Uncalibrated
+        ax.errorbar(x[::x_slice][bb], mean_slice[aa, bb].flatten(), yerr=(calib_ub_slice[aa, bb] - calib_lb_slice[aa, bb]).flatten(), label='Prediction', color='darkgreen', fmt='o', alpha=1.0, ecolor='firebrick', ms= 5, elinewidth=0.5) #Calibrated 
+        ax.set_ylim(bottom=y_min, top=y_max)
 
         ax.set(xticks=[], yticks=[])
 
@@ -788,6 +787,147 @@ plt.colorbar()
 plt.tight_layout()
 plt.savefig('wave_unet_hs_cells_predicted.svg', format="svg", bbox_inches='tight', transparent='True')
 # plt.savefig('wave_unet_hs_cells_actual.svg', format="svg", bbox_inches='tight', transparent='True')
+
+
+# %% 
+#Plotting and comparing the solution from the FNO and the ground truth 
+mpl.rcParams['figure.figsize']=(16, 16)
+
+idx = np.random.randint(0, npred) 
+
+idx = 117
+
+# if configuration['Log Normalisation'] == 'Yes':
+#     test_u = torch.exp(test_u)
+#     pred_set = torch.exp(pred_set)
+
+pred_u_decoded = y_normalizer.decode(pred_u)
+val_mean_decoded = y_normalizer.decode(torch.Tensor(val_mean))
+uncalibrated_decoded = y_normalizer.decode(torch.Tensor(prediction_sets_uncalibrated[1] - prediction_sets_uncalibrated[0]))
+calibrated_decoded = y_normalizer.decode(torch.Tensor(prediction_sets[1] - prediction_sets[0]))
+
+u_field = pred_u_decoded[idx]
+
+v_min_1 = torch.min(u_field[0,:,:])
+v_max_1 = torch.max(u_field[0,:,:])
+
+v_min_2 = torch.min(u_field[int(T/2), :, :])
+v_max_2 = torch.max(u_field[int(T/2), :, :])
+
+v_min_3 = torch.min(u_field[-1, :, :])
+v_max_3 = torch.max(u_field[-1, :, :])
+
+c_min_1 = torch.min(calibrated_decoded[idx][0, :, :])
+c_max_1 = torch.max(calibrated_decoded[idx][0, :, :])
+
+c_min_2 = torch.min(calibrated_decoded[idx][int(T/2), :, :])
+c_max_2 = torch.max(calibrated_decoded[idx][int(T/2), :, :])
+
+c_min_3 = torch.min(calibrated_decoded[idx][-1, :, :])
+c_max_3 = torch.max(calibrated_decoded[idx][-1, :, :])
+
+fig = plt.figure(figsize=plt.figaspect(0.5))
+ax = fig.add_subplot(4,3,1)
+pcm =ax.imshow(u_field[0, :,:], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_1, vmax=v_max_1)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+# ax.title.set_text('Initial')
+ax.title.set_text('t='+ str(T_in))
+ax.set_ylabel('Solution')
+fig.colorbar(pcm, pad=0.05)
+ 
+
+ax = fig.add_subplot(4,3,2)
+pcm = ax.imshow(u_field[int(T/2),:,:], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_2, vmax=v_max_2)
+# ax.title.set_text('Middle')
+ax.title.set_text('t='+ str(int(T_in + (T/2))))
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+
+ax = fig.add_subplot(4,3,3)
+pcm = ax.imshow(u_field[-1, :,:], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_3, vmax=v_max_3)
+# ax.title.set_text('Final')
+ax.title.set_text('t='+str(T+T_in))
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+
+u_field = val_mean_decoded[idx]
+
+ax = fig.add_subplot(4,3,4)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+pcm =ax.imshow(u_field[0,:,:], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_1, vmax=v_max_1)
+ax.set_ylabel('U-Net')
+
+fig.colorbar(pcm, pad=0.05)
+
+ax = fig.add_subplot(4,3,5)
+pcm = ax.imshow(u_field[int(T/2),:,:], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_2, vmax=v_max_2)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+
+ax = fig.add_subplot(4,3,6)
+pcm = ax.imshow(u_field[-1, :,:], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_3, vmax=v_max_3)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+u_field = uncalibrated_decoded[idx]
+
+ax = fig.add_subplot(4,3,7)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+pcm =ax.imshow(u_field[0,:,:], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_1, vmax=c_max_1)
+ax.set_ylabel('Uncalibrated Error')
+
+fig.colorbar(pcm, pad=0.05)
+
+ax = fig.add_subplot(4,3,8)
+pcm = ax.imshow(u_field[int(T/2),:,:], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_2, vmax=c_max_2)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+
+ax = fig.add_subplot(4,3,9)
+pcm = ax.imshow(u_field[-1, :,:], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_3, vmax=c_max_3)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+u_field = calibrated_decoded[idx]
+
+ax = fig.add_subplot(4,3,10)
+pcm =ax.imshow(u_field[0,:,:], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_1, vmax=c_max_1)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+ax.set_ylabel('Calibrated Error')
+
+fig.colorbar(pcm, pad=0.05)
+
+ax = fig.add_subplot(4,3,11)
+pcm = ax.imshow(u_field[int(T/2),:,:], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_2, vmax=c_max_2)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+
+ax = fig.add_subplot(4,3,12)
+pcm = ax.imshow(u_field[-1, :,:], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_3, vmax=c_max_3)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+plt.savefig('wave_unet_hs_heatmaps.svg', format="svg", bbox_inches='tight', transparent='True')
+
+
+# plt.subplots_adjust(wspace=0)#, hspace=0)
 
 # %%
 #PLots

@@ -312,7 +312,7 @@ class UNet2d(nn.Module):
 
 class UNet2d_dropout(nn.Module):
 
-    def __init__(self, in_channels=20, out_channels=5, init_features=32):
+    def __init__(self, in_channels=20, out_channels=5, init_features=32, dropout_rate=0.1):
         super(UNet2d_dropout, self).__init__()
 
         features = init_features
@@ -336,12 +336,20 @@ class UNet2d_dropout(nn.Module):
         self.conv = nn.Conv2d(
             in_channels=features, out_channels=out_channels, kernel_size=1
         )
-        self.dropout = nn.Dropout(p=0.1)
+
+
+        # self.dropout_layers = nn.ModuleList()
+        # for ii in range(4):
+        #     self.dropout_layers.append(nn.Dropout(p=dropout_rate))
+
+        self.dropout = nn.Dropout(p=dropout_rate)
 
     def forward(self, x):
         enc1 = self.encoder1(x)
+        # enc1 = self.dropout_layers[0](enc1)
         enc1 = self.dropout(enc1) #Dropout
         enc2 = self.encoder2(self.pool1(enc1))
+        # enc2 = self.dropout_ layers[1](enc2)
         enc2 = self.dropout(enc2) #Dropout
 
 
@@ -349,10 +357,12 @@ class UNet2d_dropout(nn.Module):
 
         dec2 = self.upconv2(bottleneck)
         dec2 = torch.cat((dec2, enc2), dim=1)
+        # dec2 = self.dropout_layers[2](dec2)
         dec2 = self.dropout(dec2) #Dropout
         dec2 = self.decoder2(dec2)
         dec1 = self.upconv1(dec2)
         dec1 = torch.cat((dec1, enc1), dim=1)
+        # dec1 = self.dropout_layers[3](dec1)
         dec1 = self.dropout(dec1) #Dropout
         dec1 = self.decoder1(dec1)
         return self.conv(dec1)
@@ -400,18 +410,21 @@ class UNet2d_dropout(nn.Module):
     
     def enable_dropout(self):
             """Function to enable the dropout layers during test-time"""
-            for m in self.layers:
-                if m.__class__.__name__.startswith("Dropout"):
-                    m.train() 
-    
+            self.dropout.train()
+            # for m in self.dropout_layers:
+            #     if m.__class__.__name__.startswith("Dropout"):
+            #         m.train() 
+
+
 #Estimating the output uncertainties using Dropout. 
 def Dropout_eval(net, x, step, Nrepeat=10):
     net.eval()
-    # net.enable_dropout()
+    net.enable_dropout()
     preds = torch.zeros(Nrepeat, x.shape[0], step, x.shape[-1], x.shape[-1])
     for i in range(Nrepeat):
         preds[i] = net(x)
     return torch.mean(preds, axis=0), torch.std(preds, axis=0)
+
 
 # %% 
 ################################################################
@@ -700,11 +713,17 @@ class FNO2d_dropout(nn.Module):
 
         return c
     
+    def enable_dropout(self):
+            """Function to enable the dropout layers during test-time"""
+            self.dropout.train()
+            # for m in self.layers:
+            #     if m.__class__.__name__.startswith("Dropout"):
+            #         m.train() 
 
     #Estimating the output uncertainties using Dropout. 
 def Dropout_eval_fno(net, x, step, Nrepeat=10):
     net.eval()
-    # net.enable_dropout()
+    net.enable_dropout()
     preds = torch.zeros(Nrepeat,x.shape[0], x.shape[1], x.shape[2], step)
     for i in range(Nrepeat):    
         preds[i] = net(x)

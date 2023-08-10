@@ -254,6 +254,14 @@ print(f"The empirical coverage after calibration is: {empirical_coverage}")
 t2 = default_timer()
 print('Conformalised Quantile Regression, time used:', t2-t1)
 
+#Estimating the tightness of fit
+cov = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1]))
+cov_idx = cov.nonzero()
+
+# tightness_metric = ((prediction_sets[1][cov_idx[0], cov_idx[1], cov_idx[2], cov_idx[3]]  - y_response[cov_idx[0], cov_idx[1], cov_idx[2], cov_idx[3]]) +  (y_response[cov_idx[0], cov_idx[1], cov_idx[2], cov_idx[3]] - prediction_sets[0][cov_idx[0], cov_idx[1], cov_idx[2], cov_idx[3]])).mean()
+tightness_metric = ((prediction_sets[1][cov_idx]  - y_response[cov_idx]) +  (y_response[cov_idx] - prediction_sets[0][cov_idx])).mean()
+
+print(f"Tightness of the coverage : Average of the distance between error bars {tightness_metric}")
 
 # %%
 #Testing calibration across range of Alpha for CQR
@@ -432,6 +440,14 @@ print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
 
 t2 = default_timer()
 print('Conformal by Residual, time used:', t2-t1)
+
+#Estimating the tightness of fit
+cov = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1]))
+cov_idx = cov.nonzero()
+
+tightness_metric = ((prediction_sets[1][cov_idx[0], cov_idx[1], cov_idx[2], cov_idx[3]]  - y_response[cov_idx[0], cov_idx[1], cov_idx[2], cov_idx[3]]) +  (y_response[cov_idx[0], cov_idx[1], cov_idx[2], cov_idx[3]] - prediction_sets[0][cov_idx[0], cov_idx[1], cov_idx[2], cov_idx[3]])).mean()
+print(f"Tightness of the coverage : Average of the distance between error bars {tightness_metric}")
+
 # %%
 def calibrate_residual(alpha):
     n = ncal
@@ -534,7 +550,8 @@ plt.show()
 
 model_dropout = UNet2d_dropout(T_in, step, width)
 # model_dropout.load_state_dict(torch.load(model_loc + 'Unet_Wave_frigid-hill_dropout.pth', map_location='cpu'))
-model_dropout.load_state_dict(torch.load(model_loc + 'Unet_Wave_dropout.pth', map_location='cpu'))
+# model_dropout.load_state_dict(torch.load(model_loc + 'Unet_Wave_dropout.pth', map_location='cpu'))
+model_dropout.load_state_dict(torch.load(model_loc + 'Unet_Wave_piercing-body.pth', map_location='cpu'))
 
 # %%
 #Performing the Calibration for Dropout
@@ -606,6 +623,13 @@ empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= predic
 print(f"The empirical coverage after calibration is: {empirical_coverage}")
 t2 = default_timer()
 print('Conformal using Dropout, time used:', t2-t1)
+
+#Estimating the tightness of fit
+cov = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1]))
+cov_idx = cov.nonzero()
+
+tightness_metric = ((prediction_sets[1][cov_idx[0], cov_idx[1], cov_idx[2], cov_idx[3]]  - y_response[cov_idx[0], cov_idx[1], cov_idx[2], cov_idx[3]]) +  (y_response[cov_idx[0], cov_idx[1], cov_idx[2], cov_idx[3]] - prediction_sets[0][cov_idx[0], cov_idx[1], cov_idx[2], cov_idx[3]])).mean()
+print(f"Tightness of the coverage : Average of the distance between error bars {tightness_metric}")
 
 # %% 
 def calibrate_dropout(alpha):
