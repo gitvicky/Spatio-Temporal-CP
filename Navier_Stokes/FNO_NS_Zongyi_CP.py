@@ -253,7 +253,7 @@ print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
 
 t2 = default_timer()
 print('Conformal by Residual, time used:', t2-t1)
-
+prediction_sets_residual = prediction_sets
 # %% 
 #Estimating the tightness of fit
 cov = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1]))
@@ -707,6 +707,7 @@ print(f"The empirical coverage after calibration is: {empirical_coverage}")
 t2 = default_timer()
 print('Conformal using Dropout, time used:', t2-t1)
 
+prediction_sets_dropout = prediction_sets
 # %% 
 #Estimating the tightness of fit
 cov = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1]))
@@ -809,32 +810,132 @@ plt.rcParams['ytick.minor.width'] =5
 mpl.rcParams['axes.titlepad'] = 20
 
 
-# %%
+# %% 
 
-plt.figure()
-plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
-# plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
-plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='navy', ls='dotted',  alpha=0.8, linewidth=3.0)
-plt.xlabel('1-alpha')
-plt.ylabel('Empirical Coverage')
-plt.legend()
 mpl.rcParams['xtick.minor.visible']=True
 mpl.rcParams['font.size']=45
 mpl.rcParams['figure.figsize']=(16,16)
 mpl.rcParams['xtick.minor.visible']=True
-mpl.rcParams['axes.linewidth']= 3
+mpl.rcParams['axes.linewidth']= 1
 mpl.rcParams['axes.titlepad'] = 20
-plt.rcParams['xtick.major.size'] =15
-plt.rcParams['ytick.major.size'] =15
-plt.rcParams['xtick.minor.size'] =10
-plt.rcParams['ytick.minor.size'] =10
-plt.rcParams['xtick.major.width'] =5
-plt.rcParams['ytick.major.width'] =5
-plt.rcParams['xtick.minor.width'] =5
-plt.rcParams['ytick.minor.width'] =5
+plt.rcParams['xtick.major.size'] = 20
+plt.rcParams['ytick.major.size'] = 20
+plt.rcParams['xtick.minor.size'] = 10.0
+plt.rcParams['ytick.minor.size'] = 10.0
+plt.rcParams['xtick.major.width'] = 0.8
+plt.rcParams['ytick.major.width'] = 0.8
+plt.rcParams['xtick.minor.width'] = 0.6
+plt.rcParams['ytick.minor.width'] = 0.6
 mpl.rcParams['axes.titlepad'] = 20
+plt.rcParams['grid.linewidth'] = 0.5
+plt.rcParams['grid.alpha'] = 0.5
+plt.rcParams['grid.linestyle'] = '-'
 
+plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.75)
+plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.75)
+plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='navy', ls='dotted',  alpha=0.75)
+plt.xlabel(r'1-$\alpha$')
+plt.ylabel('Empirical Coverage')
+plt.title("Navier-Stokes", fontsize=72)
+plt.legend()
+plt.grid() #Comment out if you dont want grids.
+plt.savefig("NS_coverage.svg", format="svg", bbox_inches='tight')
+plt.show()
 
-plt.savefig('NS_Coverage.pdf')
+# %%
+#Slice plots along the x axis. 
+idx = 12 
+t_val = -1
+y_pos = 0
+Y_pred_viz = y_response[idx,:, y_pos, t_val]
+mean_viz = mean[idx,:, y_pos, t_val]
+pred_set_0_viz = prediction_sets_residual[0][idx,:, y_pos, t_val]
+pred_set_1_viz = prediction_sets_residual[1][idx,:, y_pos, t_val]
+
+plt.figure()
+# plt.title(f"Residuals, alpha = {alpha}")
+plt.title(rf"Residuals, $\alpha$ = {alpha}", fontsize=72)
+plt.plot(x, Y_pred_viz, label='Exact', color='black', alpha = 0.7)
+plt.plot(x, mean_viz, label='Mean', color='firebrick', alpha = 0.7)
+plt.plot(x, pred_set_0_viz, label='lower-cal', color='teal', alpha = 0.7)
+plt.plot(x, pred_set_1_viz, label='upper-cal', color='navy', alpha = 0.7)
+plt.xlabel(r"\textbf{x}")
+plt.ylabel(r"\textbf{$\nu$}")
+plt.legend()
+plt.grid() #Comment out if you dont want grids.
+plt.savefig("NS_residual_x.svg", format="svg", bbox_inches='tight')
+
+# %%
+#Slice plots along the x axis. 
+idx = 12 
+t_val = -1
+y_pos = 0
+Y_pred_viz = y_response[idx,:, y_pos, t_val]
+mean_viz = mean[idx,:, y_pos, t_val]
+pred_set_0_viz = prediction_sets_dropout[0][idx,:, y_pos, t_val]
+pred_set_1_viz = prediction_sets_dropout[1][idx,:, y_pos, t_val]
+
+plt.figure()
+# plt.title(f"Residuals, alpha = {alpha}")
+plt.title(rf"Dropout, $\alpha$ = {alpha}", fontsize=72)
+plt.plot(x, Y_pred_viz, label='Exact', color='black', alpha = 0.7)
+plt.plot(x, mean_viz, label='Mean', color='firebrick', alpha = 0.7)
+plt.plot(x, pred_set_0_viz, label='lower-cal', color='teal', alpha = 0.7)
+plt.plot(x, pred_set_1_viz, label='upper-cal', color='navy', alpha = 0.7)
+
+plt.xlabel(r"\textbf{x}")
+plt.ylabel(r"\textbf{$\nu$}")
+plt.legend()
+plt.grid() #Comment out if you dont want grids.
+plt.savefig("NS_dropout_x.svg", format="svg", bbox_inches='tight')
+
 # %% 
+
+#Slice plots along the y axis. 
+idx = 12 
+t_val = -1
+y_pos = 32
+Y_pred_viz = y_response[idx,:, y_pos, t_val]
+mean_viz = mean[idx,:, y_pos, t_val]
+pred_set_0_viz = prediction_sets_residual[0][idx,:, y_pos, t_val]
+pred_set_1_viz = prediction_sets_residual[1][idx,:, y_pos, t_val]
+
+plt.figure()
+# plt.title(f"Residuals, alpha = {alpha}")
+plt.title(rf"Residuals, $\alpha$ = {alpha}", fontsize=72)
+plt.plot(x, Y_pred_viz, label='Exact', color='black', alpha = 0.7)
+plt.plot(x, mean_viz, label='Mean', color='firebrick', alpha = 0.7)
+plt.plot(x, pred_set_0_viz, label='lower-cal', color='teal', alpha = 0.7)
+plt.plot(x, pred_set_1_viz, label='upper-cal', color='navy', alpha = 0.7)
+plt.xlabel(r"\textbf{y}")
+plt.ylabel(r"\textbf{$\nu$}")
+plt.legend()
+plt.grid() #Comment out if you dont want grids.
+plt.savefig("NS_residual_y.svg", format="svg", bbox_inches='tight')
+
+# %%
+#Slice plots along the y axis. 
+idx = 12 
+t_val = -1
+x_pos = 32
+Y_pred_viz = y_response[idx,x_pos, :, t_val]
+mean_viz = mean[idx,x_pos, :, t_val]
+pred_set_0_viz = prediction_sets_dropout[0][idx,x_pos, :, t_val]
+pred_set_1_viz = prediction_sets_dropout[1][idx,x_pos, :, t_val]
+
+plt.figure()
+# plt.title(f"Residuals, alpha = {alpha}")
+plt.title(rf"Dropout, $\alpha$ = {alpha}", fontsize=72)
+plt.plot(x, Y_pred_viz, label='Exact', color='black', alpha = 0.7)
+plt.plot(x, mean_viz, label='Mean', color='firebrick', alpha = 0.7)
+plt.plot(x, pred_set_0_viz, label='lower-cal', color='teal', alpha = 0.7)
+plt.plot(x, pred_set_1_viz, label='upper-cal', color='navy', alpha = 0.7)
+
+plt.xlabel(r"\textbf{y}")
+plt.ylabel(r"\textbf{$\nu$}")
+plt.legend()
+plt.grid() #Comment out if you dont want grids.
+plt.savefig("NS_dropout_y.svg", format="svg", bbox_inches='tight')
+
+
+# %%
