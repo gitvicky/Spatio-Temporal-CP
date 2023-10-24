@@ -264,8 +264,8 @@ def conf_metric(X_cal, Y_cal):
     stacked_x = torch.FloatTensor(X_cal)
     with torch.no_grad():
         mean = nn_mean(stacked_x).numpy()
-    # return np.max(np.abs((Y_cal - mean)/Y_cal_std),axis =1)
-    return np.max(np.abs((Y_cal - mean)), axis =1)
+    return np.max(np.abs((Y_cal - mean)/Y_cal_std), axis =1)
+    # return np.max(np.abs((Y_cal - mean)), axis =1)
 
 cal_scores = conf_metric(X_cal, Y_cal)
 
@@ -277,12 +277,12 @@ alpha = 0.1
 n = len(cal_scores)
 qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
-prediction_sets =  [prediction - qhat, prediction + qhat]
+prediction_sets =  [prediction - qhat*Y_cal_std, prediction + qhat*Y_cal_std]
 
-plt.plot(x_range, prediction_sets[0])
-plt.plot(x_range, prediction_sets[1])
-plt.plot(x_range, prediction)
-plt.show()
+# plt.plot(x_range, prediction_sets[0])
+# plt.plot(x_range, prediction_sets[1])
+# plt.plot(x_range, prediction)
+# plt.show()
 
 empirical_coverage = ((y_response >= prediction_sets[0]).all(axis = 1) & (y_response <= prediction_sets[1]).all(axis = 1)).mean()
 print(f"The empirical coverage after calibration is: {empirical_coverage}")
@@ -303,7 +303,7 @@ def calibrate_res_MV(alpha):
     with torch.no_grad():
         prediction = nn_mean(stacked_x).numpy()
 
-    prediction_sets = [prediction - qhat, prediction + qhat]
+    prediction_sets = [prediction - qhat*Y_cal_std, prediction + qhat*Y_cal_std]
     empirical_coverage = ((y_response >= prediction_sets[0]).all(axis = 1) & (y_response <= prediction_sets[1]).all(axis = 1)).mean()
     return empirical_coverage
 
@@ -336,14 +336,14 @@ from matplotlib import cm
 
 idx = 100
 
-alpha = 0.1
+alpha = 0.8
 
 # alpha_levels = np.arange(0.05, 0.95, 0.05)
 
 qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
-# prediction_sets =  [prediction - qhat*Y_cal_std, prediction + qhat*Y_cal_std]
-prediction_sets =  [prediction - qhat, prediction + qhat]
+prediction_sets =  [prediction - qhat*Y_cal_std, prediction + qhat*Y_cal_std]
+# prediction_sets =  [prediction - qhat, prediction + qhat]
 
 plt.plot(x_range, prediction_sets[0][idx], color = "red")
 plt.plot(x_range, prediction_sets[1][idx], color = "red", label = f"alpha = {alpha}")
