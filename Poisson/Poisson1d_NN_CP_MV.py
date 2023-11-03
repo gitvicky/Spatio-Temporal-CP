@@ -227,11 +227,11 @@ plt.show()
 def conf_metric(X_mean, Y_cal): 
     return np.max(np.abs((Y_cal - X_mean)/modulation), axis =1)
 
-cal_scores = conf_metric(mean_cal, Y_cal)
+cal_scores_1 = conf_metric(mean_cal, Y_cal)
 
 alpha = 0.1
-n = len(cal_scores)
-qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
+n = len(cal_scores_1)
+qhat = np.quantile(cal_scores_1, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
 prediction_sets =  [prediction - qhat*modulation, prediction + qhat*modulation]
 
@@ -252,7 +252,7 @@ print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
 
 def calibrate_res_MV(alpha):
 
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
+    qhat = np.quantile(cal_scores_1, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
     prediction_sets = [prediction - qhat*modulation, prediction + qhat*modulation]
     empirical_coverage = ((Y_pred >= prediction_sets[0]).all(axis = 1) & (Y_pred <= prediction_sets[1]).all(axis = 1)).mean()
@@ -290,7 +290,7 @@ plt.show()
 
 # # alpha_levels = np.arange(0.05, 0.95, 0.05)
 
-# qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
+# qhat = np.quantile(cal_scores_1, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
 # prediction_sets =  [prediction - qhat*Y_cal_std, prediction + qhat*Y_cal_std]
 # # prediction_sets =  [prediction - qhat, prediction + qhat]
@@ -316,12 +316,12 @@ alphas = np.linspace(0.1, 0.9, 10)
 
 # alpha_levels = np.arange(0.05, 0.95, 0.05)
 cols = cm.plasma(alphas)
-n = len(cal_scores)
+n = len(cal_scores_1)
 for idx in idx_s:
     fig, ax = plt.subplots()
     for (i, alpha) in enumerate(alphas):
 
-        qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
+        qhat = np.quantile(cal_scores_1, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
         prediction_sets =  [prediction - qhat*modulation, prediction + qhat*modulation]
 
         plt.fill_between(x_range, prediction_sets[0][idx].squeeze(), prediction_sets[1][idx].squeeze(), color = cols[i])
@@ -350,17 +350,18 @@ for idx in idx_s:
 
 Y_mean = np.mean(Y_cal, axis = 0)
 modulation_err = np.std(Y_cal - mean_cal, axis = 0)
+# modulation_err = np.mean(np.abs(Y_cal - mean_cal), axis = 0)
 
 ### 
 
 def conf_metric(X_mean, Y_cal): 
     return np.max(np.abs((Y_cal - X_mean)/modulation_err), axis =1)
 
-cal_scores = conf_metric(mean_cal, Y_cal)
+cal_scores_2 = conf_metric(mean_cal, Y_cal)
 
 alpha = 0.1
-n = len(cal_scores)
-qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
+n = len(cal_scores_2)
+qhat = np.quantile(cal_scores_2, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
 prediction_sets =  [prediction - qhat*modulation_err, prediction + qhat*modulation_err]
 
@@ -381,7 +382,7 @@ print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
 
 def calibrate_res_MV(alpha):
 
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
+    qhat = np.quantile(cal_scores_2, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
     prediction_sets = [prediction - qhat*modulation_err, prediction + qhat*modulation_err]
     empirical_coverage = ((Y_pred >= prediction_sets[0]).all(axis = 1) & (Y_pred <= prediction_sets[1]).all(axis = 1)).mean()
@@ -421,12 +422,12 @@ alphas = np.linspace(0.1, 0.9, 10)
 
 # alpha_levels = np.arange(0.05, 0.95, 0.05)
 cols = cm.plasma(alphas)
-n = len(cal_scores)
+n = len(cal_scores_2)
 for idx in idx_s:
     fig, ax = plt.subplots()
     for (i, alpha) in enumerate(alphas):
 
-        qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
+        qhat = np.quantile(cal_scores_2, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
         prediction_sets =  [prediction - qhat*modulation_err, prediction + qhat*modulation_err]
 
         plt.fill_between(x_range, prediction_sets[0][idx].squeeze(), prediction_sets[1][idx].squeeze(), color = cols[i])
@@ -440,6 +441,37 @@ for idx in idx_s:
     plt.savefig(f"poisson_CP_error_std_{idx}.png")
     plt.show()
 
+
+####
+# Plot width of errors with X
+
+cal_scores_vec = [cal_scores, cal_scores_1, cal_scores_2]
+modulations = [1, modulation, modulation_err]
+
+names = ["Abs_error", "data_std", "error_std"]
+
+alphas = np.linspace(0.1, 0.9, 10)
+
+# alpha_levels = np.arange(0.05, 0.95, 0.05)
+cols = cm.plasma(alphas)
+n = len(cal_scores_2)
+for (j,cal_scores) in enumerate(cal_scores_vec):
+    fig, ax = plt.subplots()
+    for (i, alpha) in enumerate(alphas):
+
+        qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
+        prediction_sets =  [-qhat*modulations[j], qhat*modulations[j]]
+
+        plt.fill_between(x_range, prediction_sets[0].squeeze(), prediction_sets[1].squeeze(), color = cols[i])
+
+
+    fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
+    # plt.plot(x_range, prediction[idx], color = "Black", linewidth = 3, label = "true")
+    plt.title(names[j])
+    plt.legend(fontsize = 10)
+
+    plt.savefig(f"width_{names[j]}.png")
+    plt.show()
 
 
 # ##
