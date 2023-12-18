@@ -244,18 +244,18 @@ plt.plot(prediction_sets[0][idx, idy, :, tt], color = "red", linewidth=1)
 plt.plot(prediction_sets[1][idx, idy, :, tt], color = "red", linewidth=1)
 plt.show()
 
+set_width = prediction_sets[1] - prediction_sets[0]
 
 fig = plt.figure(figsize=plt.figaspect(0.5))
 
-ax = fig.add_subplot(1,3,1)
+ax = fig.add_subplot(1,2,1)
 pcm =ax.imshow(pred_u[idx, :, :, tt], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0])
 
-ax = fig.add_subplot(1,3,2)
-pcm =ax.imshow(prediction_sets[0][idx, :, :, tt], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0])
+ax = fig.add_subplot(1,2,2)
+pcm =ax.imshow(set_width[idx, :, :, tt], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0])
 
-
-ax = fig.add_subplot(1,3,3)
-pcm =ax.imshow(prediction_sets[1][idx, :, :, tt], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0])
+# ax = fig.add_subplot(1,3,3)
+# pcm =ax.imshow(prediction_sets[1][idx, :, :, tt], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0])
 plt.show()
 
 # %%
@@ -454,7 +454,145 @@ cbar.formatter.set_powerlimits((0, 0))
 
 plt.show()
 
-###
+# %%
+# ##############################
+# # Multivariate Conformal with time dependence
+# ##############################
+
+alpha = 0.1
+
+modulation = np.std(cal_u.numpy() - cal_mean, axis = 0)
+cal_scores_t = np.max(np.abs((cal_u.numpy()-cal_mean) / modulation), axis =(1,2))
+qhat_t = np.quantile(cal_scores_t, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
+
+prediction_sets_t = [val_mean - qhat_t*modulation, val_mean + qhat_t*modulation]
+
+# %%
+print('Conformal by way Residual')
+# Calculate empirical coverage (before and after calibration)
+empirical_coverage_t = ((y_response >= prediction_sets_t[0]).all(axis = (1,2)) & (y_response <= prediction_sets_t[1]).all(axis = (1,2))).mean(axis=0)
+print(f"The time dependent empirical coverage after calibration is: {empirical_coverage}")
+print(f"alpha is: {alpha}")
+print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
+
+t2 = default_timer()
+print('Conformal by Residual, time used:', t2-t1)
+
+
+# %% Plot time dependent coverages
+
+def calibrate_residual_t(alpha):
+    n = ncal
+    y_response = pred_u.numpy()
+
+    qhat_t = np.quantile(cal_scores_t, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
+    prediction_sets_t = [val_mean - qhat_t*modulation, val_mean + qhat*modulation]
+
+    empirical_coverage = ((y_response >= prediction_sets_t[0]).all(axis = (1,2)) & (y_response <= prediction_sets_t[1]).all(axis = (1,2))).mean(axis = 0)
+
+    return empirical_coverage
+
+
+alpha_levels = np.arange(0.05, 0.95, 0.1)
+emp_cov_res_t = []
+
+for ii in tqdm(range(len(alpha_levels))):
+    emp_cov_res_t.append(calibrate_residual_t(alpha_levels[ii]))
+
+emp_cov_res_t = np.vstack(emp_cov_res_t)
+
+plt.figure()
+plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=3.0)
+# plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.8, linewidth=3.0)
+plt.plot(1-alpha_levels, emp_cov_res_t, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=3.0)
+# plt.plot(1-alpha_levels, emp_cov_dropout, label='Dropout',  color='navy', ls='dotted',  alpha=0.8, linewidth=3.0)
+plt.xlabel('1-alpha')
+plt.ylabel('Empirical Coverage')
+# plt.legend()
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['font.size']=45
+mpl.rcParams['figure.figsize']=(16,16)
+mpl.rcParams['xtick.minor.visible']=True
+mpl.rcParams['axes.linewidth']= 3
+mpl.rcParams['axes.titlepad'] = 20
+plt.rcParams['xtick.major.size'] =15
+plt.rcParams['ytick.major.size'] =15
+plt.rcParams['xtick.minor.size'] =10
+plt.rcParams['ytick.minor.size'] =10
+plt.rcParams['xtick.major.width'] =5
+plt.rcParams['ytick.major.width'] =5 
+plt.rcParams['xtick.minor.width'] =5
+plt.rcParams['ytick.minor.width'] =5
+mpl.rcParams['axes.titlepad'] = 20
+# plt.savefig("Wave_FNO_MV.png")
+
+# %%
+#   Plot the predictions + error width over time
+
+alpha = 0.1
+
+qhat_t = np.quantile(cal_scores_t, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
+prediction_sets_t = [val_mean - qhat_t*modulation, val_mean + qhat_t*modulation]
+
+idx = 12
+tt_total = val_mean.shape[-1]
+num_levels = 5
+idy = 25
+
+plt.plot(pred_u[idx, idy, :, tt], color = "black", linewidth=1)
+plt.plot(prediction_sets_t[0][idx, idy, :, tt], color = "red", linewidth=1)
+plt.plot(prediction_sets_t[1][idx, idy, :, tt], color = "red", linewidth=1)
+plt.show()
+
+set_width = prediction_sets_t[1] - prediction_sets_t[0]
+
+
+# fig = plt.figure()
+
+
+for i in range(tt_total):
+    fig = plt.figure(figsize=plt.figaspect(0.5))
+    ax = fig.subplots(1, 2, sharey=True)
+
+    # ax = fig.add_subplot(i,2,1)
+    # pcm =ax.imshow(pred_u[idx, :, :, tt], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0])
+    ax[0].imshow(pred_u[idx, :, :, i], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0])
+
+    # ax = fig.add_subplot(i,2,2)
+    # pcm =ax.imshow(set_width[idx, :, :, tt], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0])
+    ax[1].imshow(set_width[idx, :, :, i], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0])
+
+# ax = fig.add_subplot(1,3,3)
+# pcm =ax.imshow(prediction_sets[1][idx, :, :, tt], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0])
+    plt.tight_layout()
+    plt.savefig("time_dep_plots/time_dependent_errors_{:03d}.png".format(i))
+
+plt.show()
+
+# On MAC, convert images to a giff using ImageMAGIK
+# convert -delay 0.0001 -loop 1 time_dependent_errors_*.png Wave_error.gif
+
+
+'''
+fig = plt.figure()
+
+ax = fig.subplots(tt_total, 2, sharey=True)
+
+for i in range(tt_total):
+
+    # ax = fig.add_subplot(i,2,1)
+    # pcm =ax.imshow(pred_u[idx, :, :, tt], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0])
+    ax[i, 0].imshow(pred_u[idx, :, :, tt], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0])
+
+    # ax = fig.add_subplot(i,2,2)
+    # pcm =ax.imshow(set_width[idx, :, :, tt], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0])
+    ax[i, 1].imshow(set_width[idx, :, :, tt], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0])
+
+# ax = fig.add_subplot(1,3,3)
+# pcm =ax.imshow(prediction_sets[1][idx, :, :, tt], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0])
+plt.tight_layout()
+plt.savefig("time_dependent_errors.png")
+'''
 
 # %%
 # ##############################
