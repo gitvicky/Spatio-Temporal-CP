@@ -195,9 +195,10 @@ with torch.no_grad():
 
         xx = torch.cat((xx[..., step:], pred), dim=-1)
 
-
 cal_mean = cal_mean.numpy()
-cal_scores = np.max(np.abs(cal_u.numpy()-cal_mean), axis = (1,2,3))
+# cal_scores = np.max(np.abs(cal_u.numpy()-cal_mean), axis = (1,2,3))
+modulation = np.std(cal_u.numpy() - cal_mean, axis = 0)
+cal_scores = np.max(np.abs((cal_u.numpy()-cal_mean) / modulation), axis =(1,2,3))
 qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
 # %% 
@@ -218,7 +219,7 @@ with torch.no_grad():
         xx = torch.cat((xx[..., step:], pred_mean), dim=-1)
 
 val_mean = val_mean.numpy()
-prediction_sets = [val_mean - qhat, val_mean + qhat]
+prediction_sets = [val_mean - qhat*modulation, val_mean + qhat*modulation]
 
 # %%
 print('Conformal by way Residual')
@@ -262,26 +263,27 @@ def calibrate_residual(alpha):
     n = ncal
     y_response = pred_u.numpy()
 
-    with torch.no_grad():
-        xx = cal_a
-        for tt in tqdm(range(0, T, step)):
-            pred_mean = model_50(xx)
+    # with torch.no_grad():
+    #     xx = cal_a
+    #     for tt in tqdm(range(0, T, step)):
+    #         pred_mean = model_50(xx)
 
-            if tt == 0:
-                cal_mean = pred_mean
+    #         if tt == 0:
+    #             cal_mean = pred_mean
 
-            else:
-                cal_mean = torch.cat((cal_mean, pred_mean), -1)       
+    #         else:
+    #             cal_mean = torch.cat((cal_mean, pred_mean), -1)       
 
-            xx = torch.cat((xx[..., step:], pred_mean), dim=-1)
+    #         xx = torch.cat((xx[..., step:], pred_mean), dim=-1)
 
-    cal_mean = cal_mean.numpy()
+    # cal_mean = cal_mean.numpy()
 
-    cal_scores = np.max(np.abs(cal_u.numpy()-cal_mean), axis = (1,2,3))
+    # cal_scores = np.max(np.abs(cal_u.numpy()-cal_mean), axis = (1,2,3))
     qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
     
-    prediction_sets = [val_mean - qhat, val_mean + qhat]
+    prediction_sets = [val_mean - qhat*modulation, val_mean + qhat*modulation]
+
     empirical_coverage = ((y_response >= prediction_sets[0]).all(axis = (1,2,3)) & (y_response <= prediction_sets[1]).all(axis = (1,2,3))).mean()
 
     return empirical_coverage
@@ -1172,4 +1174,4 @@ cbar.formatter.set_powerlimits((0, 0))
 
 
 plt.show()
-# # %%
+#  %%
