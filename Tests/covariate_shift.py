@@ -107,7 +107,7 @@ cal_scores = np.abs(y_calib - y_calib_gp)
 def pi(x_new, x_cal):
     return likelihood_ratio(x_cal, mean_1, std_1, mean_2, std_2) / (np.sum(likelihood_ratio(x_cal, mean_1, std_1, mean_2, std_2)) + likelihood_ratio(x_new, mean_1, std_1, mean_2, std_2))
     
-weighted_scores = cal_scores.squeeze() * pi(x_shift, x_calib).squeeze()
+weighted_scores = cal_scores * pi(x_shift, x_calib)
 
 # %% 
 #Estimating qhat 
@@ -124,9 +124,6 @@ def weighted_quantile(data, alpha, weights=None):
     ind=np.argsort(data)
     d=data[ind]
     w=weights[ind]
-
-    #d = d[1:]
-    #d = np.append(d, np.inf)
 
     p=1.*w.cumsum()/w.sum()
     y=np.interp(alpha, p, d)
@@ -166,5 +163,87 @@ plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()
 # %%
-#Using Kernel Density Estimation - https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KernelDensity.html
+##############################################################################################################################################
+#Using Kernel Density Estimation - https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.html
+##############################################################################################################################################
 
+# %% 
+def likelihood_ratio_KDE(x, kde1, kde2):
+    pdf1 = kde1.pdf(x)
+    pdf2 = kde2.pdf(x)
+    return pdf2 / pdf1 
+
+N = 1000 #Datapoints 
+x_calib = normal_dist(mean_1, std_1, N)
+x_shift = normal_dist(mean_2, std_2, N) #Covariate shifted
+
+y_calib = func(x_calib)
+y_calib_gp = gpr.predict(np.expand_dims(x_calib, -1))
+
+cal_scores = np.abs(y_calib - y_calib_gp)
+
+kde1 = stats.gaussian_kde(x_calib)
+kde2 = stats.gaussian_kde(x_shift)
+
+# %%
+def pi_kde(x_new, x_cal):
+    return likelihood_ratio_KDE(x_cal, kde1, kde2) / (np.sum(likelihood_ratio_KDE(x_cal, kde1, kde2)) + likelihood_ratio_KDE(x_new, kde1, kde2))
+    
+weighted_scores = cal_scores * pi_kde(x_shift, x_calib)
+
+# %% 
+#Estimating qhat 
+
+alpha = 0.1
+
+def weighted_quantile(data, alpha, weights=None):
+    ''' percents in units of 1%
+        weights specifies the frequency (count) of data.
+    '''
+    if weights is None:
+        return np.quantile(np.sort(data), alpha, axis = 0, interpolation='higher')
+    
+    ind=np.argsort(data)
+    d=data[ind]
+    w=weights[ind]
+
+    p=1.*w.cumsum()/w.sum()
+    y=np.interp(alpha, p, d)
+
+    return y
+
+qhat = weighted_quantile(cal_scores, np.ceil((N+1)*(1-alpha))/(N), pi_kde(x_shift, x_calib).squeeze())
+qhat_true = np.quantile(np.sort(weighted_scores), np.ceil((N+1)*(1-alpha))/(N), axis = 0, interpolation='higher')
+
+# %%
+y_shift = func(x_shift)
+y_shift_gp = gpr.predict(np.expand_dims(x_shift,  -1))
+
+prediction_sets =  [y_shift_gp - qhat, y_shift_gp + qhat]
+empirical_coverage = ((y_shift >= prediction_sets[0]) & (y_shift <= prediction_sets[1])).mean()
+
+print(f"The empirical coverage after calibration is: {empirical_coverage}")
+print(f"alpha is: {alpha}")
+print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
+
+# %%
+def calibrate_res(alpha):
+    qhat = weighted_quantile(cal_scores, np.ceil((N+1)*(1-alpha))/(N), pi_kde(x_shift, x_calib).squeeze())
+    prediction_sets = [y_shift_gp - qhat, y_shift_gp + qhat]
+    empirical_coverage = ((y_shift >= prediction_sets[0]) & (y_shift <= prediction_sets[1])).mean()
+    return empirical_coverage
+
+alpha_levels = np.arange(0.05, 0.95, 0.05)
+emp_cov_res = []
+for ii in tqdm(range(len(alpha_levels))):
+    emp_cov_res.append(calibrate_res(alpha_levels[ii]))
+
+plt.figure()
+plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=1.0)
+plt.plot(1-alpha_levels, emp_cov_res, label='Residual - weighted' ,ls='-.', color='teal', alpha=0.8, linewidth=1.0)
+plt.xlabel('1-alpha')
+plt.ylabel('Empirical Coverage')
+plt.legend()
+
+
+# %%
