@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Base tests for demonstrating CP udner covariate shift - 
+Base tests for demonstrating CP und er covariate shift - 
 Experiemntally evaluating the math behind this https://arxiv.org/abs/1904.06019ule 
 """
 
@@ -26,7 +26,6 @@ def normal_dist(mean, std, N):
     dist = stats.norm(mean, std)
     return dist.rvs(N)
 
-
 N = 1000 #Datapoints 
 x1 = normal_dist(np.pi/2, np.pi/6, N)
 x_shift = normal_dist(np.pi, np.pi/6, N) #Covariate shifted
@@ -46,7 +45,6 @@ y_shift = func(x_shift)
 plt.plot(np.sort(x1), func(np.sort(x1)), label="Initial")
 plt.plot(np.sort(x_shift), func(np.sort(x_shift)), label="Shifted")
 plt.title("Visualising the function outputs")
-
 
 # %% 
 #Training a GP to model the function 
@@ -74,117 +72,86 @@ plt.fill_between(x_viz.flatten(), y_mean-y_std, y_mean+y_std, color='gray', labe
 plt.legend()
 plt.title("Visualising the Model Performance")
 
-# %% 
-#Standard Inductive CP using residuals
-
-N_calib = 1000 #Datapoints 
-x_calib = normal_dist(np.pi/2, np.pi/6, N_calib)
-y_calib = func(x_calib)
-y_calib_gp = gpr.predict(np.expand_dims(x_calib, axis=-1))
-cal_scores = np.abs(y_calib_gp - y_calib)
-
-alpha = 0.1
-n = N_calib
-qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
-
-x_pred= normal_dist(np.pi/2, np.pi/6, N_calib)
-y_pred = func(x_pred)
-y_pred_gp = gpr.predict(np.expand_dims(x_pred, axis=-1))
-
-prediction_sets =  [y_pred_gp - qhat, y_pred_gp + qhat]
-empirical_coverage = ((y_pred >= prediction_sets[0]) & (y_pred <= prediction_sets[1])).mean()
-
-print(f"The empirical coverage after calibration is: {empirical_coverage}")
-print(f"alpha is: {alpha}")
-print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
-
-
-viz_N = 500
-x_viz = np.expand_dims(np.linspace(0, np.pi, viz_N), -1)
-y_viz= func(x_viz)
-y_mean, y_std = gpr.predict(x_viz, return_std=True)
-prediction_sets =  [y_mean - qhat, y_mean + qhat]
-
-plt.plot(x_viz, y_viz, label='Actual')
-plt.plot(x_viz, y_mean, label='Pred')
-plt.fill_between(x_viz.flatten(), prediction_sets[0], prediction_sets[1], color='gray', label='alpha = ' + str(alpha))
-plt.legend()
-plt.title("Visualising the Coverage")
 
 # %% 
-n = N_calib
-y_pred_gp = gpr.predict(np.expand_dims(x_pred, axis=-1))
-y_response = y_pred
-def calibrate_res(alpha):
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
-    prediction_sets = [y_pred_gp - qhat, y_pred_gp + qhat]
-    empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
-    return empirical_coverage
+# Exploring Covariate Shift -- using the known estimations from the distributions that we sample from 
 
-alpha_levels = np.arange(0.05, 0.95, 0.05)
-emp_cov_res = []
-for ii in tqdm(range(len(alpha_levels))):
-    emp_cov_res.append(calibrate_res(alpha_levels[ii]))
+def likelihood_ratio(x, mean_1, std_1, mean_2, std_2):
+    pdf1 = stats.norm.pdf(x, mean_1, std_1)
+    pdf2 = stats.norm.pdf(x, mean_2, std_2)
+    return pdf2 / pdf1 
 
-plt.figure()
-plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=1.0)
-plt.plot(1-alpha_levels, emp_cov_res, label='Residual' ,ls='-.', color='teal', alpha=0.8, linewidth=1.0)
-plt.xlabel('1-alpha')
-plt.ylabel('Empirical Coverage')
+mean_1, std_1 = 3*np.pi/4, np.pi/4
+mean_2, std_2 = np.pi, np.pi/4
+
+
+x1 = normal_dist(mean_1, std_1, N)
+x_shift = normal_dist(mean_2, std_2, N) #Covariate shifted
+
+#Visualising the covariate shift
+plt.hist(x1, label='Initial')
+plt.hist(x_shift, label='Shifted')
 plt.legend()
+plt.title("Visualising the distribution of the initial and the shifted")
 
 # %%
-#Inductive CP using the GP uncertainty with the same formulation as in the gentle introduction paper 
+N = 1000 #Datapoints 
+x_calib = normal_dist(mean_1, std_1, N)
+x_shift = normal_dist(mean_2, std_2, N) #Covariate shifted
 
-N_calib = 1000 #Datapoints 
-x_calib = normal_dist(np.pi/2, np.pi/6, N_calib)
 y_calib = func(x_calib)
-y_calib_gp, std_calib_gp = gpr.predict(np.expand_dims(x_calib, axis=-1), return_std=True)
+y_calib_gp = gpr.predict(np.expand_dims(x_calib, -1))
 
-# cal_upper = y_calib_gp + std_calib_gp
-# cal_lower =  y_calib_gp + std_calib_gp
-# cal_scores = np.maximum(y_calib_gp-cal_upper, cal_lower-y_calib_gp)    
+cal_scores = np.abs(y_calib - y_calib_gp)
+# %%
+def pi(x_new, x_cal):
+    return likelihood_ratio(x_cal, mean_1, std_1, mean_2, std_2) / (np.sum(likelihood_ratio(x_cal, mean_1, std_1, mean_2, std_2)) + likelihood_ratio(x_new, mean_1, std_1, mean_2, std_2))
+    
+weighted_scores = cal_scores.squeeze() * pi(x_shift, x_calib).squeeze()
 
-cal_scores = np.abs(y_calib_gp-y_calib)/std_calib_gp
+# %% 
+#Estimating qhat 
 
 alpha = 0.1
-n = N_calib
-qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
-x_pred= normal_dist(np.pi/2, np.pi/6, N_calib)
-y_pred = func(x_pred)
+def weighted_quantile(data, alpha, weights=None):
+    ''' percents in units of 1%
+        weights specifies the frequency (count) of data.
+    '''
+    if weights is None:
+        return np.quantile(np.sort(data), alpha, axis = 0, interpolation='higher')
+    
+    ind=np.argsort(data)
+    d=data[ind]
+    w=weights[ind]
 
-y_pred_gp, std_pred_gp = gpr.predict(np.expand_dims(x_pred, axis=-1), return_std=True)
+    #d = d[1:]
+    #d = np.append(d, np.inf)
 
+    p=1.*w.cumsum()/w.sum()
+    y=np.interp(alpha, p, d)
 
-prediction_sets =  [y_pred_gp - std_pred_gp*qhat, y_pred_gp + std_pred_gp*qhat]
+    return y
 
-empirical_coverage = ((y_pred >= prediction_sets[0]) & (y_pred <= prediction_sets[1])).mean()
+qhat = weighted_quantile(cal_scores, np.ceil((N+1)*(1-alpha))/(N), pi(x_shift, x_calib).squeeze())
+qhat_true = np.quantile(np.sort(weighted_scores), np.ceil((N+1)*(1-alpha))/(N), axis = 0, interpolation='higher')
+
+# %%
+y_shift = func(x_shift)
+y_shift_gp = gpr.predict(np.expand_dims(x_shift,  -1))
+
+prediction_sets =  [y_shift_gp - qhat, y_shift_gp + qhat]
+empirical_coverage = ((y_shift >= prediction_sets[0]) & (y_shift <= prediction_sets[1])).mean()
 
 print(f"The empirical coverage after calibration is: {empirical_coverage}")
 print(f"alpha is: {alpha}")
 print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
 
-viz_N = 500
-x_viz = np.expand_dims(np.linspace(0, np.pi, viz_N), -1)
-y_viz= func(x_viz)
-y_mean, y_std = gpr.predict(x_viz, return_std=True)
-prediction_sets =  [y_mean - qhat, y_mean + qhat]
-
-plt.plot(x_viz, y_viz, label='Actual')
-plt.plot(x_viz, y_mean, label='Pred')
-plt.fill_between(x_viz.flatten(), prediction_sets[0], prediction_sets[1], color='gray', label='alpha = ' + str(alpha))
-plt.legend()
-plt.title("Visualising the Coverage")
-
-# %% 
-n = N_calib
-y_pred_gp = gpr.predict(np.expand_dims(x_pred, axis=-1))
-y_response = y_pred
+# %%
 def calibrate_res(alpha):
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
-    prediction_sets =  [y_pred_gp - std_pred_gp*qhat, y_pred_gp + std_pred_gp*qhat]
-    empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
+    qhat = weighted_quantile(cal_scores, np.ceil((N+1)*(1-alpha))/(N), pi(x_shift, x_calib).squeeze())
+    prediction_sets = [y_shift_gp - qhat, y_shift_gp + qhat]
+    empirical_coverage = ((y_shift >= prediction_sets[0]) & (y_shift <= prediction_sets[1])).mean()
     return empirical_coverage
 
 alpha_levels = np.arange(0.05, 0.95, 0.05)
@@ -194,76 +161,10 @@ for ii in tqdm(range(len(alpha_levels))):
 
 plt.figure()
 plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=1.0)
-plt.plot(1-alpha_levels, emp_cov_res, label='GP Uncertainty' ,ls='-.', color='teal', alpha=0.8, linewidth=1.0)
+plt.plot(1-alpha_levels, emp_cov_res, label='Residual - weighted' ,ls='-.', color='teal', alpha=0.8, linewidth=1.0)
 plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()
-# # %% 
-# #Inductive CP using the GP uncertainty with the same formulation as in the gentle introduction paper 
+# %%
+#Using Kernel Density Estimation - https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KernelDensity.html
 
-# N_calib = 1000 #Datapoints 
-# x_calib = normal_dist(np.pi/2, np.pi/6, N_calib)
-# y_calib = func(x_calib)
-# y_calib_gp, std_calib_gp = gpr.predict(np.expand_dims(x_calib, axis=-1), return_std=True)
-
-# cal_upper = y_calib_gp + std_calib_gp
-# cal_lower =  y_calib_gp + std_calib_gp
-
-# cal_scores = np.maximum(y_calib_gp-cal_upper, cal_lower-y_calib_gp)    
-
-
-# alpha = 0.1
-# n = N_calib
-# qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
-
-# x_pred= normal_dist(np.pi/2, np.pi/6, N_calib)
-# y_pred = func(x_pred)
-
-# y_pred_gp, std_pred_gp = gpr.predict(np.expand_dims(x_pred, axis=-1), return_std=True)
-
-# pred_upper = y_pred_gp + std_pred_gp
-# pred_lower = y_pred_gp - std_pred_gp
-
-# prediction_sets =  [pred_lower -qhat, pred_upper +qhat]
-
-# empirical_coverage = ((y_pred >= prediction_sets[0]) & (y_pred <= prediction_sets[1])).mean()
-
-# print(f"The empirical coverage after calibration is: {empirical_coverage}")
-# print(f"alpha is: {alpha}")
-# print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
-
-# viz_N = 500
-# x_viz = np.expand_dims(np.linspace(0, np.pi, viz_N), -1)
-# y_viz= func(x_viz)
-# y_mean, y_std = gpr.predict(x_viz, return_std=True)
-# prediction_sets =  [y_mean - qhat, y_mean + qhat]
-
-# plt.plot(x_viz, y_viz, label='Actual')
-# plt.plot(x_viz, y_mean, label='Pred')
-# plt.fill_between(x_viz.flatten(), prediction_sets[0], prediction_sets[1], color='gray', label='alpha = ' + str(alpha))
-# plt.legend()
-# plt.title("Visualising the Coverage")
-
-# # %% 
-# n = N_calib
-# y_pred_gp = gpr.predict(np.expand_dims(x_pred, axis=-1))
-# y_response = y_pred
-# def calibrate_res(alpha):
-#     qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
-#     prediction_sets =  [pred_lower -qhat, pred_upper + std_pred_gp+qhat]
-
-#     empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
-#     return empirical_coverage
-
-# alpha_levels = np.arange(0.05, 0.95, 0.05)
-# emp_cov_res = []
-# for ii in tqdm(range(len(alpha_levels))):
-#     emp_cov_res.append(calibrate_res(alpha_levels[ii]))
-
-# plt.figure()
-# plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=1.0)
-# plt.plot(1-alpha_levels, emp_cov_res, label='GP Uncertainty' ,ls='-.', color='teal', alpha=0.8, linewidth=1.0)
-# plt.xlabel('1-alpha')
-# plt.ylabel('Empirical Coverage')
-# plt.legend()
-# # %% 
