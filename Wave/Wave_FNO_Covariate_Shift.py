@@ -157,7 +157,6 @@ cal_u = y_normalizer.encode(cal_u)
 pred_u = y_normalizer.encode(pred_u)
 
 
-
 # %%
 #Performing the Calibration usign Residuals: https://www.stat.cmu.edu/~larry/=sml/Conformal
 #############################################################
@@ -331,111 +330,30 @@ with torch.no_grad():
 
 # %% 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-#Attempting for a single data point 
-# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-idx = 10 #yusing the same for x, y, t
-cal_point_a = cal_a[:, idx, idx, idx].numpy() #bs, x, y, t
-cal_point_u = cal_u[:, idx, idx, idx].numpy() #bs, x, y, t
-
-pred_point_a = pred_a[:, idx, idx, idx].numpy()
-pred_point_u = pred_u[:, idx, idx, idx].numpy()
-
-pred_point_mean = pred_mean[:, idx, idx, idx].numpy() 
-
-cal_scores_point = cal_scores[:, idx, idx, idx]
-# %% 
-import scipy.stats as stats
-
-def likelihood_ratio_KDE(x, kde1, kde2):
-    pdf1 = kde1.pdf(x)
-    pdf2 = kde2.pdf(x)
-    return pdf2 / pdf1 
-
-kde1 = stats.gaussian_kde(cal_point_a)
-kde2 = stats.gaussian_kde(pred_point_a)
-
-# %%
-def pi_kde(x_new, x_cal):
-    return likelihood_ratio_KDE(x_cal, kde1, kde2) / (np.sum(likelihood_ratio_KDE(x_cal, kde1, kde2)) + likelihood_ratio_KDE(x_new, kde1, kde2))
-    
-# weighted_scores = cal_scores * pi_kde(cal_point_a, pred_point_a)
-
-# %% 
-#Estimating qhat 
-
-alpha = 0.1
-N = ncal 
-
-def weighted_quantile(data, alpha, weights=None):
-    ''' percents in units of 1%
-        weights specifies the frequency (count) of data.
-    '''
-    if weights is None:
-        return np.quantile(np.sort(data), alpha, axis = 0, interpolation='higher')
-    
-    ind=np.argsort(data)
-    d=data[ind]
-    w=weights[ind]
-
-    p=1.*w.cumsum()/w.sum()
-    y=np.interp(alpha, p, d)
-
-    return y
-
-qhat = weighted_quantile(cal_scores_point, np.ceil((N+1)*(1-alpha))/(N), pi_kde(pred_point_a, cal_point_a).squeeze())
-# qhat_true = np.quantile(np.sort(weighted_scores), np.ceil((N+1)*(1-alpha))/(N), axis = 0, interpolation='higher')
-
-# %%
-
-prediction_sets =  [pred_point_mean - qhat, pred_point_mean + qhat]
-empirical_coverage = ((pred_point_u >= prediction_sets[0]) & (pred_point_u <= prediction_sets[1])).mean()
-
-print(f"The empirical coverage after calibration is: {empirical_coverage}")
-print(f"alpha is: {alpha}")
-print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
-
-# %%
-
-def calibrate_res(alpha):
-    qhat = weighted_quantile(cal_scores_point, np.ceil((N+1)*(1-alpha))/(N), pi_kde(pred_point_a, cal_point_a).squeeze())
-    prediction_sets =  [pred_point_mean - qhat, pred_point_mean + qhat]
-    empirical_coverage = ((pred_point_u >= prediction_sets[0]) & (pred_point_u <= prediction_sets[1])).mean()
-
-    return empirical_coverage
-
-alpha_levels = np.arange(0.05, 0.95, 0.05)
-emp_cov_kde = []
-for ii in tqdm(range(len(alpha_levels))):
-    emp_cov_kde.append(calibrate_res(alpha_levels[ii]))
-
-plt.figure()
-plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=1.0)
-plt.plot(1-alpha_levels, emp_cov_kde, label='Residual - weighted - KDE' ,ls='-.', color='maroon', alpha=0.8, linewidth=1.0)
-plt.xlabel('1-alpha')
-plt.ylabel('Empirical Coverage')
-plt.legend()
-
-# %%
-#Attempting across the output domain using mutlivariate KDE
-#Dimensionality reduction using PCA
-################################################################
-cal_a = cal_a.numpy()
-cal_u = cal_u.numpy()
-pred_a = pred_a.numpy()
-pred_u = pred_u.numpy()
-pred_mean = pred_mean.numpy()
-
-# %% 
+#Estimating the KDE over the input space.
+#Initially reducing the dimensionality of the input space using PCA
 
 from sklearn.decomposition import PCA
-X = np.reshape(cal_a, (cal_a.shape[0], cal_a.shape[1]*cal_a.shape[2]*cal_a.shape[3]))
-                   
-pca = PCA(n_components=100)
-cal_a_pca = pca.fit_transform(np.reshape(cal_a, (cal_a.shape[0], cal_a.shape[1]*cal_a.shape[2]*cal_a.shape[3])))
-pred_a_pca = pca.transform(np.reshape(pred_a, (pred_a.shape[0], pred_a.shape[1]*pred_a.shape[2]*pred_a.shape[3])))
+from sklearn.manifold import TSNE
 
+cal_a_flatten = cal_a.reshape(ncal, int(33*33*20))
+pred_a_flatten = pred_a.reshape(npred, int(33*33*20))
+pca = PCA(n_components=5)
+pca.fit(cal_a_flatten.numpy())
+cal_a_pca = pca.transform(cal_a_flatten.numpy())
+pred_a_pca = pca.transform(pred_a_flatten.numpy())
 
 # %%
+# #Using t-SNE instead but not changing the variable names with pca
+
+# cal_a_pca = TSNE(n_components=2, learning_rate='auto', init='random', perplexity=3).fit_transform(cal_a_flatten.numpy())
+# pred_a_pca = TSNE(n_components=2, learning_rate='auto', init='random', perplexity=3).fit_transform(pred_a_flatten.numpy())
+
+
+# %% 
+#Estimating KDE over the reduced dimensions .
+import scipy.stats as stats
+
 def likelihood_ratio_KDE(x, kde1, kde2):
     pdf1 = kde1.pdf(x)
     pdf2 = kde2.pdf(x)
@@ -472,35 +390,47 @@ def weighted_quantile(data, alpha, weights=None):
 
     return y
 
-qhat = weighted_quantile(cal_scores, np.ceil((N+1)*(1-alpha))/(N), pi_kde(pred_a_pca, cal_a_pca.T).squeeze())
-# qhat_true = np.quantile(np.sort(weighted_scores), np.ceil((N+1)*(1-alpha))/(N), axis = 0, interpolation='higher')
+#Multivariate marginal
+qhat = []
+pi = pi_kde(pred_a_pca.T, cal_a_pca.T)
+cal_scores_flatten = cal_scores.reshape(cal_scores.shape[0], int(cal_scores.shape[1]*cal_scores.shape[2]*cal_scores.shape[3]))
 
+for ii in tqdm(range(cal_scores_flatten.shape[1])):
+    qhat.append(weighted_quantile(cal_scores_flatten[:, ii], np.ceil((N+1)*(1-alpha))/(N),  pi))
+qhat = np.asarray(qhat)
+qhat = qhat.reshape(pred_u.shape[1], pred_u.shape[2], pred_u.shape[3])
 # %%
 
-prediction_sets =  [pred_point_mean - qhat, pred_point_mean + qhat]
-empirical_coverage = ((pred_point_u.numpy() >= prediction_sets[0].numpy()) & (pred_point_u.numpy() <= prediction_sets[1].numpy())).mean()
+prediction_sets =  [pred_mean - qhat, pred_mean + qhat]
+empirical_coverage = ((pred_u.numpy() >= prediction_sets[0].numpy()) & (pred_u.numpy() <= prediction_sets[1].numpy())).mean()
 
 print(f"The empirical coverage after calibration is: {empirical_coverage}")
 print(f"alpha is: {alpha}")
 print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
 
 # %%
-
 def calibrate_res(alpha):
-    qhat = weighted_quantile(cal_scores_point, np.ceil((N+1)*(1-alpha))/(N), pi_kde(pred_point_a, cal_point_a).squeeze())
-    prediction_sets =  [pred_point_mean - qhat, pred_point_mean + qhat]
-    empirical_coverage = ((pred_point_u.numpy() >= prediction_sets[0].numpy()) & (pred_point_u.numpy() <= prediction_sets[1].numpy())).mean()
+    qhat = []
+    for ii in tqdm(range(cal_scores_flatten.shape[1])):
+        qhat.append(weighted_quantile(cal_scores_flatten[:, ii], np.ceil((N+1)*(1-alpha))/(N),  pi))
+    qhat = np.asarray(qhat)
+    qhat = qhat.reshape(pred_u.shape[1], pred_u.shape[2], pred_u.shape[3])
+
+    prediction_sets =  [pred_mean - qhat, pred_mean + qhat]
+    empirical_coverage = ((pred_u.numpy() >= prediction_sets[0].numpy()) & (pred_u.numpy() <= prediction_sets[1].numpy())).mean()
 
     return empirical_coverage
 
-alpha_levels = np.arange(0.05, 0.95, 0.05)
+alpha_levels = np.arange(0.05, 0.95, 0.1)
 emp_cov_kde = []
 for ii in tqdm(range(len(alpha_levels))):
     emp_cov_kde.append(calibrate_res(alpha_levels[ii]))
 
 plt.figure()
 plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=1.0)
-plt.plot(1-alpha_levels, emp_cov_kde, label='Residual - weighted - KDE' ,ls='-.', color='maroon', alpha=0.8, linewidth=1.0)
+plt.plot(1-alpha_levels, emp_cov_kde, label='Residual - weighted - PCA - KDE' ,ls='-.', color='maroon', alpha=0.8, linewidth=1.0)
 plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()
+
+# %% 

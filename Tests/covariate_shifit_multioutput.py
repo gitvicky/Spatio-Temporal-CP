@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Base tests for demonstrating CP und er covariate shift - 
+Base tests for demonstrating CP under covariate shift - Multivariate setting 2-in, 3-out, KDE over the 2 input dimensions. 
 Experiemntally evaluating the math behind this https://arxiv.org/abs/1904.06019ule 
 """
 
@@ -203,4 +203,3 @@ plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()
 
-# %% 
