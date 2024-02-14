@@ -17,7 +17,7 @@ from tqdm import tqdm
 
 from utils import * 
 
-torch.set_default_dtype(torch.float32)
+torch.set_default_dtype(torch.float32   )
 # %% 
 def func(x):
     return (np.sin(2*x))
@@ -27,14 +27,14 @@ def normal_dist(mean, std, N):
     dist = stats.norm(mean, std)
     return dist.rvs((N, input_size))
 
-N = 1000 #Datapoints 
+N_viz = 1000 #Datapoints a
 input_size = output_size = 100
 
-mean_1, std_1 = np.pi/4, np.pi/8
-mean_2, std_2 = np.pi/2, np.pi/4
+mean_1, std_1 = np.pi/2, np.pi/4
+mean_2, std_2 = np.pi/4, np.pi/8
 
-x = normal_dist(mean_1, std_1, N)
-x_shift = normal_dist(mean_2, std_2, N) #Covariate shifted
+x = normal_dist(mean_1, std_1, N_viz)
+x_shift = normal_dist(mean_2, std_2, N_viz) #Covariate shifted
 
 # %% 
 #Visualising the covariate shift
@@ -54,7 +54,7 @@ y_shift = func(x_shift)
 
 model = MLP(input_size, output_size, 5, 512)
 train_N = 1000
-x_lin = normal_dist(mean_1, std_1, N)
+x_lin = normal_dist(mean_1, std_1, train_N)
 x_train = torch.tensor(x_lin, dtype=torch.float32)
 y_train = torch.tensor(func(x_lin), dtype=torch.float32)
 
@@ -87,7 +87,7 @@ plt.title("Visualising the Model Performance")
 
 # %%
 #Obtaining the Calibration Scores. 
-N = 1000 #Datapoints 
+N = 100000 #Datapoints 
 X_calib = normal_dist(mean_1, std_1, N)
 X_shift = normal_dist(mean_2, std_2, N)#Covariate shifted
 
@@ -103,15 +103,17 @@ cal_scores = np.abs(y_calib - y_calib_nn) #Marginal
 
 # %% 
 #Using the Known PDFs
-def likelihood_ratio(x, mean_1, std_1, mean_2, std_2):
+def likelihood_ratio(x):
     pdf1 = stats.norm.pdf(x, mean_1, std_1)
     pdf2 = stats.norm.pdf(x, mean_2, std_2)
-    return pdf2 / pdf1 
+    return (pdf2 / pdf1)
+
+# def likelihood_ratio(x):
+#     return stats.norm.pdf(x, mean_2, std_2)/stats.norm.pdf(x, mean_1, std_1)
 
 def pi(x_new, x_cal):
-    return likelihood_ratio(x_cal, mean_1, std_1, mean_2, std_2) / (np.sum(likelihood_ratio(x_cal, mean_1, std_1, mean_2, std_2)) + likelihood_ratio(x_new, mean_1, std_1, mean_2, std_2))
+    return likelihood_ratio(x_cal) / (np.sum(likelihood_ratio(x_cal)) + likelihood_ratio(x_new))
     
-
 alpha = 0.1
 
 def weighted_quantile(data, alpha, weights=None):
@@ -150,6 +152,17 @@ print(f"The empirical coverage after calibration is: {empirical_coverage}")
 print(f"alpha is: {alpha}")
 print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
 
+# %% 
+
+# %%
+idces = np.argsort(X_shift[-1])
+plt.plot(X_shift[-1][idces], y_shift[-1][idces], label='Actual')
+plt.plot(X_shift[-1][idces], y_shift_nn[-1][idces], label='Pred')
+plt.fill_between(X_shift[-1][idces], prediction_sets[0][-1][idces], prediction_sets[1][-1][idces], alpha=0.2)
+plt.plot
+plt.legend()
+plt.title("Visualising the prediction intervals - known pdfs")
+
 # %%
 def calibrate_res(alpha):
     qhat = []
@@ -174,6 +187,7 @@ plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()
 
+
 # %% 
 ##############################################################################################################################################
 #Using Kernel Density Estimation - https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.html
@@ -188,8 +202,8 @@ x1 = normal_dist(mean_1, std_1, N)
 x_shift = normal_dist(mean_2, std_2, N) #Covariate shifted
 
 #Visualising the covariate shift
-plt.hist(x1[-1], label='Initial')
-plt.hist(x_shift[-1], label='Shifted')
+plt.hist(x1[:, -1], label='Initial')
+plt.hist(x_shift[:, -1], label='Shifted')
 plt.legend()
 plt.title("Visualising the distribution of the initial and the shifted")
 
@@ -232,8 +246,9 @@ def weighted_quantile(data, alpha, weights=None):
 #with dim reduction
 #KD Estimation. 
 from sklearn.decomposition import PCA
-pca = PCA(n_components=5)
+pca = PCA(n_components=10)
 pca.fit(X_calib)
+
 kde1 = stats.gaussian_kde(pca.transform(X_shift).T)
 kde2 = stats.gaussian_kde(pca.transform(X_calib).T)
 
@@ -264,6 +279,14 @@ print(f"The empirical coverage after calibration is: {empirical_coverage}")
 print(f"alpha is: {alpha}")
 print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
 
+# %% 
+idces = np.argsort(X_shift[-1])
+plt.plot(X_shift[-1][idces], y_shift[-1][idces], label='Actual')
+plt.plot(X_shift[-1][idces], y_shift_nn[-1][idces], label='Pred')
+plt.fill_between(X_shift[-1][idces], prediction_sets[0][-1][idces], prediction_sets[1][-1][idces], alpha=0.2)
+plt.plot
+plt.legend()
+plt.title("Visualising the prediction intervals - PCA-KDE")
 # %%
 def calibrate_res(alpha):
     qhat = []

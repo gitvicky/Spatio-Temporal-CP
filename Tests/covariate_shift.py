@@ -95,7 +95,7 @@ plt.legend()
 plt.title("Visualising the distribution of the initial and the shifted")
 
 # %%
-N = 1000 #Datapoints 
+N = 10000 #Datapoints 
 x_calib = normal_dist(mean_1, std_1, N)
 x_shift = normal_dist(mean_2, std_2, N) #Covariate shifted
 
