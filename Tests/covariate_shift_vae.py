@@ -4,7 +4,7 @@
 """
 Base tests for demonstrating CP under covariate shift - Density Estimation using a VAE
 VAE code inspired from https://github.com/Jackson-Kang/Pytorch-VAE-tutorial/blob/master/01_Variational_AutoEncoder.ipynb
-Multivariate setting for 5000-in, 5000-out
+Multivariate setting for 500-in 500-out
 Experiemntally evaluating the math behind this https://arxiv.org/abs/1904.06019ule 
 """
 # %%
