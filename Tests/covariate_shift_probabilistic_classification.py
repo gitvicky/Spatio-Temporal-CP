@@ -260,4 +260,21 @@ from sklearn.metrics import confusion_matrix
 confusion_matrix(y_true, y_pred)
 
 # %%
-#Classifier Performance
+#Classifier Performance over a test data sampled from the same known distributions. 
+
+X_calib_test = normal_dist(mean_1, std_1, 10000)
+X_shift_test = normal_dist(mean_2, std_2, 10000)#Covariate shifted
+
+X_class_test = np.expand_dims(np.vstack((X_calib_test, X_shift_test)), axis=1)
+Y_class_test = np.vstack((np.expand_dims(np.zeros(len(X_calib_test)), -1), np.expand_dims(np.ones(len(X_shift_test)) ,-1)))
+
+y_pred = torch.sigmoid(classifier(torch.tensor(X_class_test, dtype=torch.float32))).detach().numpy()
+y_true = Y_class_test
+
+for ii in range(len(y_pred)):
+    if y_pred[ii] < 0.5:
+        y_pred[ii] =0 
+
+from sklearn.metrics import confusion_matrix
+confusion_matrix(y_true, y_pred)
+# %%
