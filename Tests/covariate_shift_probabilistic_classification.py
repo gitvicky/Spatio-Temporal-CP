@@ -262,8 +262,8 @@ confusion_matrix(y_true, y_pred)
 # %%
 #Classifier Performance over a test data sampled from the same known distributions. 
 
-X_calib_test = normal_dist(mean_1, std_1, 10000)
-X_shift_test = normal_dist(mean_2, std_2, 10000)#Covariate shifted
+X_calib_test = normal_dist(mean_1, std_1, N)
+X_shift_test = normal_dist(mean_2, std_2, N)#Covariate shifted
 
 X_class_test = np.expand_dims(np.vstack((X_calib_test, X_shift_test)), axis=1)
 Y_class_test = np.vstack((np.expand_dims(np.zeros(len(X_calib_test)), -1), np.expand_dims(np.ones(len(X_shift_test)) ,-1)))
@@ -277,4 +277,101 @@ for ii in range(len(y_pred)):
 
 from sklearn.metrics import confusion_matrix
 confusion_matrix(y_true, y_pred)
+
+#Estimating the likelihood ratio
+w = (y_pred)/(1-y_pred)
+
+# %%
+
+def likelihood_ratio_classifier(X):
+    y_pred = torch.sigmoid(classifier(torch.tensor(X, dtype=torch.float32))).detach().numpy()
+
+#Avoiding numerical instabilities in likelihoob ratio estimation 
+    for ii in range(len(y_pred)): 
+        if y_pred[ii] < 0.01:
+            y_pred[ii] = 0.01
+        elif y_pred[ii] >= 0.99:
+            y_pred[ii] = 0.99
+
+
+    return (y_pred/(1-y_pred))
+
+# %%
+def pi_classifer(x_new, x_cal):
+    return likelihood_ratio_classifier(np.expand_dims(x_cal, 1)) / (np.sum(likelihood_ratio_classifier(np.expand_dims(x_cal, 1))) + likelihood_ratio_classifier(np.expand_dims(x_new,1)))
+    
+# %% 
+
+#Estimating qhat 
+alpha = 0.1
+
+def weighted_quantile(data, alpha, weights=None):
+    ''' percents in units of 1%
+        weights specifies the frequency (count) of data.
+    '''
+    if weights is None:
+        return np.quantile(np.sort(data), alpha, axis = 0, interpolation='higher')
+    
+    ind=np.argsort(data, axis=0)
+    d=data[ind]
+    w=weights[ind]
+
+    p=1.*w.cumsum()/w.sum()
+    y=np.interp(alpha, p, d)
+
+    return y
+
+# %% 
+pi_vals = pi_classifer(X_shift, X_calib)
+
+# %% 
+qhat = []
+for ii in range(output_size):
+    qhat.append(weighted_quantile(cal_scores[:, ii], np.ceil((N+1)*(1-alpha))/(N),  pi_vals))
+qhat = np.asarray(qhat)
+
+# %%
+y_shift = func(X_shift)
+y_shift_nn = model(torch.tensor(X_shift, dtype=torch.float32)).detach().numpy()
+
+prediction_sets =  [y_shift_nn - qhat, y_shift_nn + qhat]#Marginal
+# prediction_sets =  [y_shift_nn - qhat*modulation, y_shift_nn + qhat*modulation]#Joint
+
+empirical_coverage = ((y_shift >= prediction_sets[0]) & (y_shift <= prediction_sets[1])).mean()
+
+print(f"The empirical coverage after calibration is: {empirical_coverage}")
+print(f"alpha is: {alpha}")
+print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
+
+# %%
+idces = np.argsort(X_shift[-1])
+plt.plot(X_shift[-1][idces], y_shift[-1][idces], label='Actual')
+plt.plot(X_shift[-1][idces], y_shift_nn[-1][idces], label='Pred')
+plt.fill_between(X_shift[-1][idces], prediction_sets[0][-1][idces], prediction_sets[1][-1][idces], alpha=0.2)
+plt.plot
+plt.legend()
+plt.title("Visualising the prediction intervals - Prob. Classifier")
+# %%
+def calibrate_res(alpha):
+    qhat = []
+    for ii in range(output_size):
+     qhat.append(weighted_quantile(cal_scores[:, ii], np.ceil((N+1)*(1-alpha))/(N),  pi_vals))
+    qhat = np.asarray(qhat)
+
+    # qhat = weighted_quantile(cal_scores, np.ceil((N+1)*(1-alpha))/(N), pi_kde(X_shift.T, X_calib.T).squeeze())
+    prediction_sets = [y_shift_nn - qhat, y_shift_nn + qhat]
+    empirical_coverage = ((y_shift >= prediction_sets[0]) & (y_shift <= prediction_sets[1])).mean()
+    return empirical_coverage
+
+alpha_levels = np.arange(0.05, 0.95, 0.1)
+emp_cov_kde = []
+for ii in tqdm(range(len(alpha_levels))):
+    emp_cov_kde.append(calibrate_res(alpha_levels[ii]))
+
+plt.figure()
+plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=1.0)
+plt.plot(1-alpha_levels, emp_cov_kde, label='Residual - weighted - PCA-KDE' ,ls='-.', color='maroon', alpha=0.8, linewidth=1.0)
+plt.xlabel('1-alpha')
+plt.ylabel('Empirical Coverage')
+plt.legend()
 # %%
