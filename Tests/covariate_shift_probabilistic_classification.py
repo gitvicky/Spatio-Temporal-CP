@@ -16,7 +16,8 @@ from tqdm import tqdm
 
 from utils import * 
 
-torch.set_default_dtype(torch.float32   )
+torch.set_default_dtype(torch.float32)
+
 # %% 
 def func(x):
     return (np.sin(2*x))
@@ -191,49 +192,50 @@ plt.legend()
 
 #Setting up the classifier.
 
-# Fully Connected Network or a Multi-Layer Perceptron
+# 1D convolutional classifier. 
 class classifier_1D(nn.Module):
-    def __init__(self, in_features, out_features, num_layers, num_neurons, activation=torch.tanh):
+    def __init__(self, in_features, activation=torch.nn.ReLU()):
         super(classifier_1D, self).__init__()
 
         self.in_features = in_features
-        self.out_features = out_features
 
-        self.conv1 = nn.Conv1d(1, 32, 3, stride=2)
-        self.conv2 = nn.Conv1d(32, 64, 3, stride=2)
-        self.maxpool1 = nn.MaxPool1d()
-        # x = x.view(-1, x.shape[1]*x.shape[2]*x.shape[3])
-        self.layer1 = nn.Linear()
+        #Convolutional Layers
+        self.conv1 = nn.Conv1d(1, 32, 2, stride=2)
+        self.conv2 = nn.Conv1d(32, 64, 2, stride=2)
+        self.maxpool = nn.MaxPool1d(2)
+
+        #Dense Layers
+        self.dense1 = nn.Linear(int(64*62), 1024)
+        self.dense2 = nn.Linear(1024, 256)
+        self.dense3 = nn.Linear(256, 64)
+        self.dense_out = nn.Linear(64, 1)
 
         self.act_func = activation
 
-        self.layers = nn.ModuleList()
-
-        self.layer_input = nn.Linear(self.in_features, self.num_neurons)
-
-        for ii in range(self.num_layers - 1):
-            self.layers.append(nn.Linear(self.num_neurons, self.num_neurons))
-        self.layer_output = nn.Linear(self.num_neurons, self.out_features)
+        self.layers = [self.dense1, self.dense2, self.dense3]
 
     def forward(self, x):
-        x_temp = self.act_func(self.layer_input(x))
+        x = self.act_func(self.maxpool(self.conv1(x)))
+        x = self.act_func(self.conv2(x))
+
+        x = x.view(-1, x.shape[1]*x.shape[2])
+
         for dense in self.layers:
-            x_temp = self.act_func(dense(x_temp))
-        x_temp = self.layer_output(x_temp)
-        return x_temp
+            x = self.act_func(dense(x))
+        x = self.dense_out(x)
+        return x
 
-
-
-classifier = MLP(input_size, 1, 5, 256) #Sigmoid at the output is evaluated outside the model definition. 
+# %%
+classifier = classifier_1D(in_features=1) #Sigmoid at the output is evaluated outside the model definition. 
 loss_func = torch.nn.BCEWithLogitsLoss() #LogitsLoss contains the sigmoid layer - provides numerical stability. 
 optimizer = torch.optim.Adam(classifier.parameters(), lr=1e-3)
 
 # %%
 #Prepping the data. 
-X_class = np.vstack((X_calib, X_shift))
+X_class = np.expand_dims(np.vstack((X_calib, X_shift)), axis=1)
 Y_class = np.vstack((np.expand_dims(np.zeros(len(X_calib)), -1), np.expand_dims(np.ones(len(X_shift)) ,-1)))
 
-train_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(torch.tensor(X_class), torch.tensor(Y_class)), batch_size=100, shuffle=True)
+train_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(torch.tensor(X_class, dtype=torch.float32), torch.tensor(Y_class, dtype=torch.float32)), batch_size=100, shuffle=True)
 # %% 
 #Training the classifier. 
 epochs = 1000
@@ -241,8 +243,21 @@ for ii in tqdm(range(epochs)):
     for xx, yy in train_loader:
         optimizer.zero_grad()
         y_out = classifier(xx)
-        loss = loss_func(xx, yy)
+        loss = loss_func(y_out, yy)
         loss.backward()
         optimizer.step()
 
 # %%
+#Classifier performance. - within the training data itself. 
+y_pred = torch.sigmoid(classifier(torch.tensor(X_class, dtype=torch.float32))).detach().numpy()
+y_true = Y_class
+
+for ii in range(len(y_pred)):
+    if y_pred[ii] < 0.5:
+        y_pred[ii] =0 
+
+from sklearn.metrics import confusion_matrix
+confusion_matrix(y_true, y_pred)
+
+# %%
+#Classifier Performance
