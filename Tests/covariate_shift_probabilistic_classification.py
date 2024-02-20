@@ -286,13 +286,12 @@ w = (y_pred)/(1-y_pred)
 def likelihood_ratio_classifier(X):
     y_pred = torch.sigmoid(classifier(torch.tensor(X, dtype=torch.float32))).detach().numpy()
 
-#Avoiding numerical instabilities in likelihoob ratio estimation 
+#Avoiding numerical instabilities in likelihood ratio estimation 
     for ii in range(len(y_pred)): 
         if y_pred[ii] < 0.01:
             y_pred[ii] = 0.01
         elif y_pred[ii] >= 0.99:
             y_pred[ii] = 0.99
-
 
     return (y_pred/(1-y_pred))
 
@@ -364,13 +363,15 @@ def calibrate_res(alpha):
     return empirical_coverage
 
 alpha_levels = np.arange(0.05, 0.95, 0.1)
-emp_cov_kde = []
+emp_cov_prob = []
 for ii in tqdm(range(len(alpha_levels))):
-    emp_cov_kde.append(calibrate_res(alpha_levels[ii]))
+    emp_cov_prob.append(calibrate_res(alpha_levels[ii]))
 
 plt.figure()
 plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=1.0)
-plt.plot(1-alpha_levels, emp_cov_kde, label='Residual - weighted - PCA-KDE' ,ls='-.', color='maroon', alpha=0.8, linewidth=1.0)
+plt.plot(1-alpha_levels, emp_cov_prob, label='Residual - weighted - Prob. Classifier' ,ls='-.', color='maroon', alpha=0.8, linewidth=1.0)
+plt.plot(1-alpha_levels, emp_cov, label='Residual - weighted - Known' ,ls='-.', color='blue', alpha=0.8, linewidth=1.0)
+
 plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()

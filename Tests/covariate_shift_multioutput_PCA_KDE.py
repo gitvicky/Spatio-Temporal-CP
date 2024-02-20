@@ -307,6 +307,8 @@ for ii in tqdm(range(len(alpha_levels))):
 plt.figure()
 plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=1.0)
 plt.plot(1-alpha_levels, emp_cov_kde, label='Residual - weighted - PCA-KDE' ,ls='-.', color='maroon', alpha=0.8, linewidth=1.0)
+plt.plot(1-alpha_levels, emp_cov, label='Residual - weighted - Known' ,ls='-.', color='blue', alpha=0.8, linewidth=1.0)
+
 plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()

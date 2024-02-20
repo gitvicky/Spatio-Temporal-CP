@@ -7,7 +7,6 @@ u_tt = c^2 * (u_xx + u_yy)
 
 on [-1, 1]x[-1, 1], t > 0 and Dirichlet BC u=0
 
-
 Source : http://people.bu.edu/andasari/courses/numericalpython/python.html
 """
 # %%
@@ -163,7 +162,7 @@ def Parameter_Scan ():
     ic = np.asarray(list_ic)
     u = np.asarray(list_u)
     
-    np.savez('Spectral_Wave_data_Parameter_Scan.npz', x=x, y=y,t=t, u=u, ic=ic)
+    # np.savez('Spectral_Wave_data_Parameter_Scan.npz', x=x, y=y,t=t, u=u, ic=ic)
     
     # data = np.load('Spectral_Wave_data.npz')
     # file_names = data.files
@@ -190,4 +189,4 @@ def LHS_Sampling():
     ic = param_lhs
     u = np.asarray(list_u)
     
-    np.savez('Spectral_Wave_data_LHS.npz', x=x, y=y,t=t, u=u, ic=ic)
+    # np.savez('Spectral_Wave_data_LHS.npz', x=x, y=y,t=t, u=u, ic=ic)
