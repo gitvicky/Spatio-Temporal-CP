@@ -474,6 +474,303 @@ for (j,cal_scores) in enumerate(cal_scores_vec):
     plt.show()
 
 
+
+# %%
+from sklearn.decomposition import TruncatedSVD
+
+errors = Y_cal - mean_cal
+
+plt.plot(mean_cal.T, color = "red")
+
+N_dim=5
+
+a1 = TruncatedSVD(n_components=N_dim)
+a1.fit(mean_cal)
+
+var_decomp = np.cumsum(a1.explained_variance_ratio_)
+
+print(np.sum(a1.explained_variance_ratio_))
+
+trans_NN = a1.transform(mean_cal)
+trans_Cal = a1.transform(Y_cal)
+
+diff = trans_Cal - trans_NN
+
+# plt.figure()
+# plt.hist(np.vstack(trans_data[:, 0]), bins = 100)
+
+plt.figure()
+plt.scatter(trans_NN[:, 0], trans_NN[:,1])
+plt.scatter(trans_Cal[:, 0], trans_Cal[:,1])
+plt.scatter(diff[:, 0], diff[:,1])
+
+plt.figure()
+plt.scatter(trans_NN[:, 2], trans_NN[:,3])
+plt.scatter(trans_Cal[:, 2], trans_Cal[:,3])
+plt.scatter(diff[:, 2], diff[:,3])
+
+plt.figure()
+plt.scatter(trans_NN[:, 3], trans_NN[:,4])
+plt.scatter(trans_Cal[:, 3], trans_Cal[:,4])
+plt.scatter(diff[:, 3], diff[:,4])
+
+
+plt.figure()
+[plt.hist(diff[:,i], 100) for i in range(0, N_dim)] 
+
+##
+# plt.scatter(trans_data[:,2], trans_data[:,3])
+# plt.scatter(trans_data[:,3], trans_data[:,4])
+# plt.scatter(trans_data[:,4], trans_data[:,5])
+# plt.scatter(trans_data[:,5], trans_data[:,6])
+
+
+Back_prop = a1.inverse_transform(diff)
+
+plt.figure()
+plt.plot(x_range, errors.T, color ="red", alpha = 0.1)
+plt.plot(x_range, Back_prop.T, color ="blue", alpha = 0.1)
+# plt.plot(x_range, Y_mean, color = "blue", label = "mean")
+# plt.plot(x_range, modulation, color = "black", label = "STD")
+# plt.legend()
+plt.show()
+
+# %%
+plt.figure()
+
+cal_scores = cal_scores_2
+
+for (i, alpha) in enumerate(alphas):
+
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
+    prediction_sets =  [-qhat*modulations[j], qhat*modulations[j]]
+
+    plt.fill_between(x_range, prediction_sets[0].squeeze(), prediction_sets[1].squeeze(), color = cols[i])
+
+
+fig.colorbar(cm.ScalarMappable(cmap="plasma"), ax=ax)
+
+plt.plot(x_range, errors.T, color ="red", alpha = 0.1)
+# plt.plot(x_range, Back_prop.T, color ="blue", alpha = 0.1)
+# plt.plot(x_range, Y_mean, color = "blue", label = "mean")
+# plt.plot(x_range, modulation, color = "black", label = "STD")
+# plt.legend()
+plt.show()
+
+
+## %
+# Get errors distance to origin
+
+scores = np.sqrt(np.sum(diff * diff, axis = 1))     # Euclidian distance. Makes a circle of equal scores
+
+plt.figure()
+plt.hist(scores, 100)
+
+plt.figure()
+plt.step(np.sort(scores), range(0,len(scores)))
+
+## %
+from scipy.spatial import ConvexHull
+from itertools import product
+
+# Bounding using convex hull
+CH = ConvexHull(diff)
+verts = diff[CH.vertices]
+
+# Bounding using hyper-rectangle
+Data_min = np.min(diff, axis = 0)
+Data_max = np.max(diff, axis = 0)
+
+my_list = [(Data_min), (Data_max)]
+
+X_ = np.vstack([Data_min, Data_max])
+box_vertex = np.asarray(list(product(*X_.T)), dtype=float)
+
+
+plt.figure()
+plt.scatter(diff[:, 0], diff[:,1], label = "errors")
+plt.scatter(verts[:, 0], verts[:,1], label = "CH vertex")
+plt.scatter(box_vertex[:, 0], box_vertex[:,1], label = "Hyper-rectangle vert")
+plt.legend()
+
+plt.figure()
+plt.scatter(diff[:, 2], diff[:,3], label = "errors")
+plt.scatter(verts[:, 2], verts[:,3], label = "CH vertex")
+plt.scatter(box_vertex[:, 2], box_vertex[:,3], label = "Hyper-rectangle vert")
+plt.legend()
+
+plt.figure()
+plt.scatter(diff[:, 3], diff[:,4], label = "errors")
+plt.scatter(verts[:, 3], verts[:,4], label = "CH vertex")
+plt.scatter(box_vertex[:, 3], box_vertex[:,4], label = "Hyper-rectangle vert")
+plt.legend()
+
+
+back_verts = a1.inverse_transform(verts)
+bounds_back_max = np.max(back_verts, axis = 0)
+bounds_back_min = np.min(back_verts, axis = 0)
+
+box_bounds_back = a1.inverse_transform(box_vertex)
+bounds_back_box_max = np.max(box_bounds_back, axis = 0)
+bounds_back_box_min = np.min(box_bounds_back, axis = 0)
+
+
+plt.figure()
+# plt.plot(x_range, errors.T, color ="red", alpha = 0.1)
+plt.plot(x_range, Back_prop.T, color ="red", alpha = 0.1)
+plt.plot(x_range, bounds_back_max, color ="blue",linewidth = 2)
+plt.plot(x_range, bounds_back_min, color ="blue",linewidth = 2)
+plt.plot(x_range, bounds_back_box_max, color ="purple",linewidth = 2)
+plt.plot(x_range, bounds_back_box_min, color ="purple",linewidth = 2)
+# plt.plot(x_range, Back_prop.T, color ="blue", alpha = 0.1)
+# plt.plot(x_range, Y_mean, color = "blue", label = "mean")
+# plt.plot(x_range, modulation, color = "black", label = "STD")
+# plt.legend()
+plt.show()
+
+# %% Marco's functions
+import numpy
+
+def minimal_enclosing_hyperbox(x):
+    """
+    Inputs
+    x: (nxd) array, where n is the size of the data, and d is the number of dimensions of the box
+
+    Outputs
+    active_scenarios: list[int], a list of integers pointing to the corresponding active scenarios in the dataset
+    box: 2xd array, an enclosing box of dimension d.
+    """
+    x = numpy.asarray(x,dtype=float) # coherce any iterable to numpy array
+    n,d = x.shape
+    index,box = [],[]
+    for j in range(d):
+        s = numpy.argsort(x[:,j])
+        index += [s[0],s[-1]]
+        box.append([x[s[0],j], x[s[-1],j]])
+    active_scenarios = list(set(index)) # list of indices corresponding to the active scenarios
+    return active_scenarios, numpy.asarray(box,dtype=float)
+
+# def is_inside_box(x,abox):
+#     """
+#     x:    (nxd) array
+#     abox: (dx2) array, or list[list[2 float]] ex.: [[0,1],[3,8],[1,9]] <- a.k.a. interval iterable
+#     """
+#     n,d = x.shape
+#     box = numpy.asarray(abox, dtype=float)
+#     box_lo = box[:,0]
+#     box_hi = box[:,1]
+#     inside = (matlib.repmat(box_lo,n,1) <= x) & (x <= matlib.repmat(box_hi,n,1))
+#     return numpy.all(inside,axis=1)
+
+def width(x:numpy.ndarray):
+    """
+    IN
+    x: An interval or interval iterable, i.e. an (dx2) array
+
+    OUT
+    w: the width of the intervals
+    """
+    x = numpy.asarray(x,dtype=float)
+    if len(x.shape)==1: return x[1]-x[0]
+    else: return x[:,1]-x[:,0]
+
+def index_to_mask(x,n=100):  
+    """
+    Converts the list of indices x into a (nx1) boolean mask, true at those particular indices
+    """
+    nrange=numpy.arange(n)
+    boole = numpy.zeros(nrange.shape, dtype=bool)
+    for xi in x: boole += nrange==xi
+    return boole
+
+def make_hashtable(x):
+    h = {}
+    for i,xi in enumerate(x):
+        h[tuple(xi)]=i
+    return h
+
+def sanity_check(a,b,tol=1e-4): # checks that the smallest set has enough observation to make a decsion.
+    b_last = b[-1] # last enclosing set in the sequence
+    for interval in b_last:
+        if width(interval)<tol:
+            return a[:-1],b[:-1] # returns sequences stripped of the last element
+    return a,b
+
+
+def data_peeling_algorithm(X,tol=1e-4): # should also input the shape, rectangle, circle, etc.
+    """
+    X: (nxd) data set of iid observations
+    tol: a tolerance parameter determining the minimal size of an allowed enclosing box
+
+    sequence_of_indices: a list (number of levels long) of sets (or list) of indices of heterogeneous size
+    sequence_of_boxes: a list (number of levels long) of (dx2) boxes
+    """
+    H = make_hashtable(X) # turns dataset in to hashtable
+    n,d = X.shape
+    sequence_of_indices,sequence_of_boxes = [],[]
+    index_num = 0 # number of support vectors per level
+    j=0 # number of levels
+    while index_num < n:
+        if j==0:
+            active_indices, box  = minimal_enclosing_hyperbox(X) # solve the optimization
+            active_mask = index_to_mask(active_indices, n=n)
+            nonactive_mask = active_mask==False
+            X_strip = X[active_mask,:].copy()
+            collect_indices =[]
+            for xstrip in X_strip: 
+                collect_indices.append(H[tuple(xstrip)])
+                index_num+=1
+            X_new = X[nonactive_mask,:].copy() # strip active scenarios from the original dataset
+        else:
+            active_indices, box  = minimal_enclosing_hyperbox(X_new)
+            active_mask = index_to_mask(active_indices, n=X_new.shape[0])
+            nonactive_mask = active_mask==False
+            X_strip = X_new[active_mask,:].copy()
+            X_new = X_new[nonactive_mask,:].copy()
+            collect_indices = []
+            for xstrip in X_strip: 
+                collect_indices.append(H[tuple(xstrip)])
+                index_num+=1
+        sequence_of_indices.append(collect_indices)
+        sequence_of_boxes.append(box)
+        j+=1
+    # return sequence_of_indices, sequence_of_boxes
+    a,b = sanity_check(sequence_of_indices, sequence_of_boxes, tol=tol) # this checks that the algorithm terminates as it is supposed to.
+    return a,b
+
+active_s, box = minimal_enclosing_hyperbox(diff)
+a, b = data_peeling_algorithm(diff)
+
+
+# %%
+# s, v, d = np.linalg.svd(errors.T)
+
+# plt.plot(v)
+# plt.imshow(s)
+# plt.imshow(d)
+
+# T_trunc = 2
+
+# s_ = s[:, T_trunc]
+
+# Y_mean = np.mean(Y_cal, axis = 0)
+# modulation_err = np.std(Y_cal - mean_cal, axis = 0)
+# # modulation_err = np.mean(np.abs(Y_cal - mean_cal), axis = 0)
+
+# ### 
+
+# def conf_metric(X_mean, Y_cal): 
+#     return np.max(np.abs((Y_cal - X_mean)/modulation_err), axis =1)
+
+# cal_scores_2 = conf_metric(mean_cal, Y_cal)
+
+# alpha = 0.1
+# n = len(cal_scores_2)
+# qhat = np.quantile(cal_scores_2, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
+
+# prediction_sets =  [prediction - qhat*modulation_err, prediction + qhat*modulation_err]
+
+
 # ##
 # alpha_levels = np.arange(0.05, 0.95, 0.05)
 # cols = cm.plasma(alpha_levels)

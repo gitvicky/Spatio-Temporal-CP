@@ -572,7 +572,6 @@ plt.show()
 # On MAC, convert images to a giff using ImageMAGIK
 # convert -delay 0.0001 -loop 1 time_dependent_errors_*.png Wave_error.gif
 
-
 '''
 fig = plt.figure()
 
