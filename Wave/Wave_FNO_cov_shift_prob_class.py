@@ -221,7 +221,6 @@ print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
 t2 = default_timer()
 print('Conformal by Residual, time used:', t2-t1)
 
-
 #Estimating the tightness of fit
 cov = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1]))
 cov_idx = cov.nonzero()
@@ -270,7 +269,7 @@ plt.rcParams['ytick.minor.width'] =5
 mpl.rcParams['axes.titlepad'] = 20
 
 # %% 
-#Generating new data at normal speed 
+#Generating new data at normal speed but with shifted distributions. 
 #Sampling the PDE parameters from known distributions. 
 #Three parameters of interest currently: amplitude, x-pos, y-pos
 from Spectral_Wave_Data_Gen import *
@@ -289,7 +288,7 @@ def normal_dist(mean, std, N):
     dist = stats.norm(mean, std)
     return dist.rvs((N, 1))
 
-n_sims = 100
+n_sims = 1000
 
 # %%
 #Generating calibration data 
@@ -424,10 +423,12 @@ pi_vals = pi_classifer(X_shift_params, X_calib_params)
 
 # %% 
 #Currently we are doing the qhat estimation for each different variable separately. 
+#Need to parallelise this operation. 
 N = n_sims
 qhat = []
+output_size = len(cal_scores.flatten())
 for ii in range(output_size):
-    qhat.append(weighted_quantile(cal_scores[:, ii], np.ceil((N+1)*(1-alpha))/(N),  pi_vals))
+    qhat.append(weighted_quantile(cal_scores.flatten[:, ii], np.ceil((N+1)*(1-alpha))/(N),  pi_vals))
 qhat = np.asarray(qhat)
 
 # %%
@@ -460,7 +461,6 @@ print(f"The empirical coverage after calibration is: {empirical_coverage}")
 print(f"alpha is: {alpha}")
 print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
 
-# %% 
 
 # %%
 def calibrate_res(alpha):
@@ -485,6 +485,83 @@ plt.plot(1-alpha_levels, emp_cov, label='Residual - weighted - prob. class.' ,ls
 plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()
+
+# %% 
+#Setting up the Convolutional classifier.
+
+# 1D convolutional classifier. 
+class classifier_2D(nn.Module):
+    def __init__(self, in_features, activation=torch.nn.ReLU()):
+        super(classifier_2D, self).__init__()
+
+        self.in_features = in_features
+
+        #Convolutional Layers
+        self.conv1 = nn.Conv2d(self.in_features, 32, 2, stride=2)
+        self.conv2 = nn.Conv2d(32, 64, 2, stride=2)
+        self.maxpool = nn.MaxPool2d(2,2)
+
+        #Dense Layers
+        self.dense1 = nn.Linear(int(64*4*4), 512)
+        self.dense2 = nn.Linear(512, 256)
+        self.dense3 = nn.Linear(256, 64)
+        self.dense_out = nn.Linear(64, 1)
+
+        self.act_func = activation
+
+        self.layers = [self.dense1, self.dense2, self.dense3]
+
+    def forward(self, x):
+        x = self.act_func(self.maxpool(self.conv1(x)))
+        x = self.act_func(self.conv2(x))
+
+        x = x.view(x.shape[0], -1)
+
+        for dense in self.layers:
+            x = self.act_func(dense(x))
+        x = self.dense_out(x)
+        return x
+
+# %%
+in_features = configuration['T_in'] = 20
+
+classifier = classifier_2D(in_features)
+
+loss_func = torch.nn.BCEWithLogitsLoss() #LogitsLoss contains the sigmoid layer - provides numerical stability. 
+optimizer = torch.optim.Adam(classifier.parameters(), lr=1e-3)
+
+# %% 
+#Prepping the data. 
+X_class = torch.vstack((u_cal_a, u_shift_a)).permute(0,3,1,2)
+Y_class = np.vstack((np.expand_dims(np.zeros(n_sims), -1), np.expand_dims(np.ones(n_sims) ,-1)))
+
+train_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(X_class, torch.tensor(Y_class, dtype=torch.float32)), batch_size=100, shuffle=True)
+
+# %% 
+#Training the classifier. 
+epochs = 1000
+for ii in tqdm(range(epochs)):    
+    for xx, yy in train_loader:
+        optimizer.zero_grad()
+        y_out = classifier(xx)
+        loss = loss_func(y_out, yy)
+        loss.backward()
+        optimizer.step()
+
+# %%
+#Classifier performance. - within the training data itself. 
+y_pred = torch.sigmoid(classifier(X_class)).detach().numpy()
+y_true = Y_class
+
+for ii in range(len(y_pred)):
+    if y_pred[ii] < 0.5:
+        y_pred[ii] =0 
+    else: 
+        y_pred[ii] = 1.0
+
+from sklearn.metrics import confusion_matrix
+confusion_matrix(y_true, y_pred)
+
 # %% 
 # # %%
 # y_shift = func(X_shift)
@@ -503,7 +580,7 @@ plt.legend()
 #     from pyDOE import lhs
     
 #     lb = np.asarray([10, 0.10, 0.10]) #Lambda, a, b 
-#     ub = np.asarray([50, 0.50, 0.50]) #Lambda, a, b 
+#     ub = np.asarray([50, 0.50, 0.50]) #Lambda, a, b    
     
 #     N = 1000
     
@@ -560,6 +637,8 @@ plt.legend()
 #         xx = torch.cat((xx[..., step:], pred), dim=-1)
 
 # # %% 
+
+#Using a Classifier
 # # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # #Estimating the KDE over the input space.
 # #Initially reducing the dimensionality of the input space using PCA

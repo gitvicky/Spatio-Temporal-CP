@@ -139,6 +139,30 @@ qhat = []
 for ii in range(output_size):
     qhat.append(weighted_quantile(cal_scores[:, ii], np.ceil((N+1)*(1-alpha))/(N),  pi_vals[:, ii]))
 qhat = np.asarray(qhat)
+
+# %% 
+# #Attempting to Parallelise the qhat estimation. 
+
+
+# def weighted_quantile_parallel(data, alpha, weights=None):
+#     ''' percents in units of 1%
+#         weights specifies the frequency (count) of data.
+#     '''
+#     if weights is None:
+#         return np.quantile(np.sort(data), alpha, axis = 0, interpolation='higher')
+    
+#     data = data.reshape(data.shape[0], -1)
+#     ind=np.argsort(data, axis=0)
+#     d=data[ind]
+#     w=weights[ind]
+
+#     p=1.*w.cumsum()/w.sum()
+#     y=np.interp(alpha, p, d)
+
+#     return y
+# cal_scores_flatten = cal_scores.reshape(N, -1)
+# cal_scores_sort_args = cal_scores_flatten[: 0].argsort()
+
 # %%
 y_shift = func(X_shift)
 y_shift_nn = model(torch.tensor(X_shift, dtype=torch.float32)).detach().numpy()
