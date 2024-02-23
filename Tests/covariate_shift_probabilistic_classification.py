@@ -89,7 +89,7 @@ plt.title("Visualising the Model Performance")
 #Obtaining the Calibration Scores. 
 N = 1000 #Datapoints 
 X_calib = normal_dist(mean_1, std_1, N)
-X_shift = normal_dist(mean_2, std_2, N)#Covariate shifted
+X_shift = normal_dist(mean_2, std_2, 1)#Covariate shifted
 
 y_calib = func(X_calib)
 
@@ -113,7 +113,10 @@ def likelihood_ratio(x):
 
 def pi(x_new, x_cal):
     return likelihood_ratio(x_cal) / (np.sum(likelihood_ratio(x_cal)) + likelihood_ratio(x_new))
-    
+
+def pi_nplus1(x_new, x_cal):
+    return likelihood_ratio(x_new) / (np.sum(likelihood_ratio(x_cal)) + likelihood_ratio(x_new))
+
 alpha = 0.1
 
 def weighted_quantile(data, alpha, weights=None):
@@ -154,11 +157,12 @@ def get_weighted_quantile(scores, quantile, weights):
     return q_y
 # %% 
 #Multivariate marginal 
-pi_vals = pi(X_shift, X_calib)
+pi_vals = pi(X_shift, X_calib) # Our Implementation
+pi_vals = pi(X_shift, X_calib) +  pi_nplus1(X_shift, X_calib) #Including the n+1 as well 
 
-
-pi_vals = likelihood_ratio(X_shift)
-pi_vals /= np.sum(pi_vals, axis=1, keepdims=True) 
+#Attempting what they had done in the Conformal for Design paper. 
+# pi_vals = np.vstack((likelihood_ratio(X_calib), likelihood_ratio(X_shift)))
+# cal_scores = np.vstack((cal_scores, np.infty * np.ones(X_shift.shape)))
 # %%
 # qhat = []
 # for ii in range(output_size):
@@ -216,6 +220,7 @@ plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()
 
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # %% 
 #Density Ratio Estimation using Probabilistic Classification
 
