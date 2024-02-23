@@ -131,43 +131,46 @@ def weighted_quantile(data, alpha, weights=None):
     y=np.interp(alpha, p, d)
 
     return y
+
+#Inspired from https://www.pnas.org/doi/abs/10.1073/pnas.2204569119
+def get_weighted_quantile(scores, quantile, weights):
+    
+    if weights.ndim == 1:
+        weights = weights[:, None]
+        scores = scores[:, None]
+
+    #Normalise weights
+    p_weights = weights / np.sum(weights, axis=0)
+
+    #Sort the scores and the weights 
+    args_sorted_scores = np.argsort(scores, axis=0)
+    sortedscores= np.take_along_axis(scores, args_sorted_scores, axis=0)
+    sortedp_weights = np.take_along_axis(p_weights, args_sorted_scores, axis=0)
+
+    # locate quantiles of weighted scores per y
+    cdf_pweights = np.cumsum(sortedp_weights, axis=0)
+    qidx_y = np.sum(cdf_pweights < quantile, axis=0)  # equivalent to [np.searchsorted(cdf_n1, q) for cdf_n1 in cdf_n1xy]
+    q_y = sortedscores[(qidx_y, range(qidx_y.size))]
+    return q_y
 # %% 
 #Multivariate marginal 
 pi_vals = pi(X_shift, X_calib)
+
+
+pi_vals = likelihood_ratio(X_shift)
+pi_vals /= np.sum(pi_vals, axis=1, keepdims=True) 
 # %%
-qhat = []
-for ii in range(output_size):
-    qhat.append(weighted_quantile(cal_scores[:, ii], np.ceil((N+1)*(1-alpha))/(N),  pi_vals[:, ii]))
-qhat = np.asarray(qhat)
+# qhat = []
+# for ii in range(output_size):
+#     qhat.append(weighted_quantile(cal_scores[:, ii], np.ceil((N+1)*(1-alpha))/(N),  pi_vals[:, ii]))
+# qhat = np.asarray(qhat)
 
-# %% 
-# #Attempting to Parallelise the qhat estimation. 
-
-
-# def weighted_quantile_parallel(data, alpha, weights=None):
-#     ''' percents in units of 1%
-#         weights specifies the frequency (count) of data.
-#     '''
-#     if weights is None:
-#         return np.quantile(np.sort(data), alpha, axis = 0, interpolation='higher')
-    
-#     data = data.reshape(data.shape[0], -1)
-#     ind=np.argsort(data, axis=0)
-#     d=data[ind]
-#     w=weights[ind]
-
-#     p=1.*w.cumsum()/w.sum()
-#     y=np.interp(alpha, p, d)
-
-#     return y
-# cal_scores_flatten = cal_scores.reshape(N, -1)
-# cal_scores_sort_args = cal_scores_flatten[: 0].argsort()
-
+qhat = get_weighted_quantile(cal_scores, np.ceil((N+1)*(1-alpha))/(N), pi_vals)
 # %%
 y_shift = func(X_shift)
 y_shift_nn = model(torch.tensor(X_shift, dtype=torch.float32)).detach().numpy()
 
-prediction_sets =  [y_shift_nn - qhat, y_shift_nn + qhat]#Marginal
+prediction_sets =  [y_shift_nn - qhat.flatten(), y_shift_nn + qhat.flatten()]#Marginal
 # prediction_sets =  [y_shift_nn - qhat*modulation, y_shift_nn + qhat*modulation]#Joint
 
 empirical_coverage = ((y_shift >= prediction_sets[0]) & (y_shift <= prediction_sets[1])).mean()
@@ -176,7 +179,6 @@ print(f"The empirical coverage after calibration is: {empirical_coverage}")
 print(f"alpha is: {alpha}")
 print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
 
-# %% 
 
 # %%
 idces = np.argsort(X_shift[-1])
@@ -189,12 +191,13 @@ plt.title("Visualising the prediction intervals - known pdfs")
 
 # %%
 def calibrate_res(alpha):
-    qhat = []
-    for ii in range(output_size):
-     qhat.append(weighted_quantile(cal_scores[:, ii], np.ceil((N+1)*(1-alpha))/(N),  pi_vals[:, ii]))
-    qhat = np.asarray(qhat)
+    # qhat = []
+    # for ii in range(output_size):
+    #  qhat.append(weighted_quantile(cal_scores[:, ii], np.ceil((N+1)*(1-alpha))/(N),  pi_vals[:, ii]))
+    # qhat = np.asarray(qhat)
 
-    # qhat = weighted_quantile(cal_scores, np.ceil((N+1)*(1-alpha))/(N), pi_kde(X_shift.T, X_calib.T).squeeze())
+    qhat = get_weighted_quantile(cal_scores, np.ceil((N+1)*(1-alpha))/(N), pi_vals).squeeze()
+    
     prediction_sets = [y_shift_nn - qhat, y_shift_nn + qhat]
     empirical_coverage = ((y_shift >= prediction_sets[0]) & (y_shift <= prediction_sets[1])).mean()
     return empirical_coverage
@@ -207,6 +210,8 @@ for ii in tqdm(range(len(alpha_levels))):
 plt.figure()
 plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=1.0)
 plt.plot(1-alpha_levels, emp_cov, label='Residual - weighted - known pdf' ,ls='-.', color='maroon', alpha=0.8, linewidth=1.0)
+# plt.plot(1-alpha_levels, this, label='get_weighted' ,ls='-.', color='blue', alpha=0.8, linewidth=1.0)
+
 plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()
