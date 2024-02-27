@@ -13,6 +13,7 @@ import torch
 import torch.nn as nn 
 import scipy.stats as stats
 from tqdm import tqdm 
+from scipy.special import logsumexp
 
 from utils import * 
 
@@ -28,10 +29,11 @@ def normal_dist(mean, std, N):
     return dist.rvs((N, input_size))
 
 N_viz = 1000 #Datapoints a
-input_size = output_size = 500
+input_size = output_size = 15
 
 mean_1, std_1 = np.pi/2, np.pi/4
-mean_2, std_2 = np.pi/4, np.pi/8
+# mean_2, std_2 = np.pi/4, np.pi/8
+mean_2, std_2 = np.pi/2, np.pi/8        # Make the problem easier by just changing var
 
 x = normal_dist(mean_1, std_1, N_viz)
 x_shift = normal_dist(mean_2, std_2, N_viz) #Covariate shifted
@@ -86,10 +88,16 @@ plt.title("Visualising the Model Performance")
 
 
 # %%
-#Obtaining the Calibration Scores. 
-N = 1000 #Datapoints 
-X_calib = normal_dist(mean_1, std_1, N)
-X_shift = normal_dist(mean_2, std_2, 1)#Covariate shifted
+#Obtaining the Calibration Scores.  
+###
+# Ander: I've modified below this line
+###
+
+N_cal = 10000 #Datapoints 
+N_shift = 1000
+
+X_calib = normal_dist(mean_1, std_1, N_cal)
+X_shift = normal_dist(mean_2, std_2, N_shift)#Covariate shifted
 
 y_calib = func(X_calib)
 
@@ -104,18 +112,34 @@ cal_scores = np.abs(y_calib - y_calib_nn) #Marginal
 # %% 
 #Using the Known PDFs
 def likelihood_ratio(x):
-    pdf1 = stats.norm.pdf(x, mean_1, std_1)
-    pdf2 = stats.norm.pdf(x, mean_2, std_2)
+    pdf1 = np.prod(stats.norm.pdf(x, mean_1, std_1))
+    pdf2 = np.prod(stats.norm.pdf(x, mean_2, std_2))
     return (pdf2 / pdf1)
+
+def loglikelihood_ratio(x):
+    pdf1 = np.sum(stats.norm.logpdf(x, mean_1, std_1))
+    pdf2 = np.sum(stats.norm.logpdf(x, mean_2, std_2))
+    return pdf2 - pdf1
 
 # def likelihood_ratio(x):
 #     return stats.norm.pdf(x, mean_2, std_2)/stats.norm.pdf(x, mean_1, std_1)
+
+# These values are the same for every pi_log evaluation
+log_like_ratio_xcal = np.array([loglikelihood_ratio(X_calib[i,:]) for i in range(N_cal)])
+log_like_ratio_xcal_sum = logsumexp(log_like_ratio_xcal)
+
+def pi_log(x_new):
+    return log_like_ratio_xcal - (logsumexp([loglikelihood_ratio(x_new), log_like_ratio_xcal_sum]))
+
+def pi_log_inf(x_new):
+    return loglikelihood_ratio(x_new) - (logsumexp([loglikelihood_ratio(x_new), log_like_ratio_xcal_sum]))
 
 def pi(x_new, x_cal):
     return likelihood_ratio(x_cal) / (np.sum(likelihood_ratio(x_cal)) + likelihood_ratio(x_new))
 
 def pi_nplus1(x_new, x_cal):
     return likelihood_ratio(x_new) / (np.sum(likelihood_ratio(x_cal)) + likelihood_ratio(x_new))
+
 
 alpha = 0.1
 
@@ -160,6 +184,48 @@ def get_weighted_quantile(scores, quantile, weights):
 pi_vals = pi(X_shift, X_calib) # Our Implementation
 pi_vals = pi(X_shift, X_calib) +  pi_nplus1(X_shift, X_calib) #Including the n+1 as well 
 
+## Using weighted log samples
+import pandas as pd
+import seaborn as sns 
+
+## Get true scores for testing
+Y_shift_true = func(X_shift)
+y_shift_nn = model(torch.tensor(X_shift, dtype=torch.float32)).detach().numpy()
+true_shift_scores = np.abs(Y_shift_true - y_shift_nn) #Marginal
+
+## Test for input sample index and output dimension
+test_index = 100
+test_dimension = 0
+
+likes_vals = np.array([likelihood_ratio(X_shift[i,:]) for i in range(N_shift)] )
+log_likes_vals = np.array([loglikelihood_ratio(X_shift[i,:]) for i in range(N_shift)] )
+
+pi_logs = np.array([pi_log(X_shift[i, :]) for i in range(N_shift)])
+pi_log_infs = np.array([pi_log_inf(X_shift[i, :]) for i in range(N_shift)])
+
+pi_logs_1 = pi_logs[test_index, :]
+pi_logs_1 = np.append(pi_logs_1, pi_log_infs[test_index])
+
+pi_logs_1_adjust = np.exp(pi_logs_1)
+ws = pi_logs_1_adjust / np.sum(pi_logs_1_adjust)
+
+ESS = np.sum(pi_logs_1_adjust) **2 / np.sum(pi_logs_1_adjust**2)
+
+this_dim_true = true_shift_scores[:, test_dimension]
+this_dim_shift = cal_scores[:, test_dimension]
+this_dim_shift = np.append(this_dim_shift, np.inf)
+
+plt.step(np.sort(this_dim_true), np.linspace(0, 1, N_shift+1)[:-1])
+df = pd.DataFrame(np.vstack((this_dim_shift, ws)).T, columns = ['sample', 'weights'])
+
+sns.ecdfplot(data = df, x = 'sample', weights = 'weights', stat = 'proportion', legend = True)
+plt.xlabel("s(x,y)", fontsize = 18)
+plt.ylabel("cdf", fontsize = 18)
+plt.show()
+
+# plt.hist(ws, 200)
+
+
 #Attempting what they had done in the Conformal for Design paper. 
 # pi_vals = np.vstack((likelihood_ratio(X_calib), likelihood_ratio(X_shift)))
 # cal_scores = np.vstack((cal_scores, np.infty * np.ones(X_shift.shape)))
@@ -169,15 +235,31 @@ pi_vals = pi(X_shift, X_calib) +  pi_nplus1(X_shift, X_calib) #Including the n+1
 #     qhat.append(weighted_quantile(cal_scores[:, ii], np.ceil((N+1)*(1-alpha))/(N),  pi_vals[:, ii]))
 # qhat = np.asarray(qhat)
 
-qhat = get_weighted_quantile(cal_scores, np.ceil((N+1)*(1-alpha))/(N), pi_vals)
+# qhat = get_weighted_quantile(cal_scores, np.ceil((N_cal+1)*(1-alpha))/(N_cal), pi_vals)
+
+# Add infinity to pi_logs and cal_scores
+pi_log_with_inf = np.zeros((pi_logs.shape[0] + 1, pi_logs.shape[1]))
+pi_log_with_inf[:-1, :] = pi_logs
+pi_log_with_inf[-1, :] = pi_log_infs
+
+numerical_shift = 0 # Use if the weights are tiny, scale them to a non-zero amount
+pi_logs_exp = np.exp(pi_logs + numerical_shift)
+pi_normalised =  pi_logs_exp/np.sum(pi_logs_exp, axis =0)
+
+cal_scores_with_inf = np.ones((cal_scores.shape[0] + 1, cal_scores.shape[1]))
+cal_scores_with_inf[:-1, :] = cal_scores
+cal_scores_with_inf[-1, :] = np.inf
+
+qhat_weighted = np.array([get_weighted_quantile(cal_scores_with_inf[:,i], np.ceil((N_cal+1)*(1-alpha))/(N_cal), pi_normalised[i, :]) for i in range(input_size)])
 # %%
 y_shift = func(X_shift)
 y_shift_nn = model(torch.tensor(X_shift, dtype=torch.float32)).detach().numpy()
 
-prediction_sets =  [y_shift_nn - qhat.flatten(), y_shift_nn + qhat.flatten()]#Marginal
+prediction_sets =  [y_shift_nn - qhat_weighted.flatten(), y_shift_nn + qhat_weighted.flatten()]#Marginal
 # prediction_sets =  [y_shift_nn - qhat*modulation, y_shift_nn + qhat*modulation]#Joint
 
-empirical_coverage = ((y_shift >= prediction_sets[0]) & (y_shift <= prediction_sets[1])).mean()
+empirical_coverage = [((y_shift[:, i] >= prediction_sets[0][:, i]) & (y_shift[:, i] <= prediction_sets[1][:, i])).mean() for i in range(output_size)]
+empirical_coverage = np.array(empirical_coverage)
 
 print(f"The empirical coverage after calibration is: {empirical_coverage}")
 print(f"alpha is: {alpha}")
@@ -200,25 +282,30 @@ def calibrate_res(alpha):
     #  qhat.append(weighted_quantile(cal_scores[:, ii], np.ceil((N+1)*(1-alpha))/(N),  pi_vals[:, ii]))
     # qhat = np.asarray(qhat)
 
-    qhat = get_weighted_quantile(cal_scores, np.ceil((N+1)*(1-alpha))/(N), pi_vals).squeeze()
+    qhat_weighted = np.array([get_weighted_quantile(cal_scores[:,i], np.ceil((N_cal+1)*(1-alpha))/(N_cal), pi_normalised[i, :]) for i in range(input_size)])
     
-    prediction_sets = [y_shift_nn - qhat, y_shift_nn + qhat]
-    empirical_coverage = ((y_shift >= prediction_sets[0]) & (y_shift <= prediction_sets[1])).mean()
+    prediction_sets =  [y_shift_nn - qhat_weighted.flatten(), y_shift_nn + qhat_weighted.flatten()]#Marginal
+
+    empirical_coverage = [((y_shift[:, i] >= prediction_sets[0][:, i]) & (y_shift[:, i] <= prediction_sets[1][:, i])).mean() for i in range(output_size)]
+    empirical_coverage = np.array(empirical_coverage)
+
     return empirical_coverage
 
-alpha_levels = np.arange(0.05, 0.95, 0.1)
+alpha_levels = np.arange(0.05, 0.95, 0.05)
 emp_cov= []
 for ii in tqdm(range(len(alpha_levels))):
     emp_cov.append(calibrate_res(alpha_levels[ii]))
 
+emp_cov = np.array(emp_cov)
+
 plt.figure()
 plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=1.0)
-plt.plot(1-alpha_levels, emp_cov, label='Residual - weighted - known pdf' ,ls='-.', color='maroon', alpha=0.8, linewidth=1.0)
+[plt.plot(1-alpha_levels, emp_cov[:,i], label='Residual - weighted - known pdf' ,ls='-.', color='maroon', alpha=0.8, linewidth=1.0) for i in range(output_size)]
 # plt.plot(1-alpha_levels, this, label='get_weighted' ,ls='-.', color='blue', alpha=0.8, linewidth=1.0)
 
 plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
-plt.legend()
+# plt.legend()
 
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # %% 
