@@ -19,17 +19,20 @@ from utils import *
 
 torch.set_default_dtype(torch.float32)
 
+N_viz = 1000 #Datapoints a
+input_size = 5
+output_size = 2
+
 # %% 
 def func(x):
-    return (np.sin(2*x))
+    # return np.array([np.expand_dims(np.sin(2*np.sum(x, axis = -1)), -1) for i in range(output_size)])
+    return np.array([np.sin(2*np.sum(x, axis = -1)) for i in range(output_size)]).T
 
 #Sampling from a normal distribution
 def normal_dist(mean, std, N):
     dist = stats.norm(mean, std)
     return dist.rvs((N, input_size))
 
-N_viz = 1000 #Datapoints a
-input_size = output_size = 15
 
 mean_1, std_1 = np.pi/2, np.pi/4
 # mean_2, std_2 = np.pi/4, np.pi/8
@@ -40,7 +43,7 @@ x_shift = normal_dist(mean_2, std_2, N_viz) #Covariate shifted
 
 # %% 
 #Visualising the covariate shift
-
+plt.figure()
 plt.hist(x[:, 0], label='Initial')
 plt.hist(x_shift[:, 0], label='Shifted')
 plt.legend()
@@ -54,7 +57,7 @@ y_shift = func(x_shift)
 # %% 
 #Training a NN to model the output 
 
-model = MLP(input_size, output_size, 5, 512)
+model = MLP(input_size, output_size, 2, 10)
 train_N = 1000
 x_lin = normal_dist(mean_1, std_1, train_N)
 x_train = torch.tensor(x_lin, dtype=torch.float32)
@@ -74,17 +77,17 @@ for ii in tqdm(range(epochs)):
     
 # %% 
 #Visualising the model performance on the training data
-viz_N = input_size
-x_viz = torch.tensor(np.linspace(np.pi/6, np.pi/2, viz_N), dtype=torch.float32)
-x_viz = x_viz.repeat(1000, 1)
-y_viz= func(x_viz)
-y_mean = model(x_viz)
+# viz_N = input_size
+# x_viz = torch.tensor(np.linspace(np.pi/6, np.pi/2, viz_N), dtype=torch.float32)
+# x_viz = x_viz.repeat(1000, 1)
+# y_viz= func(x_viz)
+# y_mean = model(x_viz)
 
 
-plt.plot(y_train[-1], label='Actual')
-plt.plot(y_out[-1].detach().numpy(), label='Pred')
-plt.legend()
-plt.title("Visualising the Model Performance")
+# plt.plot(y_train[-1], label='Actual')
+# plt.plot(y_out[-1].detach().numpy(), label='Pred')
+# plt.legend()
+# plt.title("Visualising the Model Performance")
 
 
 # %%
@@ -93,7 +96,7 @@ plt.title("Visualising the Model Performance")
 # Ander: I've modified below this line
 ###
 
-N_cal = 10000 #Datapoints 
+N_cal = 1001 #Datapoints 
 N_shift = 1000
 
 X_calib = normal_dist(mean_1, std_1, N_cal)
@@ -180,7 +183,7 @@ def get_weighted_quantile(scores, quantile, weights):
     q_y = sortedscores[(qidx_y, range(qidx_y.size))]
     return q_y
 # %% 
-#Multivariate marginal 
+#Multivariate marginal
 pi_vals = pi(X_shift, X_calib) # Our Implementation
 pi_vals = pi(X_shift, X_calib) +  pi_nplus1(X_shift, X_calib) #Including the n+1 as well 
 
@@ -197,8 +200,8 @@ true_shift_scores = np.abs(Y_shift_true - y_shift_nn) #Marginal
 test_index = 100
 test_dimension = 0
 
-likes_vals = np.array([likelihood_ratio(X_shift[i,:]) for i in range(N_shift)] )
-log_likes_vals = np.array([loglikelihood_ratio(X_shift[i,:]) for i in range(N_shift)] )
+# likes_vals = np.array([likelihood_ratio(X_shift[i,:]) for i in range(N_shift)] )
+# log_likes_vals = np.array([loglikelihood_ratio(X_shift[i,:]) for i in range(N_shift)] )
 
 pi_logs = np.array([pi_log(X_shift[i, :]) for i in range(N_shift)])
 pi_log_infs = np.array([pi_log_inf(X_shift[i, :]) for i in range(N_shift)])
@@ -206,56 +209,52 @@ pi_log_infs = np.array([pi_log_inf(X_shift[i, :]) for i in range(N_shift)])
 pi_logs_1 = pi_logs[test_index, :]
 pi_logs_1 = np.append(pi_logs_1, pi_log_infs[test_index])
 
-pi_logs_1_adjust = np.exp(pi_logs_1)
+log_shift = 10
+pi_logs_1_adjust = np.exp(pi_logs_1 + log_shift)
 ws = pi_logs_1_adjust / np.sum(pi_logs_1_adjust)
 
-ESS = np.sum(pi_logs_1_adjust) **2 / np.sum(pi_logs_1_adjust**2)
+ESS = np.sum(pi_logs_1_adjust) **2 / np.sum(pi_logs_1_adjust**2)    ## Effective sample size
 
 this_dim_true = true_shift_scores[:, test_dimension]
 this_dim_shift = cal_scores[:, test_dimension]
 this_dim_shift = np.append(this_dim_shift, np.inf)
 
-plt.step(np.sort(this_dim_true), np.linspace(0, 1, N_shift+1)[:-1])
+plt.figure()
+plt.step(np.sort(this_dim_true), np.linspace(0, 1, N_shift+1)[:-1], label="true non-conformity scores")
 df = pd.DataFrame(np.vstack((this_dim_shift, ws)).T, columns = ['sample', 'weights'])
 
-sns.ecdfplot(data = df, x = 'sample', weights = 'weights', stat = 'proportion', legend = True)
+sns.ecdfplot(data = df, x = 'sample', weights = 'weights', stat = 'proportion', legend = True,  label="predicted scores")
 plt.xlabel("s(x,y)", fontsize = 18)
 plt.ylabel("cdf", fontsize = 18)
+plt.title(f"Effective SS: {ESS}")
+plt.legend()
 plt.show()
 
-# plt.hist(ws, 200)
-
-
-#Attempting what they had done in the Conformal for Design paper. 
-# pi_vals = np.vstack((likelihood_ratio(X_calib), likelihood_ratio(X_shift)))
-# cal_scores = np.vstack((cal_scores, np.infty * np.ones(X_shift.shape)))
-# %%
-# qhat = []
-# for ii in range(output_size):
-#     qhat.append(weighted_quantile(cal_scores[:, ii], np.ceil((N+1)*(1-alpha))/(N),  pi_vals[:, ii]))
-# qhat = np.asarray(qhat)
-
-# qhat = get_weighted_quantile(cal_scores, np.ceil((N_cal+1)*(1-alpha))/(N_cal), pi_vals)
-
+# %% 
+#   Check empirical coverage of shifted distribution for one alpha
+#
 # Add infinity to pi_logs and cal_scores
-pi_log_with_inf = np.zeros((pi_logs.shape[0] + 1, pi_logs.shape[1]))
-pi_log_with_inf[:-1, :] = pi_logs
-pi_log_with_inf[-1, :] = pi_log_infs
+alpha = 0.1
 
-numerical_shift = 0 # Use if the weights are tiny, scale them to a non-zero amount
-pi_logs_exp = np.exp(pi_logs + numerical_shift)
-pi_normalised =  pi_logs_exp/np.sum(pi_logs_exp, axis =0)
+pi_log_with_inf = np.zeros((pi_logs.shape[0], pi_logs.shape[1] + 1))
+pi_log_with_inf[:, :-1] = pi_logs
+pi_log_with_inf[:, -1] = pi_log_infs
+
+log_shift = 0 # Use if the weights are tiny, scale them to a non-zero amount
+pi_logs_exp = np.exp(pi_log_with_inf + log_shift)
+pi_normalised =  pi_logs_exp.T/np.sum(pi_logs_exp, axis =1)
+pi_normalised = pi_normalised.T
 
 cal_scores_with_inf = np.ones((cal_scores.shape[0] + 1, cal_scores.shape[1]))
 cal_scores_with_inf[:-1, :] = cal_scores
 cal_scores_with_inf[-1, :] = np.inf
 
-qhat_weighted = np.array([get_weighted_quantile(cal_scores_with_inf[:,i], np.ceil((N_cal+1)*(1-alpha))/(N_cal), pi_normalised[i, :]) for i in range(input_size)])
-# %%
-y_shift = func(X_shift)
-y_shift_nn = model(torch.tensor(X_shift, dtype=torch.float32)).detach().numpy()
+# qhat_weighted = np.array([get_weighted_quantile(cal_scores_with_inf[:,i], np.ceil((N_cal+1)*(1-alpha))/(N_cal), pi_normalised[i, :]) for i in range(input_size)])
+qhat_weighted = np.array([[get_weighted_quantile(cal_scores_with_inf[:,i], np.ceil((N_cal+1)*(1-alpha))/(N_cal), pi_normalised[j, :]) for i in range(output_size)] for j in range(N_shift)])
 
-prediction_sets =  [y_shift_nn - qhat_weighted.flatten(), y_shift_nn + qhat_weighted.flatten()]#Marginal
+qhat_weighted = np.array(qhat_weighted)
+
+prediction_sets =  [y_shift_nn - qhat_weighted[:,:,0], y_shift_nn + qhat_weighted[:,:,0]]
 # prediction_sets =  [y_shift_nn - qhat*modulation, y_shift_nn + qhat*modulation]#Joint
 
 empirical_coverage = [((y_shift[:, i] >= prediction_sets[0][:, i]) & (y_shift[:, i] <= prediction_sets[1][:, i])).mean() for i in range(output_size)]
@@ -267,24 +266,21 @@ print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
 
 
 # %%
-idces = np.argsort(X_shift[-1])
-plt.plot(X_shift[-1][idces], y_shift[-1][idces], label='Actual')
-plt.plot(X_shift[-1][idces], y_shift_nn[-1][idces], label='Pred')
-plt.fill_between(X_shift[-1][idces], prediction_sets[0][-1][idces], prediction_sets[1][-1][idces], alpha=0.2)
-plt.plot
-plt.legend()
-plt.title("Visualising the prediction intervals - known pdfs")
+# idces = np.argsort(X_shift[-1])
+# plt.plot(X_shift[-1][idces], y_shift[-1][idces], label='Actual')
+# plt.plot(X_shift[-1][idces], y_shift_nn[-1][idces], label='Pred')
+# plt.fill_between(X_shift[-1][idces], prediction_sets[0][-1][idces], prediction_sets[1][-1][idces], alpha=0.2)
+# plt.plot
+# plt.legend()
+# plt.title("Visualising the prediction intervals - known pdfs")
 
 # %%
+#
 def calibrate_res(alpha):
-    # qhat = []
-    # for ii in range(output_size):
-    #  qhat.append(weighted_quantile(cal_scores[:, ii], np.ceil((N+1)*(1-alpha))/(N),  pi_vals[:, ii]))
-    # qhat = np.asarray(qhat)
 
-    qhat_weighted = np.array([get_weighted_quantile(cal_scores[:,i], np.ceil((N_cal+1)*(1-alpha))/(N_cal), pi_normalised[i, :]) for i in range(input_size)])
+    qhat_weighted = np.array([[get_weighted_quantile(cal_scores_with_inf[:,i], np.ceil((N_cal+1)*(1-alpha))/(N_cal), pi_normalised[j, :]) for i in range(output_size)] for j in range(N_shift)])
     
-    prediction_sets =  [y_shift_nn - qhat_weighted.flatten(), y_shift_nn + qhat_weighted.flatten()]#Marginal
+    prediction_sets =  [y_shift_nn - qhat_weighted[:,:,0], y_shift_nn + qhat_weighted[:,:,0]]#Marginal
 
     empirical_coverage = [((y_shift[:, i] >= prediction_sets[0][:, i]) & (y_shift[:, i] <= prediction_sets[1][:, i])).mean() for i in range(output_size)]
     empirical_coverage = np.array(empirical_coverage)
@@ -306,7 +302,7 @@ plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.
 plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 # plt.legend()
-
+plt.show()
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # %% 
 #Density Ratio Estimation using Probabilistic Classification
