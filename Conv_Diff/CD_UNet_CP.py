@@ -37,6 +37,7 @@ configuration = {"Case": 'Burgers',
 
 # %%
 #Importing the necessary packages
+import os 
 import numpy as np
 from tqdm import tqdm 
 import torch
@@ -46,8 +47,9 @@ import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from matplotlib import cm 
 import matplotlib as mpl 
-plt.rcParams['text.usetex'] = True
 
+#Setting the matplotlib settings 
+plt.rcParams['text.usetex'] = True
 plt.rcParams['grid.linewidth'] = 1.0
 plt.rcParams['grid.alpha'] = 0.5
 plt.rcParams['grid.linestyle'] = '-'
@@ -82,7 +84,7 @@ from utils import *
 torch.manual_seed(0)
 np.random.seed(0)
 from utils import *
-
+from utils_cp import * 
 
 # %% 
 #Setting the seeds and the path for the run. 
@@ -173,9 +175,9 @@ model_50.load_state_dict(torch.load(model_loc + 'Unet_CD_mean_0.5.pth', map_loca
 
 
 # %%
+#Performing the Calibration for Quantile Regression
 t1 = default_timer()
 
-#Performing the Calibration for Quantile Regression
 n = ncal
 alpha = 0.1 #Coverage will be 1- alpha 
 
@@ -184,48 +186,45 @@ with torch.no_grad():
     cal_upper = model_95(torch.Tensor(cal_a)).numpy()
 
 # %%
-cal_scores = np.maximum(cal_u.numpy()-cal_upper, cal_lower-cal_u.numpy())           
-qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
+#Perfprming the calibration
+cal_scores = nonconf_score_lu(cal_u.numpy(), cal_lower, cal_upper)
+qhat = calibrate(cal_scores, n, alpha)
 
 # %% 
 #Obtaining the Prediction Sets
-
 y_response = pred_u.numpy()
-stacked_x = torch.FloatTensor(pred_a)
+x_response = torch.FloatTensor(pred_a)
 
 with torch.no_grad():
-    val_lower = model_05(stacked_x).numpy()
-    val_upper = model_95(stacked_x).numpy()
-    mean = model_50(stacked_x).numpy()
+    val_lower = model_05(x_response).numpy()
+    val_upper = model_95(x_response).numpy()
+    mean = model_50(x_response).numpy()
 
-prediction_sets = [val_lower - qhat, val_upper + qhat]
+prediction_sets_calibrated = [val_lower - qhat, val_upper + qhat]
 
 # %%
 print('Conformal by way QCR')
 # Calculate empirical coverage (before and after calibration)
 prediction_sets_uncalibrated = [val_lower, val_upper]
-empirical_coverage_uncalibrated = ((y_response >= prediction_sets_uncalibrated[0]) & (y_response <= prediction_sets_uncalibrated[1])).mean()
+empirical_coverage_uncalibrated = emp_cov(prediction_sets_uncalibrated, y_response)
 print(f"The empirical coverage before calibration is: {empirical_coverage_uncalibrated}")
-empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
-print(f"The empirical coverage after calibration is: {empirical_coverage}")
+empirical_coverage_calibrated = emp_cov(prediction_sets_calibrated, y_response)
+print(f"The empirical coverage after calibration is: {empirical_coverage_calibrated}")
 
 t2 = default_timer()
 print('CQR, time used:', t2-t1)
 
-#Estimating the tightness of fit
-cov = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1]))
-cov_idx = cov.nonzero()
-
-tightness_metric = ((prediction_sets[1][cov_idx]  - y_response[cov_idx]) +  (y_response[cov_idx] - prediction_sets[0][cov_idx])).mean()
+tightness_metric = est_tight(prediction_sets_calibrated, y_response)
 print(f"Tightness of the coverage : Average of the distance between error bars {tightness_metric}")
 
-# %%% 
+# %%
+
 idx = 12
 t_val = -1
 Y_pred_viz = y_response[idx, t_val]
 mean_viz = mean[idx, t_val]
-pred_set_0_viz = prediction_sets[0][idx, t_val]
-pred_set_1_viz = prediction_sets[1][idx, t_val]
+pred_set_0_viz = prediction_sets_calibrated[0][idx, t_val]
+pred_set_1_viz = prediction_sets_calibrated[1][idx, t_val]
 pred_set_uncal_0_viz = prediction_sets_uncalibrated[0][idx, t_val]
 pred_set_uncal_1_viz = prediction_sets_uncalibrated[1][idx, t_val]
 
@@ -246,30 +245,18 @@ plt.savefig("convdiff_cqr.svg", format="svg", bbox_inches='tight', transparent='
 plt.show()
 # %% 
 #Testing calibration across range of Alpha for QCR 
-def calibrate_cqr(alpha):
-    n = ncal
-    y_response = pred_u.numpy()
-
-    with torch.no_grad():
-        cal_lower = model_05(torch.Tensor(cal_a)).numpy()
-        cal_upper = model_95(torch.Tensor(cal_a)).numpy()
-
-    cal_scores = np.maximum(cal_u.numpy()-cal_upper, cal_lower-cal_u.numpy())           
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
-
-    prediction_sets = [val_lower - qhat, val_upper + qhat]
-    empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
-    return empirical_coverage
-
 
 alpha_levels = np.arange(0.05, 0.95, 0.1)
 emp_cov_cqr = []
 
 for ii in tqdm(range(len(alpha_levels))):
-    emp_cov_cqr.append(calibrate_cqr(alpha_levels[ii]))
+    qhat = calibrate(cal_scores, n, alpha_levels[ii])
+    prediction_sets = [val_lower - qhat, val_upper + qhat]
+    emp_cov_cqr.append(emp_cov(prediction_sets, y_response))
 
 
 # %% 
+#Plot the Empirical Coverage
 # plt.figure()
 # plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.75, linewidth=3.0)
 # plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.75, linewidth=3.0)
@@ -280,7 +267,7 @@ for ii in tqdm(range(len(alpha_levels))):
 # plt.legend()
 # plt.grid() #Comment out if you dont want grids.
 
-# %% 
+
 # %%
 #####################################
 #Conformalising using Residuals (MAE)
@@ -290,7 +277,6 @@ for ii in tqdm(range(len(alpha_levels))):
 model_50 = UNet1d(T_in, step, width)
 model_50.load_state_dict(torch.load(model_loc + 'Unet_CD_mean_0.5.pth', map_location='cpu'))
 
-
 t1 = default_timer()
 
 n = ncal
@@ -299,23 +285,19 @@ alpha = 0.1 #Coverage will be 1- alpha
 with torch.no_grad():
     cal_mean = model_50(torch.Tensor(cal_a)).numpy()
 
-cal_scores = np.abs(cal_u.numpy()-cal_mean)           
-qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
-
+cal_scores = nonconf_score_abs(cal_u.numpy(), cal_mean)
+qhat = calibrate(cal_scores, n, alpha)
 # %% 
 #Obtaining the Prediction Sets
 y_response = pred_u.numpy()
-
 with torch.no_grad():
-    mean = model_50(torch.FloatTensor(pred_a)).numpy()
+    pred_mean = model_50(torch.FloatTensor(pred_a)).numpy()
 
-prediction_sets =  [mean - qhat, mean + qhat]
-
-
+prediction_sets =  [pred_mean - qhat, pred_mean + qhat]
 # %%
 print('Conformal by way Residual')
 # Calculate empirical coverage (before and after calibration)
-empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
+empirical_coverage = emp_cov(prediction_sets, y_response) 
 print(f"The empirical coverage after calibration is: {empirical_coverage}")
 print(f"alpha is: {alpha}")
 print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
@@ -324,18 +306,15 @@ t2 = default_timer()
 print('Residuals, time used:', t2-t1)
 
 #Estimating the tightness of fit
-cov = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1]))
-cov_idx = cov.nonzero()
-
-tightness_metric = ((prediction_sets[1][cov_idx]  - y_response[cov_idx]) +  (y_response[cov_idx] - prediction_sets[0][cov_idx])).mean()
+tightness_metric = est_tight(prediction_sets, y_response)
 print(f"Tightness of the coverage : Average of the distance between error bars {tightness_metric}")
 
-    # %% 
+# %% 
 
 idx = 12 
 t_val = -1
 Y_pred_viz = y_response[idx, t_val]
-mean_viz = mean[idx, t_val]
+mean_viz = pred_mean[idx, t_val]
 pred_set_0_viz = prediction_sets[0][idx, t_val]
 pred_set_1_viz = prediction_sets[1][idx, t_val]
 
@@ -354,29 +333,18 @@ plt.savefig("convdiff_residual.svg", format="svg", bbox_inches='tight',  transpa
 plt.show()
 
 # %%
-def calibrate_res(alpha):
-    n = ncal
-    y_response = pred_u.numpy()
-
-    with torch.no_grad():
-        cal_mean = model_50(torch.Tensor(cal_a)).numpy()
-        
-    cal_scores = np.abs(cal_u-cal_mean)     
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
-
-    prediction_sets =  [mean - qhat, mean + qhat]
-    empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
-    return empirical_coverage
-
+#Empriical Coverage for all values of alpha 
 
 alpha_levels = np.arange(0.05, 0.95, 0.1)
 emp_cov_res = []
 for ii in tqdm(range(len(alpha_levels))):
-    emp_cov_res.append(calibrate_res(alpha_levels[ii]))
+    qhat = calibrate(cal_scores, n, alpha_levels[ii])
+    prediction_sets =  [pred_mean - qhat, pred_mean + qhat]
+    emp_cov_res.append(emp_cov(prediction_sets, y_response))
 
 
 # %% 
-
+#Plotting the empirical coverage
 # plt.figure()
 # plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.75, linewidth=3.0)
 # # plt.plot(1-alpha_levels, emp_cov_cqr, label='CQR', color='maroon', ls='--',  alpha=0.75, linewidth=3.0)
@@ -399,7 +367,6 @@ model_dropout.load_state_dict(torch.load(model_loc + 'Unet_CD_dropout_NA.pth', m
 
 # %%
 #Performing the Calibration for Dropout
-
 t1 = default_timer()
 
 n = ncal
@@ -425,8 +392,9 @@ with torch.no_grad():
 cal_upper = cal_mean + cal_std
 cal_lower = cal_mean - cal_std
 
-cal_scores = np.maximum(cal_u-cal_upper, cal_lower-cal_u)
-qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
+cal_scores = nonconf_score_lu(cal_u, cal_lower, cal_upper)
+qhat = calibrate(cal_scores, n, alpha)
+
 
 # %% 
 #Obtaining the Prediction Sets
@@ -452,7 +420,7 @@ val_lower = val_lower.numpy()
 val_upper = val_upper.numpy()
 
 prediction_sets_uncalibrated = [val_lower, val_upper]
-prediction_sets = [val_lower - qhat, val_upper + qhat]
+prediction_sets_calibrated = [val_lower - qhat, val_upper + qhat]
 
 # %% 
 y_response = pred_u.numpy()
@@ -460,30 +428,25 @@ y_response = pred_u.numpy()
 print('Conformal by way of Dropout')
 # Calculate empirical coverage (before and after calibration)
 prediction_sets_uncalibrated = [val_lower, val_upper]
-empirical_coverage_uncalibrated = ((y_response >= prediction_sets_uncalibrated[0]) & (y_response <= prediction_sets_uncalibrated[1])).mean()
+empirical_coverage_uncalibrated = emp_cov(prediction_sets_uncalibrated, y_response)
 print(f"The empirical coverage before calibration is: {empirical_coverage_uncalibrated}")
-empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
+empirical_coverage = emp_cov(prediction_sets_calibrated, y_response)
 print(f"The empirical coverage after calibration is: {empirical_coverage}")
 t2 = default_timer()
 print('Dropout, time used:', t2-t1)
 
 
 #Estimating the tightness of fit
-cov = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1]))
-cov_idx = cov.nonzero()
-
-tightness_metric = ((prediction_sets[1][cov_idx]  - y_response[cov_idx]) +  (y_response[cov_idx] - prediction_sets[0][cov_idx])).mean()
+tightness_metric = est_tight(prediction_sets_calibrated, y_response)
 print(f"Tightness of the coverage : Average of the distance between error bars {tightness_metric}")
-
-
 # %% 
 
 idx = 12
 t_val = -1
 Y_pred_viz = y_response[idx, t_val]
 mean_viz = mean[idx, t_val]
-pred_set_0_viz = prediction_sets[0][idx, t_val]
-pred_set_1_viz = prediction_sets[1][idx, t_val]
+pred_set_0_viz = prediction_sets_calibrated[0][idx, t_val]
+pred_set_1_viz = prediction_sets_calibrated[1][idx, t_val]
 pred_set_uncal_0_viz = prediction_sets_uncalibrated[0][idx, t_val]
 pred_set_uncal_1_viz = prediction_sets_uncalibrated[1][idx, t_val]
 
@@ -505,41 +468,14 @@ plt.savefig("convdiff_dropout.svg", format="svg", bbox_inches='tight', transpare
 plt.show()
 # %%
 
-def calibrate_dropout(alpha):
-
-    with torch.no_grad():
-        xx = cal_a
-
-        for tt in tqdm(range(0, T, step)):
-            mean, std = Dropout_eval(model_dropout, xx, step)
-
-            if tt == 0:
-                cal_mean = mean
-                cal_std = std
-            else:
-                cal_mean = torch.cat((cal_mean, mean), 1)       
-                cal_std = torch.cat((cal_std, std), 1)       
-
-            xx = torch.cat((xx[:, step:, :], mean), dim=1)
-
-
-    # cal_mean = cal_mean.numpy()
-
-    cal_upper = cal_mean + cal_std
-    cal_lower = cal_mean - cal_std
-
-    cal_scores = np.maximum(cal_u-cal_upper, cal_lower-cal_u)
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
-    prediction_sets = [val_lower - qhat, val_upper + qhat]
-    empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
-    return empirical_coverage
-
 
 alpha_levels = np.arange(0.05, 0.95, 0.1)
 emp_cov_dropout = []
-
 for ii in tqdm(range(len(alpha_levels))):
-    emp_cov_dropout.append(calibrate_dropout(alpha_levels[ii]))
+    qhat = calibrate(cal_scores, n, alpha_levels[ii])
+    prediction_sets =  [val_lower - qhat, val_upper + qhat]
+    emp_cov_dropout.append(emp_cov(prediction_sets, y_response))
+
 
 # %% 
 
@@ -585,75 +521,75 @@ plt.grid() #Comment out if you dont want grids.
 plt.savefig("convdiff_comparison.svg", format="svg", bbox_inches='tight')
 plt.show()
 # %%
-outer_grid = fig.add_gridspec(2, 5, wspace=0, hspace=0)
+# outer_grid = fig.add_gridspec(2, 5, wspace=0, hspace=0)
 
-for a in range(2):
-    for b in range(5):
-        # gridspec inside gridspec
-        inner_grid = outer_grid[a, b].subgridspec(3, 3, wspace=0, hspace=0)
-        axs = inner_grid.subplots()  # Create all subplots for the inner grid.
-        for (c, d), ax in np.ndenumerate(axs):
-            print(c, d, ax)
-            # ax.plot(*squiggle_xy(a + 1, b + 1, c + 1, d + 1))
-            ax.plot(that[0])
-            ax.set(xticks=[], yticks=[])
+# for a in range(2):
+#     for b in range(5):
+#         # gridspec inside gridspec
+#         inner_grid = outer_grid[a, b].subgridspec(3, 3, wspace=0, hspace=0)
+#         axs = inner_grid.subplots()  # Create all subplots for the inner grid.
+#         for (c, d), ax in np.ndenumerate(axs):
+#             print(c, d, ax)
+#             # ax.plot(*squiggle_xy(a + 1, b + 1, c + 1, d + 1))
+#             ax.plot(that[0])
+#             ax.set(xticks=[], yticks=[])
 
-# show only the outside spines
-for ax in fig.get_axes():
-    ss = ax.get_subplotspec()
-    ax.spines.top.set_visible(ss.is_first_row())
-    ax.spines.bottom.set_visible(ss.is_last_row())
-    ax.spines.left.set_visible(ss.is_first_col())
-    ax.spines.right.set_visible(ss.is_last_col())
+# # show only the outside spines
+# for ax in fig.get_axes():
+#     ss = ax.get_subplotspec()
+#     ax.spines.top.set_visible(ss.is_first_row())
+#     ax.spines.bottom.set_visible(ss.is_last_row())
+#     ax.spines.left.set_visible(ss.is_first_col())
+#     ax.spines.right.set_visible(ss.is_last_col())
 
-plt.show()
-# %%
-#Plotting the cell-wise CP estimation. 
+# plt.show()
+# # %%
+# #Plotting the cell-wise CP estimation. 
 
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-import numpy as np
+# import matplotlib.pyplot as plt
+# import matplotlib.gridspec as gridspec
+# import numpy as np
 
-idx = 12
+# idx = 12
 
-t_len = 4
-x_len = 4
-t_slice = int(y_response.shape[1] / t_len)
-x_slice = int(y_response.shape[2] / x_len)
+# t_len = 4
+# x_len = 4
+# t_slice = int(y_response.shape[1] / t_len)
+# x_slice = int(y_response.shape[2] / x_len)
 
-y_response_slice = y_response[idx, ::t_slice, ::x_slice]
-mean_slice = mean[idx, ::t_slice, ::x_slice]
-uncalib_lb_slice = prediction_sets_uncalibrated[0][idx, ::t_slice, ::x_slice]
-uncalib_ub_slice = prediction_sets_uncalibrated[1][idx, ::t_slice, ::x_slice]
-calib_lb_slice = prediction_sets[0][idx, ::t_slice, ::x_slice]
-calib_ub_slice = prediction_sets[1][idx, ::t_slice, ::x_slice]
+# y_response_slice = y_response[idx, ::t_slice, ::x_slice]
+# mean_slice = mean[idx, ::t_slice, ::x_slice]
+# uncalib_lb_slice = prediction_sets_uncalibrated[0][idx, ::t_slice, ::x_slice]
+# uncalib_ub_slice = prediction_sets_uncalibrated[1][idx, ::t_slice, ::x_slice]
+# calib_lb_slice = prediction_sets[0][idx, ::t_slice, ::x_slice]
+# calib_ub_slice = prediction_sets[1][idx, ::t_slice, ::x_slice]
 
-# Create a t_len x x_len grid of cells using gridspec
-plt.figure()
-gs = gridspec.GridSpec(t_len, x_len, wspace=0, hspace=0, width_ratios=list(np.ones((x_len))), height_ratios=list(np.ones((t_len))))
+# # Create a t_len x x_len grid of cells using gridspec
+# plt.figure()
+# gs = gridspec.GridSpec(t_len, x_len, wspace=0, hspace=0, width_ratios=list(np.ones((x_len))), height_ratios=list(np.ones((t_len))))
 
-y_max = np.max(calib_ub_slice)
-y_min = np.min(calib_lb_slice)
+# y_max = np.max(calib_ub_slice)
+# y_min = np.min(calib_lb_slice)
 
-for aa in range(t_len):
-    for bb in range(x_len):
-        ax = plt.subplot(gs[aa, bb])
-        ax.scatter(x_range[::x_slice][bb], y_response_slice[aa, bb])
-        # ax.errorbar(x_range[::x_slice][bb], mean_slice[aa, bb].flatten(), yerr=(uncalib_ub_slice[aa, bb] - uncalib_lb_slice[aa, bb]).flatten(), label='Prediction', color='navy', fmt='o', alpha=0.5) #Uncalibrated
-        ax.errorbar(x_range[::x_slice][bb], mean_slice[aa, bb].flatten(), yerr=(calib_ub_slice[aa, bb] - calib_lb_slice[aa, bb]).flatten(), label='Prediction', color='navy', fmt='o', alpha=0.5) #Calibrated 
-        ax.set_ylim(bottom=y_min, top=y_max)
+# for aa in range(t_len):
+#     for bb in range(x_len):
+#         ax = plt.subplot(gs[aa, bb])
+#         ax.scatter(x_range[::x_slice][bb], y_response_slice[aa, bb])
+#         # ax.errorbar(x_range[::x_slice][bb], mean_slice[aa, bb].flatten(), yerr=(uncalib_ub_slice[aa, bb] - uncalib_lb_slice[aa, bb]).flatten(), label='Prediction', color='navy', fmt='o', alpha=0.5) #Uncalibrated
+#         ax.errorbar(x_range[::x_slice][bb], mean_slice[aa, bb].flatten(), yerr=(calib_ub_slice[aa, bb] - calib_lb_slice[aa, bb]).flatten(), label='Prediction', color='navy', fmt='o', alpha=0.5) #Calibrated 
+#         ax.set_ylim(bottom=y_min, top=y_max)
 
-        ax.set(xticks=[], yticks=[])
+#         ax.set(xticks=[], yticks=[])
 
-# Remove space between subplots
-plt.subplots_adjust(wspace=0, hspace=0)
+# # Remove space between subplots
+# plt.subplots_adjust(wspace=0, hspace=0)
 
-plt.tight_layout()
+# plt.tight_layout()
 
-# Show the plot
-plt.show()
+# # Show the plot
+# plt.show()
 
 
-# %%
-plt.plot(mean_slice.T)
-# %%
+# # %%
+# plt.plot(mean_slice.T)
+# # %%
