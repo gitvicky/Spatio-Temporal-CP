@@ -333,7 +333,7 @@ plt.savefig("convdiff_residual.svg", format="svg", bbox_inches='tight',  transpa
 plt.show()
 
 # %%
-#Empriical Coverage for all values of alpha 
+#Emprical Coverage for all values of alpha 
 
 alpha_levels = np.arange(0.05, 0.95, 0.1)
 emp_cov_res = []
@@ -392,7 +392,10 @@ with torch.no_grad():
 cal_upper = cal_mean + cal_std
 cal_lower = cal_mean - cal_std
 
-cal_scores = nonconf_score_lu(cal_u, cal_lower, cal_upper)
+cal_lower = cal_lower.numpy()
+cal_upper = cal_upper.numpy()
+
+cal_scores = nonconf_score_lu(cal_u.numpy(), cal_lower, cal_upper)
 qhat = calibrate(cal_scores, n, alpha)
 
 
@@ -467,8 +470,7 @@ plt.grid() #Comment out if you dont want grids.
 plt.savefig("convdiff_dropout.svg", format="svg", bbox_inches='tight', transparent='True')
 plt.show()
 # %%
-
-
+#Empirical Coverage across the full range 
 alpha_levels = np.arange(0.05, 0.95, 0.1)
 emp_cov_dropout = []
 for ii in tqdm(range(len(alpha_levels))):
