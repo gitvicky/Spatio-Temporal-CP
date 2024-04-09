@@ -216,6 +216,7 @@ with torch.no_grad():
 val_mean = val_mean.numpy()
 prediction_sets = [val_mean - qhat, val_mean + qhat]
 
+pred_sets = get_prediction_sets([cal_mean, cal_u], val_mean, alpha, nonconf_score='abs')
 # %%
 print('Conformal by way Residual')
 # Calculate empirical coverage (before and after calibration)
@@ -294,7 +295,6 @@ cal_lower = cal_lower.numpy()
 cal_scores = nonconf_score_lu(cal_u.numpy(), cal_lower, cal_upper)
 qhat = calibrate(cal_scores, n, alpha)
 
-
 # %% 
 #Obtaining the Prediction Sets
 with torch.no_grad():
@@ -321,6 +321,7 @@ val_upper = val_upper.numpy()
 prediction_sets_uncalibrated = [val_lower, val_upper]
 prediction_sets_calibrated = [val_lower - qhat, val_upper + qhat]
 
+pred_sets = get_prediction_sets([cal_mean, cal_std], [val_mean, val_std], alpha, nonconf_score='std')
 # %% 
 y_response = pred_u.numpy()
 
@@ -402,10 +403,9 @@ mpl.rcParams['axes.titlepad'] = 20
 
 # %%
 
-def get_prediction_sets(alpha):
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
-    prediction_sets = [val_mean - qhat, val_mean + qhat]
-
+# def get_prediction_sets(alpha):
+#     qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
+#     prediction_sets = [val_mean - qhat, val_mean + qhat]
 
 # cols = cm.plasma(alpha_levels)
 # pred_sets = [get_prediction_sets(a) for a in alpha_levels] 
@@ -462,6 +462,7 @@ T_in = configuration['T_in']
 T = configuration['T_out']
 step = configuration['Step']
 
+
 # %%    
 #Chunking the data. 
 train_a = u[:ntrain,:,:,:T_in]
@@ -492,7 +493,6 @@ train_u = y_normalizer.encode(train_u)
 cal_u = y_normalizer.encode(cal_u)
 pred_u = y_normalizer.encode(pred_u)
 
-# %%
 
 # %% 
 t1 = default_timer()
@@ -515,9 +515,8 @@ with torch.no_grad():
         xx = torch.cat((xx[..., step:], pred), dim=-1)
 
 
-cal_mean = cal_mean.numpy()
-cal_scores = np.abs(cal_u.numpy()-cal_mean)           
-qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
+cal_scores = nonconf_score_abs(cal_u.numpy(), cal_mean.numpy())
+qhat = calibrate(cal_scores, n, alpha)
 
 # %% 
 #Obtaining the Prediction Sets
@@ -536,66 +535,36 @@ with torch.no_grad():
 
         xx = torch.cat((xx[..., step:], pred_mean), dim=-1)
 
-val_mean = val_mean.numpy()
-prediction_sets = [val_mean - qhat, val_mean + qhat]
+# val_mean = val_mean.numpy()
+prediction_sets = [val_mean.numpy() - qhat, val_mean.numpy() + qhat]
 
 # %%
 print('Conformal by way Residual')
 # Calculate empirical coverage (before and after calibration)
-empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
+empirical_coverage = emp_cov(prediction_sets, y_response) 
 print(f"The empirical coverage after calibration is: {empirical_coverage}")
 print(f"alpha is: {alpha}")
 print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
 
 t2 = default_timer()
-print('Conformal by Residual, time used:', t2-t1)
-
+print('Residuals, time used:', t2-t1)
 
 #Estimating the tightness of fit
-cov = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1]))
-cov_idx = cov.nonzero()
-
-tightness_metric = ((prediction_sets[1][cov_idx]  - y_response[cov_idx]) +  (y_response[cov_idx] - prediction_sets[0][cov_idx])).mean()
-
+tightness_metric = est_tight(prediction_sets, y_response)
 print(f"Tightness of the coverage : Average of the distance between error bars {tightness_metric}")
+
 # %%
-def calibrate_residual(alpha):
-    n = ncal
-    y_response = pred_u.numpy()
-
-    with torch.no_grad():
-        xx = cal_a
-        for tt in tqdm(range(0, T, step)):
-            pred_mean = model_50(xx)
-
-            if tt == 0:
-                cal_mean = pred_mean
-
-            else:
-                cal_mean = torch.cat((cal_mean, pred_mean), -1)       
-
-            xx = torch.cat((xx[..., step:], pred_mean), dim=-1)
-
-    cal_mean = cal_mean.numpy()
-
-    cal_scores = np.abs(cal_u.numpy()-cal_mean)           
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
-
-    
-    prediction_sets = [val_mean - qhat, val_mean + qhat]
-    empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
-
-    return prediction_sets, empirical_coverage
-
-
+#Emprical Coverage for all values of alpha 
 alpha_levels = np.arange(0.05, 0.95, 0.1)
 emp_cov_res_hs = []
 pred_sets_res_hs = []
 for ii in tqdm(range(len(alpha_levels))):
-    a, b = calibrate_residual(alpha_levels[ii])
-    pred_sets_res_hs.append(a)
-    emp_cov_res_hs.append(b)
-    # emp_cov_res_hs.append(calibrate_residual(alpha_levels[ii]))
+    qhat = calibrate(cal_scores, n, alpha_levels[ii])
+    prediction_sets =  [val_mean.numpy() - qhat, val_mean.numpy() + qhat]
+    pred_sets_res_hs.append(prediction_sets)
+    emp_cov_res_hs.append(emp_cov(prediction_sets, y_response))
+
+
 
 # %% 
 plt.figure()
@@ -684,14 +653,11 @@ with torch.no_grad():
 
         xx = torch.cat((xx[..., step:], mean), dim=-1)
 
-# cal_mean = cal_mean.numpy()
-
 cal_upper = cal_mean + cal_std
 cal_lower = cal_mean - cal_std
 
-cal_scores = np.maximum(cal_u.numpy()-cal_upper.numpy(), cal_lower.numpy()-cal_u.numpy())
-qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
-
+cal_scores = nonconf_score_lu(cal_mean.numpy(), cal_lower.numpy(), cal_upper.numpy())
+qhat = calibrate(cal_scores, n, alpha)
 # %% 
 #Obtaining the Prediction Sets
 with torch.no_grad():
@@ -721,64 +687,63 @@ prediction_sets = [val_lower - qhat, val_upper + qhat]
 # %% 
 y_response = pred_u.numpy()
 
-print('Conformal by way Dropout')
+print('Conformal by way of Dropout')
 # Calculate empirical coverage (before and after calibration)
 prediction_sets_uncalibrated = [val_lower, val_upper]
-empirical_coverage_uncalibrated = ((y_response >= prediction_sets_uncalibrated[0]) & (y_response <= prediction_sets_uncalibrated[1])).mean()
+empirical_coverage_uncalibrated = emp_cov(prediction_sets_uncalibrated, y_response)
 print(f"The empirical coverage before calibration is: {empirical_coverage_uncalibrated}")
-empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
+empirical_coverage = emp_cov(prediction_sets_calibrated, y_response)
 print(f"The empirical coverage after calibration is: {empirical_coverage}")
 t2 = default_timer()
-print('Conformal using Dropout, time used:', t2-t1)
-
+print('Dropout, time used:', t2-t1)
 
 #Estimating the tightness of fit
-cov = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1]))
-cov_idx = cov.nonzero()
-
-tightness_metric = ((prediction_sets[1][cov_idx]  - y_response[cov_idx]) +  (y_response[cov_idx] - prediction_sets[0][cov_idx])).mean()
-
+tightness_metric = est_tight(prediction_sets_calibrated, y_response)
 print(f"Tightness of the coverage : Average of the distance between error bars {tightness_metric}")
-# %% 
-def calibrate_dropout(alpha):
-    with torch.no_grad():
-        xx = cal_a
 
-        for tt in tqdm(range(0, T, step)):
-            mean, std = Dropout_eval_fno(model_dropout, xx, step)
+# # %% 
+# def calibrate_dropout(alpha):
+#     with torch.no_grad():
+#         xx = cal_a
 
-            if tt == 0:
-                cal_mean = mean
-                cal_std = std
-            else:
-                cal_mean = torch.cat((cal_mean, mean), -1)       
-                cal_std = torch.cat((cal_std, std), -1)       
+#         for tt in tqdm(range(0, T, step)):
+#             mean, std = Dropout_eval_fno(model_dropout, xx, step)
 
-            xx = torch.cat((xx[..., step:], mean), dim=-1)
+#             if tt == 0:
+#                 cal_mean = mean
+#                 cal_std = std
+#             else:
+#                 cal_mean = torch.cat((cal_mean, mean), -1)       
+#                 cal_std = torch.cat((cal_std, std), -1)       
+
+#             xx = torch.cat((xx[..., step:], mean), dim=-1)
 
 
-    # cal_mean = cal_mean.numpy()
+#     # cal_mean = cal_mean.numpy()
 
-    cal_upper = cal_mean + cal_std
-    cal_lower = cal_mean - cal_std
+#     cal_upper = cal_mean + cal_std
+#     cal_lower = cal_mean - cal_std
 
-    cal_scores = np.maximum(cal_u.numpy()-cal_upper.numpy(), cal_lower.numpy()-cal_u.numpy())
-    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
+#     cal_scores = np.maximum(cal_u.numpy()-cal_upper.numpy(), cal_lower.numpy()-cal_u.numpy())
+#     qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
         
-    prediction_sets = [val_mean - qhat, val_mean + qhat]
-    empirical_coverage = ((y_response >= prediction_sets[0].numpy()) & (y_response <= prediction_sets[1].numpy())).mean()
+#     prediction_sets = [val_mean - qhat, val_mean + qhat]
+#     empirical_coverage = ((y_response >= prediction_sets[0].numpy()) & (y_response <= prediction_sets[1].numpy())).mean()
 
-    return prediction_sets, empirical_coverage
+#     return prediction_sets, empirical_coverage
 
 # %%
+#Emprical Coverage for all values of alpha 
 alpha_levels = np.arange(0.05, 0.95, 0.1)
 emp_cov_dropout_hs = []
 pred_sets_dropout_hs = []
 for ii in tqdm(range(len(alpha_levels))):
-    a, b = calibrate_dropout(alpha_levels[ii])
-    pred_sets_dropout_hs.append(a)
-    emp_cov_dropout_hs.append(b)
+    qhat = calibrate(cal_scores, n, alpha_levels[ii])
+    prediction_sets =  [pred_mean.numpy() - qhat, pred_mean.numpy() + qhat]
+    pred_sets_dropout_hs.append(prediction_sets)
+    emp_cov_dropout_hs.append(emp_cov(prediction_sets, y_response))
+
 
 # %% 
 
