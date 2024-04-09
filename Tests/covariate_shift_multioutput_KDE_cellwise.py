@@ -6,7 +6,6 @@ Base tests for demonstrating CP under covariate shift -
 Multivariate setting for 5000-in, 5000-out, PCA over 5000 input dimensions and then KDE over the reduced dimensions. 
 Experiemntally evaluating the math behind this https://arxiv.org/abs/1904.06019ule 
 
-Ignore 
 """
 
 # %% 
@@ -19,7 +18,7 @@ from tqdm import tqdm
 
 from utils import * 
 
-torch.set_default_dtype(torch.float32   )
+torch.set_default_dtype(torch.float32)
 # %% 
 def func(x):
     return (np.sin(2*x))
@@ -29,8 +28,8 @@ def normal_dist(mean, std, N):
     dist = stats.norm(mean, std)
     return dist.rvs((N, input_size))
 
-N_viz = 1000 #Datapoints a
-input_size = output_size = 10
+N_viz = 1000 #Datapoints
+input_size = output_size = 1024
 
 mean_1, std_1 = np.pi/2, np.pi/4
 mean_2, std_2 = np.pi/4, np.pi/8
@@ -86,10 +85,9 @@ plt.plot(y_out[-1].detach().numpy(), label='Pred')
 plt.legend()
 plt.title("Visualising the Model Performance")
 
-
 # %%
 #Obtaining the Calibration Scores. 
-N = 100000 #Datapoints 
+N = 1000 #Datapoints 
 X_calib = normal_dist(mean_1, std_1, N)
 X_shift = normal_dist(mean_2, std_2, N)#Covariate shifted
 
@@ -187,15 +185,17 @@ plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()
 
-
 # %% 
 ##############################################################################################################################################
 #Using Kernel Density Estimation - https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.html
+#Across Each Cell 
 ##############################################################################################################################################
 
-def likelihood_ratio_KDE(x, kde1, kde2):
-    pdf1 = kde1.pdf(x)
-    pdf2 = kde2.pdf(x)
+def likelihood_ratio_KDE_cells(x1, x2):
+    kde1 = stats.gaussian_kde(x1)
+    kde2 = stats.gaussian_kde(x2)
+    pdf1 = kde1.pdf(x1)
+    pdf2 = kde2.pdf(x1)
     return pdf2 / pdf1 
 
 x1 = normal_dist(mean_1, std_1, N)
@@ -207,17 +207,112 @@ plt.hist(x_shift[:, -1], label='Shifted')
 plt.legend()
 plt.title("Visualising the distribution of the initial and the shifted")
 
+# %%
+def pi_kde_cells(x_cal, x_shift):
+    return likelihood_ratio_KDE_cells(x_cal, x_shift) / (np.sum(likelihood_ratio_KDE_cells(x_cal, x_shift)) + likelihood_ratio_KDE_cells(x_shift, x_cal))
+    
+pi_vals = []
+for ii in tqdm(range(input_size)):
+    pi_vals.append(pi_kde_cells(y_calib[:, ii], y_shift[:,ii]))
+    
+pi_vals = np.asarray(pi_vals).T
+# pi_vals = pi_vals.mean(axis=-1)
+# %% 
+#Estimating qhat 
+alpha = 0.1
+
+def weighted_quantile(data, alpha, weights=None):
+    ''' percents in units of 1%
+        weights specifies the frequency (count) of data.
+    '''
+    if weights is None:
+        return np.quantile(np.sort(data), alpha, axis = 0, interpolation='higher')
+    
+    ind=np.argsort(data, axis=0)
+    d=data[ind]
+    w=weights[ind]
+
+    p=1.*w.cumsum()/w.sum()
+    y=np.interp(alpha, p, d)
+
+    return y
+
+# %% 
+qhat = []
+for ii in range(output_size):
+    qhat.append(weighted_quantile(cal_scores[:, ii], np.ceil((N+1)*(1-alpha))/(N),  pi_vals[:, ii]))
+qhat = np.asarray(qhat)
+
+# qhat = weighted_quantile(cal_scores, np.ceil((N+1)*(1-alpha))/(N), pi_kde(X_shift.T, X_calib.T).squeeze())#Normal method without going cell-wise. 
+# qhat_true = np.quantile(np.sort(weighted_scores), np.ceil((N+1)*(1-alpha))/(N), axis = 0, interpolation='higher')
 
 # %%
-#KD Estimation. 
-kde1 = stats.gaussian_kde(X_calib.T)
-kde2 = stats.gaussian_kde(X_shift.T)
+y_shift = func(X_shift)
+y_shift_nn = model(torch.tensor(X_shift, dtype=torch.float32)).detach().numpy()
+
+prediction_sets =  [y_shift_nn - qhat, y_shift_nn + qhat]#Marginal
+
+empirical_coverage = ((y_shift >= prediction_sets[0]) & (y_shift <= prediction_sets[1])).mean()
+
+print(f"The empirical coverage after calibration is: {empirical_coverage}")
+print(f"alpha is: {alpha}")
+print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
+
+# %% 
+idces = np.argsort(X_shift[-1])
+plt.plot(X_shift[-1][idces], y_shift[-1][idces], label='Actual')
+plt.plot(X_shift[-1][idces], y_shift_nn[-1][idces], label='Pred')
+plt.fill_between(X_shift[-1][idces], prediction_sets[0][-1][idces], prediction_sets[1][-1][idces], alpha=0.2)
+plt.plot
+plt.legend()
+plt.title("Visualising the prediction intervals - PCA-KDE")
+# %%
+def calibrate_res(alpha):
+    qhat = []
+    for ii in range(output_size):
+     qhat.append(weighted_quantile(cal_scores[:, ii], np.ceil((N+1)*(1-alpha))/(N),   pi_vals[:,ii]))
+    qhat = np.asarray(qhat)
+
+    prediction_sets = [y_shift_nn - qhat, y_shift_nn + qhat]
+    empirical_coverage = ((y_shift >= prediction_sets[0]) & (y_shift <= prediction_sets[1])).mean()
+    return empirical_coverage
+
+alpha_levels = np.arange(0.05, 0.95, 0.1)
+emp_cov_kde = []
+for ii in tqdm(range(len(alpha_levels))):
+    emp_cov_kde.append(calibrate_res(alpha_levels[ii]))
+
+plt.figure()
+plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=1.0)
+plt.plot(1-alpha_levels, emp_cov, label='Residual - weighted - Known' ,ls='-.', color='blue', alpha=0.8, linewidth=1.0)
+plt.plot(1-alpha_levels, emp_cov_kde, label='Residual - weighted - KDE - cellwise' ,ls='-.', color='maroon', alpha=0.8, linewidth=1.0)
+
+plt.xlabel('1-alpha')
+plt.ylabel('Empirical Coverage')
+plt.legend()
 
 # %%
+##############################################################################################################################################
+#Using Kernel Density Estimation - https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.html
+##############################################################################################################################################
+
+def likelihood_ratio_KDE(x, kde1, kde2):
+    pdf1 = kde1.pdf(x)
+    pdf2 = kde2.pdf(x)
+    return pdf2 / pdf1 
+
+from sklearn.decomposition import PCA
+pca = PCA(n_components=10)
+pca.fit(X_calib)
+
+kde1 = stats.gaussian_kde(pca.transform(X_shift).T)
+kde2 = stats.gaussian_kde(pca.transform(X_calib).T)
+
 def pi_kde(x_new, x_cal):
     return likelihood_ratio_KDE(x_cal, kde1, kde2) / (np.sum(likelihood_ratio_KDE(x_cal, kde1, kde2)) + likelihood_ratio_KDE(x_new, kde1, kde2))
-    
-# weighted_scores = cal_scores * pi_kde(X_shift.T, X_calib.T)
+   
+pi_vals = pi_kde(pca.transform(X_shift).T, pca.transform(X_calib).T)
+
 
 # %% 
 #Estimating qhat 
@@ -238,55 +333,12 @@ def weighted_quantile(data, alpha, weights=None):
     y=np.interp(alpha, p, d)
 
     return y
-# %% 
-#Multivariate marginal - KDE over the full input space without dim. red.
-# pi_vals = pi_kde(X_shift.T, X_calib.T)
-
 # %%
-#with dim reduction
-#KD Estimation. 
-from sklearn.decomposition import PCA
-pca = PCA(n_components=10)
-pca.fit(X_calib)
-
-kde1 = stats.gaussian_kde(pca.transform(X_shift).T)
-kde2 = stats.gaussian_kde(pca.transform(X_calib).T)
-
-def pi_kde(x_new, x_cal):
-    return likelihood_ratio_KDE(x_cal, kde1, kde2) / (np.sum(likelihood_ratio_KDE(x_cal, kde1, kde2)) + likelihood_ratio_KDE(x_new, kde1, kde2))
-   
-pi_vals = pi_kde(pca.transform(X_shift).T, pca.transform(X_calib).T)
-
-# %% 
 qhat = []
 for ii in range(output_size):
     qhat.append(weighted_quantile(cal_scores[:, ii], np.ceil((N+1)*(1-alpha))/(N),  pi_vals))
 qhat = np.asarray(qhat)
 
-# qhat = weighted_quantile(cal_scores, np.ceil((N+1)*(1-alpha))/(N), pi_kde(X_shift.T, X_calib.T).squeeze())#Normal method without going cell-wise. 
-# qhat_true = np.quantile(np.sort(weighted_scores), np.ceil((N+1)*(1-alpha))/(N), axis = 0, interpolation='higher')
-
-# %%
-y_shift = func(X_shift)
-y_shift_nn = model(torch.tensor(X_shift, dtype=torch.float32)).detach().numpy()
-
-prediction_sets =  [y_shift_nn - qhat, y_shift_nn + qhat]#Marginal
-# prediction_sets =  [y_shift_nn - qhat*modulation, y_shift_nn + qhat*modulation]#Joint
-
-empirical_coverage = ((y_shift >= prediction_sets[0]) & (y_shift <= prediction_sets[1])).mean()
-
-print(f"The empirical coverage after calibration is: {empirical_coverage}")
-print(f"alpha is: {alpha}")
-print(f"1 - alpha <= empirical coverage is {(1-alpha <= empirical_coverage)}")
-
-# %% 
-idces = np.argsort(X_shift[-1])
-plt.plot(X_shift[-1][idces], y_shift[-1][idces], label='Actual')
-plt.plot(X_shift[-1][idces], y_shift_nn[-1][idces], label='Pred')
-plt.fill_between(X_shift[-1][idces], prediction_sets[0][-1][idces], prediction_sets[1][-1][idces], alpha=0.2)
-plt.plot
-plt.legend()
-plt.title("Visualising the prediction intervals - PCA-KDE")
 # %%
 def calibrate_res(alpha):
     qhat = []
@@ -294,23 +346,22 @@ def calibrate_res(alpha):
      qhat.append(weighted_quantile(cal_scores[:, ii], np.ceil((N+1)*(1-alpha))/(N),  pi_vals))
     qhat = np.asarray(qhat)
 
-    # qhat = weighted_quantile(cal_scores, np.ceil((N+1)*(1-alpha))/(N), pi_kde(X_shift.T, X_calib.T).squeeze())
     prediction_sets = [y_shift_nn - qhat, y_shift_nn + qhat]
     empirical_coverage = ((y_shift >= prediction_sets[0]) & (y_shift <= prediction_sets[1])).mean()
     return empirical_coverage
 
 alpha_levels = np.arange(0.05, 0.95, 0.1)
-emp_cov_kde = []
+emp_cov_joint_kde = []
 for ii in tqdm(range(len(alpha_levels))):
-    emp_cov_kde.append(calibrate_res(alpha_levels[ii]))
+    emp_cov_joint_kde.append(calibrate_res(alpha_levels[ii]))
 
 plt.figure()
 plt.plot(1-alpha_levels, 1-alpha_levels, label='Ideal', color ='black', alpha=0.8, linewidth=1.0)
-plt.plot(1-alpha_levels, emp_cov_kde, label='Residual - weighted - PCA-KDE' ,ls='-.', color='maroon', alpha=0.8, linewidth=1.0)
+plt.plot(1-alpha_levels, emp_cov_kde, label='Residual - weighted - KDE cell-wise ' ,ls='-.', color='maroon', alpha=0.8, linewidth=1.0)
 plt.plot(1-alpha_levels, emp_cov, label='Residual - weighted - Known' ,ls='-.', color='blue', alpha=0.8, linewidth=1.0)
+plt.plot(1-alpha_levels, emp_cov_joint_kde, label='Residual - weighted - KDE' ,ls='-.', color='green', alpha=0.8, linewidth=1.0)
 
 plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()
-
 # %%

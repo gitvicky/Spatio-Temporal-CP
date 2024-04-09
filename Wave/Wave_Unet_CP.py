@@ -319,7 +319,7 @@ plt.legend()
 plt.savefig("wave_unet_cqr.svg", format="svg", bbox_inches='tight', transparent='True')
 plt.show()
 # %%
-#Performing the Calibration usign Residuals: https://www.stat.cmu.edu/~larry/=sml/Conformal
+#Performing the Calibration using Residuals: https://www.stat.cmu.edu/~larry/=sml/Conformal
 #############################################################
 # Conformal Prediction Residuals
 #############################################################
@@ -505,25 +505,6 @@ val_upper = val_upper.numpy()
 prediction_sets_uncalibrated = [val_lower, val_upper]
 prediction_sets_calibrated = [val_lower - qhat, val_upper + qhat]
 
-# %% 
-# y_response = pred_u.numpy()
-
-# print('Conformal by way Dropout')
-# # Calculate empirical coverage (before and after calibration)
-# prediction_sets_uncalibrated = [val_lower, val_upper]
-# empirical_coverage_uncalibrated = ((y_response >= prediction_sets_uncalibrated[0]) & (y_response <= prediction_sets_uncalibrated[1])).mean()
-# print(f"The empirical coverage before calibration is: {empirical_coverage_uncalibrated}")
-# empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
-# print(f"The empirical coverage after calibration is: {empirical_coverage}")
-# t2 = default_timer()
-# print('Conformal using Dropout, time used:', t2-t1)
-
-# #Estimating the tightness of fit
-# cov = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1]))
-# cov_idx = cov.nonzero()
-
-# tightness_metric = ((prediction_sets[1][cov_idx[0], cov_idx[1], cov_idx[2], cov_idx[3]]  - y_response[cov_idx[0], cov_idx[1], cov_idx[2], cov_idx[3]]) +  (y_response[cov_idx[0], cov_idx[1], cov_idx[2], cov_idx[3]] - prediction_sets[0][cov_idx[0], cov_idx[1], cov_idx[2], cov_idx[3]])).mean()
-# print(f"Tightness of the coverage : Average of the distance between error bars {tightness_metric}")
 
 # %% 
 y_response = pred_u.numpy()

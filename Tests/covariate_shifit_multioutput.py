@@ -4,6 +4,8 @@
 """
 Base tests for demonstrating CP under covariate shift - Multivariate setting 2-in, 3-out, KDE over the 2 input dimensions. 
 Experiemntally evaluating the math behind this https://arxiv.org/abs/1904.06019ule 
+
+Ignore
 """
 
 # %% 
@@ -26,7 +28,7 @@ def normal_dist(mean, std, N):
     dist = stats.norm(mean, std)
     return np.expand_dims(dist.rvs(N), -1)
 
-N = 1000 #Datapoints 
+N = 10000 #Datapoints 
 
 mean_1, std_1 = np.pi/4, np.pi/4
 mean_2, std_2 = 2*np.pi, np.pi/8

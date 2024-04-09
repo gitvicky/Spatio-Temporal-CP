@@ -34,3 +34,42 @@ def nonconf_score_lu(pred, lower, upper):
 #non-conformity score using the absolute error
 def nonconf_score_abs(pred, target):
     return np.abs(pred-target)
+
+#Ander's version
+def weighted_quantile(scores, alpha, weights=None):
+    ''' percents in units of 1%
+        weights specifies the frequency (count) of data.
+    '''
+    if weights is None:
+        return np.quantile(np.sort(scores), alpha, axis = 0, interpolation='higher')
+    
+    ind=np.argsort(scores, axis=0)
+    s=scores[ind]
+    w=weights[ind]
+
+    p=1.*w.cumsum()/w.sum()
+    y=np.interp(alpha, p, s)
+
+    return y
+
+#Inspired from https://www.pnas.org/doi/abs/10.1073/pnas.2204569119
+#Can Handle multi-dimensional outputs
+def get_weighted_quantile(scores, quantile, weights):
+    
+    if weights.ndim == 1:
+        weights = weights[:, None]
+        scores = scores[:, None]
+
+    #Normalise weights
+    p_weights = weights / np.sum(weights, axis=0)
+
+    #Sort the scores and the weights 
+    args_sorted_scores = np.argsort(scores, axis=0)
+    sortedscores= np.take_along_axis(scores, args_sorted_scores, axis=0)
+    sortedp_weights = np.take_along_axis(p_weights, args_sorted_scores, axis=0)
+
+    # locate quantiles of weighted scores per y
+    cdf_pweights = np.cumsum(sortedp_weights, axis=0)
+    qidx_y = np.sum(cdf_pweights < quantile, axis=0)  # equivalent to [np.searchsorted(cdf_n1, q) for cdf_n1 in cdf_n1xy]
+    q_y = sortedscores[(qidx_y, range(qidx_y.size))]
+    return q_y

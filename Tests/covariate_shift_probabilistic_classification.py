@@ -28,7 +28,7 @@ def normal_dist(mean, std, N):
     return dist.rvs((N, input_size))
 
 N_viz = 1000 #Datapoints a
-input_size = output_size = 500
+input_size = output_size = 5
 
 mean_1, std_1 = np.pi/2, np.pi/4
 mean_2, std_2 = np.pi/4, np.pi/8
@@ -161,8 +161,8 @@ pi_vals = pi(X_shift, X_calib) # Our Implementation
 pi_vals = pi(X_shift, X_calib) +  pi_nplus1(X_shift, X_calib) #Including the n+1 as well 
 
 #Attempting what they had done in the Conformal for Design paper. 
-# pi_vals = np.vstack((likelihood_ratio(X_calib), likelihood_ratio(X_shift)))
-# cal_scores = np.vstack((cal_scores, np.infty * np.ones(X_shift.shape)))
+pi_vals = np.vstack((likelihood_ratio(X_calib), likelihood_ratio(X_shift)))
+cal_scores = np.vstack((cal_scores, np.infty * np.ones(X_shift.shape)))
 # %%
 # qhat = []
 # for ii in range(output_size):
@@ -272,7 +272,7 @@ Y_class = np.vstack((np.expand_dims(np.zeros(len(X_calib)), -1), np.expand_dims(
 train_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(torch.tensor(X_class, dtype=torch.float32), torch.tensor(Y_class, dtype=torch.float32)), batch_size=100, shuffle=True)
 # %% 
 #Training the classifier. 
-epochs = 1000
+epochs = 500
 for ii in tqdm(range(epochs)):    
     for xx, yy in train_loader:
         optimizer.zero_grad()
