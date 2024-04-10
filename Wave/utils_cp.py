@@ -47,9 +47,10 @@ def get_prediction_sets(cal_data, pred_data, alpha, nonconf_score='abs'):
     elif nonconf_score == 'std':
         cal_mean = np.asarray(cal_data[0])
         cal_std = np.asarray(cal_data[1])
+        cal_target = np.asarray(cal_data[2])
         pred_mean = np.asarray(pred_data[0])
         pred_std = np.asarray(pred_data[1])
-        scores = nonconf_score_lu(cal_mean, cal_mean - cal_std, cal_mean + cal_std)
+        scores = nonconf_score_lu(cal_target, cal_mean - cal_std, cal_mean + cal_std)
         n = len(cal_mean)
         qhat = calibrate(scores, n , alpha)
         pred_sets = [pred_mean - pred_std - qhat, pred_mean + pred_std + qhat]       

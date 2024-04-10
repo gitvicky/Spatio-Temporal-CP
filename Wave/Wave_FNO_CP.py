@@ -321,7 +321,7 @@ val_upper = val_upper.numpy()
 prediction_sets_uncalibrated = [val_lower, val_upper]
 prediction_sets_calibrated = [val_lower - qhat, val_upper + qhat]
 
-pred_sets = get_prediction_sets([cal_mean, cal_std], [val_mean, val_std], alpha, nonconf_score='std')
+pred_sets = get_prediction_sets([cal_mean, cal_std, cal_u], [val_mean, val_std], alpha, nonconf_score='std')
 # %% 
 y_response = pred_u.numpy()
 
