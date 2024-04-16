@@ -251,6 +251,147 @@ plt.xlabel('1-alpha')
 plt.ylabel('Empirical Coverage')
 plt.legend()
 
+# %% 
+
+#Plotting the evolution of solution, fno output and the cp error 
+plt.rcdefaults()
+fig = plt.figure(figsize=(10, 8))
+
+idx = np.random.randint(0, npred) 
+
+idx = 20
+
+# if configuration['Log Normalisation'] == 'Yes':
+#     test_u = torch.exp(test_u)
+#     pred_set = torch.exp(pred_set)
+
+pred_u_decoded = y_normalizer.decode(pred_u)
+val_mean_decoded = y_normalizer.decode(torch.Tensor(val_mean))
+calibrated_decoded = y_normalizer.decode(torch.Tensor(prediction_sets[1] - prediction_sets[0]))
+
+u_field = pred_u_decoded[idx]
+
+v_min_1 = torch.min(u_field[:,:,0])
+v_max_1 = torch.max(u_field[:,:,0])
+
+v_min_2 = torch.min(u_field[:, :, int(T/2)])
+v_max_2 = torch.max(u_field[:, :, int(T/2)])
+
+v_min_3 = torch.min(u_field[:, :, -1])
+v_max_3 = torch.max(u_field[:, :, -1])
+
+c_min_1 = torch.min(calibrated_decoded[idx][:, :, 0])
+c_max_1 = torch.max(calibrated_decoded[idx][:, :, 0])
+
+c_min_2 = torch.min(calibrated_decoded[idx][:, :, int(T/2)])
+c_max_2 = torch.max(calibrated_decoded[idx][:, :, int(T/2)])
+
+c_min_3 = torch.min(calibrated_decoded[idx][:, :, -1])
+c_max_3 = torch.max(calibrated_decoded[idx][:, :, -1])
+
+# fig = plt.figure(figsize=plt.figaspect(0.5))
+ax = fig.add_subplot(3,3,1)
+pcm =ax.imshow(u_field[:, :,0], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_1, vmax=v_max_1)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+# ax.title.set_text('Initial')
+ax.title.set_text('t='+ str(T_in))
+ax.set_ylabel('Solution')
+fig.colorbar(pcm, pad=0.05)
+ 
+
+ax = fig.add_subplot(3,3,2)
+pcm = ax.imshow(u_field[:,:,int(T/2)], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_2, vmax=v_max_2)
+# ax.title.set_text('Middle')
+ax.title.set_text('t='+ str(int(T_in + (T/2))))
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+
+ax = fig.add_subplot(3,3,3)
+pcm = ax.imshow(u_field[:,:,-1], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_3, vmax=v_max_3)
+# ax.title.set_text('Final')
+ax.title.set_text('t='+str(T+T_in))
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+
+u_field = val_mean_decoded[idx]
+
+ax = fig.add_subplot(3,3,4)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+pcm =ax.imshow(u_field[:,:,0], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_1, vmax=v_max_1)
+ax.set_ylabel('FNO')
+
+fig.colorbar(pcm, pad=0.05)
+
+ax = fig.add_subplot(3,3,5)
+pcm = ax.imshow(u_field[:,:,int(T/2)], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_2, vmax=v_max_2)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+
+ax = fig.add_subplot(3,3,6)
+pcm = ax.imshow(u_field[:,:,-1], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_3, vmax=v_max_3)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+# u_field = uncalibrated_decoded[idx]
+
+# ax = fig.add_subplot(4,3,7)
+# ax.axes.xaxis.set_ticks([])
+# ax.axes.yaxis.set_ticks([])
+# pcm =ax.imshow(u_field[:,:,0], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_1, vmax=c_max_1)
+# ax.set_ylabel('Uncalibrated Error')
+
+# fig.colorbar(pcm, pad=0.05)
+
+# ax = fig.add_subplot(4,3,8)
+# pcm = ax.imshow(u_field[:,:,int(T/2)], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_2, vmax=c_max_2)
+# ax.axes.xaxis.set_ticks([])
+# ax.axes.yaxis.set_ticks([])
+# fig.colorbar(pcm, pad=0.05)
+
+
+# ax = fig.add_subplot(4,3,9)
+# pcm = ax.imshow(u_field[:,:,-1], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_3, vmax=c_max_3)
+# ax.axes.xaxis.set_ticks([])
+# ax.axes.yaxis.set_ticks([])
+# fig.colorbar(pcm, pad=0.05)
+
+u_field = calibrated_decoded[idx]
+
+ax = fig.add_subplot(3,3,7)
+pcm =ax.imshow(u_field[:,:,0], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_1, vmax=c_max_1)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+ax.set_ylabel('Calibrated Error')
+
+fig.colorbar(pcm, pad=0.05)
+
+ax = fig.add_subplot(3,3,8)
+pcm = ax.imshow(u_field[:,:,int(T/2)], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_2, vmax=c_max_2)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+
+ax = fig.add_subplot(3,3,9)
+pcm = ax.imshow(u_field[:,:,-1], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_3, vmax=c_max_3)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+fig.tight_layout()
+
+plt.savefig('wave_fno_heatmaps.svg', format="svg", bbox_inches='tight', transparent='True')
+plt.savefig('wave_fno_heatmaps.pdf', format="pdf", bbox_inches='tight', transparent='True')
+
 # %%
 # ##############################
 # # Conformal using Dropout 
@@ -424,6 +565,145 @@ mpl.rcParams['axes.titlepad'] = 20
 
 # plt.plot(x_points, y_response[idx, tt][x_id, :], linewidth = 4, color = "black", label = "exact")
 # plt.legend()
+
+
+
+
+#Plotting the evolution of solution, fno output and the cp error 
+mpl.rcParams['figure.figsize']=(16, 16)
+
+idx = np.random.randint(0, npred) 
+
+idx = 0
+
+# if configuration['Log Normalisation'] == 'Yes':
+#     test_u = torch.exp(test_u)
+#     pred_set = torch.exp(pred_set)
+
+pred_u_decoded = y_normalizer.decode(pred_u)
+val_mean_decoded = y_normalizer.decode(torch.Tensor(val_mean))
+uncalibrated_decoded = y_normalizer.decode(torch.Tensor(prediction_sets_uncalibrated[1] - prediction_sets_uncalibrated[0]))
+calibrated_decoded = y_normalizer.decode(torch.Tensor(prediction_sets[1] - prediction_sets[0]))
+
+u_field = pred_u_decoded[idx]
+
+v_min_1 = torch.min(u_field[:,:,0])
+v_max_1 = torch.max(u_field[:,:,0])
+
+v_min_2 = torch.min(u_field[:, :, int(T/2)])
+v_max_2 = torch.max(u_field[:, :, int(T/2)])
+
+v_min_3 = torch.min(u_field[:, :, -1])
+v_max_3 = torch.max(u_field[:, :, -1])
+
+c_min_1 = torch.min(calibrated_decoded[idx][:, :, 0])
+c_max_1 = torch.max(calibrated_decoded[idx][:, :, 0])
+
+c_min_2 = torch.min(calibrated_decoded[idx][:, :, int(T/2)])
+c_max_2 = torch.max(calibrated_decoded[idx][:, :, int(T/2)])
+
+c_min_3 = torch.min(calibrated_decoded[idx][:, :, -1])
+c_max_3 = torch.max(calibrated_decoded[idx][:, :, -1])
+
+fig = plt.figure(figsize=plt.figaspect(0.5))
+ax = fig.add_subplot(4,3,1)
+pcm =ax.imshow(u_field[:, :,0], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_1, vmax=v_max_1)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+# ax.title.set_text('Initial')
+ax.title.set_text('t='+ str(T_in))
+ax.set_ylabel('Solution')
+fig.colorbar(pcm, pad=0.05)
+ 
+
+ax = fig.add_subplot(4,3,2)
+pcm = ax.imshow(u_field[:,:,int(T/2)], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_2, vmax=v_max_2)
+# ax.title.set_text('Middle')
+ax.title.set_text('t='+ str(int(T_in + (T/2))))
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+
+ax = fig.add_subplot(4,3,3)
+pcm = ax.imshow(u_field[:,:,-1], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_3, vmax=v_max_3)
+# ax.title.set_text('Final')
+ax.title.set_text('t='+str(T+T_in))
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+
+u_field = val_mean_decoded[idx]
+
+ax = fig.add_subplot(4,3,4)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+pcm =ax.imshow(u_field[:,:,0], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_1, vmax=v_max_1)
+ax.set_ylabel('FNO')
+
+fig.colorbar(pcm, pad=0.05)
+
+ax = fig.add_subplot(4,3,5)
+pcm = ax.imshow(u_field[:,:,int(T/2)], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_2, vmax=v_max_2)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+
+ax = fig.add_subplot(4,3,6)
+pcm = ax.imshow(u_field[:,:,-1], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_3, vmax=v_max_3)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+u_field = uncalibrated_decoded[idx]
+
+ax = fig.add_subplot(4,3,7)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+pcm =ax.imshow(u_field[:,:,0], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_1, vmax=c_max_1)
+ax.set_ylabel('Uncalibrated Error')
+
+fig.colorbar(pcm, pad=0.05)
+
+ax = fig.add_subplot(4,3,8)
+pcm = ax.imshow(u_field[:,:,int(T/2)], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_2, vmax=c_max_2)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+
+ax = fig.add_subplot(4,3,9)
+pcm = ax.imshow(u_field[:,:,-1], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_3, vmax=c_max_3)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+u_field = calibrated_decoded[idx]
+
+ax = fig.add_subplot(4,3,10)
+pcm =ax.imshow(u_field[:,:,0], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_1, vmax=c_max_1)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+ax.set_ylabel('Calibrated Error')
+
+fig.colorbar(pcm, pad=0.05)
+
+ax = fig.add_subplot(4,3,11)
+pcm = ax.imshow(u_field[:,:,int(T/2)], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_2, vmax=c_max_2)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+
+ax = fig.add_subplot(4,3,12)
+pcm = ax.imshow(u_field[:,:,-1], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_3, vmax=c_max_3)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+# plt.savefig('wave_fno_heatmaps.svg', format="svg", bbox_inches='tight', transparent='True')
 
 
 # %% 
@@ -627,6 +907,147 @@ plt.rcParams['ytick.minor.width'] =5
 mpl.rcParams['axes.titlepad'] = 20
 
 # %% 
+
+#Plotting the evolution of solution, fno output and the cp error 
+plt.rcdefaults()
+fig = plt.figure(figsize=(10, 8))
+
+idx = np.random.randint(0, npred) 
+
+idx = 10
+
+# if configuration['Log Normalisation'] == 'Yes':
+#     test_u = torch.exp(test_u)
+#     pred_set = torch.exp(pred_set)
+
+pred_u_decoded = y_normalizer.decode(pred_u)
+val_mean_decoded = y_normalizer.decode(torch.Tensor(val_mean))
+calibrated_decoded = y_normalizer.decode(torch.Tensor(prediction_sets[1] - prediction_sets[0]))
+
+u_field = pred_u_decoded[idx]
+
+v_min_1 = torch.min(u_field[:,:,0])
+v_max_1 = torch.max(u_field[:,:,0])
+
+v_min_2 = torch.min(u_field[:, :, int(T/2)])
+v_max_2 = torch.max(u_field[:, :, int(T/2)])
+
+v_min_3 = torch.min(u_field[:, :, -1])
+v_max_3 = torch.max(u_field[:, :, -1])
+
+c_min_1 = torch.min(calibrated_decoded[idx][:, :, 0])
+c_max_1 = torch.max(calibrated_decoded[idx][:, :, 0])
+
+c_min_2 = torch.min(calibrated_decoded[idx][:, :, int(T/2)])
+c_max_2 = torch.max(calibrated_decoded[idx][:, :, int(T/2)])
+
+c_min_3 = torch.min(calibrated_decoded[idx][:, :, -1])
+c_max_3 = torch.max(calibrated_decoded[idx][:, :, -1])
+
+# fig = plt.figure(figsize=plt.figaspect(0.5))
+ax = fig.add_subplot(3,3,1)
+pcm =ax.imshow(u_field[:, :,0], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_1, vmax=v_max_1)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+# ax.title.set_text('Initial')
+ax.title.set_text('t='+ str(T_in))
+ax.set_ylabel('Solution')
+fig.colorbar(pcm, pad=0.05)
+ 
+
+ax = fig.add_subplot(3,3,2)
+pcm = ax.imshow(u_field[:,:,int(T/2)], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_2, vmax=v_max_2)
+# ax.title.set_text('Middle')
+ax.title.set_text('t='+ str(int(T_in + (T/2))))
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+
+ax = fig.add_subplot(3,3,3)
+pcm = ax.imshow(u_field[:,:,-1], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_3, vmax=v_max_3)
+# ax.title.set_text('Final')
+ax.title.set_text('t='+str(T+T_in))
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+
+u_field = val_mean_decoded[idx]
+
+ax = fig.add_subplot(3,3,4)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+pcm =ax.imshow(u_field[:,:,0], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_1, vmax=v_max_1)
+ax.set_ylabel('FNO')
+
+fig.colorbar(pcm, pad=0.05)
+
+ax = fig.add_subplot(3,3,5)
+pcm = ax.imshow(u_field[:,:,int(T/2)], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_2, vmax=v_max_2)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+
+ax = fig.add_subplot(3,3,6)
+pcm = ax.imshow(u_field[:,:,-1], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_3, vmax=v_max_3)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+# u_field = uncalibrated_decoded[idx]
+
+# ax = fig.add_subplot(4,3,7)
+# ax.axes.xaxis.set_ticks([])
+# ax.axes.yaxis.set_ticks([])
+# pcm =ax.imshow(u_field[:,:,0], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_1, vmax=c_max_1)
+# ax.set_ylabel('Uncalibrated Error')
+
+# fig.colorbar(pcm, pad=0.05)
+
+# ax = fig.add_subplot(4,3,8)
+# pcm = ax.imshow(u_field[:,:,int(T/2)], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_2, vmax=c_max_2)
+# ax.axes.xaxis.set_ticks([])
+# ax.axes.yaxis.set_ticks([])
+# fig.colorbar(pcm, pad=0.05)
+
+
+# ax = fig.add_subplot(4,3,9)
+# pcm = ax.imshow(u_field[:,:,-1], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_3, vmax=c_max_3)
+# ax.axes.xaxis.set_ticks([])
+# ax.axes.yaxis.set_ticks([])
+# fig.colorbar(pcm, pad=0.05)
+
+u_field = calibrated_decoded[idx]
+
+ax = fig.add_subplot(3,3,7)
+pcm =ax.imshow(u_field[:,:,0], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_1, vmax=c_max_1)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+ax.set_ylabel('Calibrated Error')
+
+fig.colorbar(pcm, pad=0.05)
+
+ax = fig.add_subplot(3,3,8)
+pcm = ax.imshow(u_field[:,:,int(T/2)], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_2, vmax=c_max_2)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+
+ax = fig.add_subplot(3,3,9)
+pcm = ax.imshow(u_field[:,:,-1], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_3, vmax=c_max_3)
+ax.axes.xaxis.set_ticks([])
+ax.axes.yaxis.set_ticks([])
+fig.colorbar(pcm, pad=0.05)
+
+fig.tight_layout()
+
+plt.savefig('wave_fno_hs_heatmaps.svg', format="svg", bbox_inches='tight', transparent='True')
+plt.savefig('wave_fno_hs_heatmaps.pdf', format="pdf", bbox_inches='tight', transparent='True')
+
+# %% 
 #With Dropout on Half Speed
 model_dropout = FNO2d_dropout(modes, modes, width, T_in, step, x, y)
 model_dropout.load_state_dict(torch.load(model_loc + 'FNO_Wave_plastic-serval_dropout.pth', map_location='cpu'))
@@ -682,7 +1103,7 @@ val_lower = val_lower.numpy()
 val_upper = val_upper.numpy()
 
 prediction_sets_uncalibrated = [val_lower, val_upper]
-prediction_sets = [val_lower - qhat, val_upper + qhat]
+prediction_sets_calibrated = [val_lower - qhat, val_upper + qhat]
 
 # %% 
 y_response = pred_u.numpy()
@@ -740,7 +1161,7 @@ emp_cov_dropout_hs = []
 pred_sets_dropout_hs = []
 for ii in tqdm(range(len(alpha_levels))):
     qhat = calibrate(cal_scores, n, alpha_levels[ii])
-    prediction_sets =  [pred_mean.numpy() - qhat, pred_mean.numpy() + qhat]
+    prediction_sets =  [val_mean.numpy() - qhat, val_mean.numpy() + qhat]
     pred_sets_dropout_hs.append(prediction_sets)
     emp_cov_dropout_hs.append(emp_cov(prediction_sets, y_response))
 
@@ -871,7 +1292,6 @@ cbar = fig.colorbar(pcm, cax=cax)
 cbar.formatter.set_powerlimits((0, 0))
 
 
-
 ax = fig.add_subplot(2,3,2)
 pcm = ax.imshow(u_field[:,:,int(T/2)], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_2, vmax=v_max_2)
 # ax.title.set_text('Middle')
@@ -895,7 +1315,6 @@ cax = divider.append_axes("right", size="5%", pad=0.1)
 cbar = fig.colorbar(pcm, cax=cax)
 cbar.formatter.set_powerlimits((0, 0))
 
-
 u_field = cal_mean_decoded[idx]
 
 ax = fig.add_subplot(2,3,4)
@@ -915,7 +1334,6 @@ divider = make_axes_locatable(ax)
 cax = divider.append_axes("right", size="5%", pad=0.1)
 cbar = fig.colorbar(pcm, cax=cax)
 cbar.formatter.set_powerlimits((0, 0))
-
 
 ax = fig.add_subplot(2,3,6)
 pcm = ax.imshow(u_field[:,:,-1], cmap=cm.coolwarm,  extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_3, vmax=v_max_3)

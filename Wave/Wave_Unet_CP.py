@@ -206,9 +206,9 @@ with torch.no_grad():
 cal_lower = cal_lower.numpy()
 cal_upper = cal_upper.numpy()
 
+
 # %%
-# %%
-#Perfprming the calibration
+#Performing the calibration
 cal_scores = nonconf_score_lu(cal_u.numpy(), cal_lower, cal_upper)
 qhat = calibrate(cal_scores, n, alpha)
 
