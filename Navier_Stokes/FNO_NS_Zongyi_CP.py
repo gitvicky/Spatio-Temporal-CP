@@ -742,8 +742,8 @@ def calibrate_dropout(alpha):
     # cal_scores = np.maximum(cal_u.numpy()-cal_upper.numpy(), cal_lower.numpy()-cal_u.numpy())
     qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 
-    prediction_sets = [val_lower - qhat, val_upper + qhat]
-    # prediction_sets = [val_mean.numpy() - val_std.numpy()*qhat, val_mean.numpy() + val_std.numpy()*qhat]
+    # prediction_sets = [val_lower - qhat, val_upper + qhat]
+    prediction_sets = [val_mean.numpy() - val_std.numpy()*qhat, val_mean.numpy() + val_std.numpy()*qhat]
 
     empirical_coverage = ((y_response >= prediction_sets[0]) & (y_response <= prediction_sets[1])).mean()
     return empirical_coverage
@@ -943,6 +943,9 @@ plt.savefig("NS_dropout_y.svg", format="svg", bbox_inches='tight')
 # %%
 #Plotting the evolution of solution, fno output and the cp error 
 plt.rcdefaults()
+from matplotlib import cm 
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+import matplotlib as mpl
 fig = plt.figure(figsize=(9, 8))
 
 
@@ -961,6 +964,12 @@ prediction_sets_uncalibrated = [val_lower, val_upper]
 alpha = 0.33
 qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
 prediction_sets_calibrated = [val_mean - val_std - qhat, val_mean + val_std + qhat]
+
+# #Using a different formulation - similar to the one deployed for GPs in test. 
+# cal_scores = np.abs(cal_mean - cal_u)/cal_std
+# qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, method='higher')
+# prediction_sets_calibrated = [val_mean - val_std * qhat, val_mean + val_std * qhat]
+
 
 pred_u_decoded = y_normalizer.decode(pred_u)
 val_mean_decoded = y_normalizer.decode(torch.Tensor(val_mean))
@@ -992,28 +1001,40 @@ pcm =ax.imshow(u_field[:, :,0], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0],
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
 # ax.title.set_text('Initial')
-ax.title.set_text('t='+ str(T_in))
-ax.set_ylabel('Solution')
-fig.colorbar(pcm, pad=0.05)
- 
+ax.set_title('t='+ str(T_in), fontsize=15)
+ax.set_ylabel('Solution', fontsize=18)
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.formatter.set_powerlimits((0, 0))
+cbar.ax.tick_params(labelsize=12)
+cbar.ax.yaxis.get_offset_text().set(size=12) 
 
 ax = fig.add_subplot(4,3,2)
 pcm = ax.imshow(u_field[:,:,int(T/2)], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_2, vmax=v_max_2)
 # ax.title.set_text('Middle')
-ax.title.set_text('t='+ str(int(T_in + (T/2))))
+ax.set_title('t='+ str(int(T_in + (T/2))), fontsize=15)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
-fig.colorbar(pcm, pad=0.05)
-
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.formatter.set_powerlimits((0, 0))
+cbar.ax.tick_params(labelsize=12)
+cbar.ax.yaxis.get_offset_text().set(size=12)
 
 ax = fig.add_subplot(4,3,3)
 pcm = ax.imshow(u_field[:,:,-1], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_3, vmax=v_max_3)
 # ax.title.set_text('Final')
-ax.title.set_text('t='+str(T+T_in))
+ax.set_title('t='+ str(T+T_in), fontsize=18)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
-fig.colorbar(pcm, pad=0.05)
-
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.formatter.set_powerlimits((0, 0))
+cbar.ax.tick_params(labelsize=12)
+cbar.ax.yaxis.get_offset_text().set(size=12)
 
 u_field = val_mean_decoded[idx]
 
@@ -1021,22 +1042,37 @@ ax = fig.add_subplot(4,3,4)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
 pcm =ax.imshow(u_field[:,:,0], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_1, vmax=v_max_1)
-ax.set_ylabel('FNO')
+ax.set_ylabel('FNO', fontsize=15)
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.formatter.set_powerlimits((0, 0))
+cbar.ax.tick_params(labelsize=12)
+cbar.ax.yaxis.get_offset_text().set(size=12)
 
-fig.colorbar(pcm, pad=0.05)
 
 ax = fig.add_subplot(4,3,5)
 pcm = ax.imshow(u_field[:,:,int(T/2)], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_2, vmax=v_max_2)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
-fig.colorbar(pcm, pad=0.05)
-
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.formatter.set_powerlimits((0, 0))
+cbar.ax.tick_params(labelsize=12)
+cbar.ax.yaxis.get_offset_text().set(size=12)
 
 ax = fig.add_subplot(4,3,6)
 pcm = ax.imshow(u_field[:,:,-1], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_3, vmax=v_max_3)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
-fig.colorbar(pcm, pad=0.05)
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.formatter.set_powerlimits((0, 0))
+cbar.ax.tick_params(labelsize=12)
+cbar.ax.yaxis.get_offset_text().set(size=12)
+
 
 u_field = uncalibrated_decoded[idx]
 
@@ -1044,48 +1080,73 @@ ax = fig.add_subplot(4,3,7)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
 pcm =ax.imshow(u_field[:,:,0], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_1, vmax=c_max_1)
-ax.set_ylabel('Uncalibrated\nError')
+ax.set_ylabel('Uncalibrated\nError', fontsize=18)
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.formatter.set_powerlimits((0, 0))
+cbar.ax.tick_params(labelsize=12)
+cbar.ax.yaxis.get_offset_text().set(size=12)
 
-fig.colorbar(pcm, pad=0.05)
 
 ax = fig.add_subplot(4,3,8)
 pcm = ax.imshow(u_field[:,:,int(T/2)], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_2, vmax=c_max_2)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
-fig.colorbar(pcm, pad=0.05)
-
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.formatter.set_powerlimits((0, 0))
+cbar.ax.tick_params(labelsize=12)
+cbar.ax.yaxis.get_offset_text().set(size=12)
 
 ax = fig.add_subplot(4,3,9)
 pcm = ax.imshow(u_field[:,:,-1], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_3, vmax=c_max_3)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
-fig.colorbar(pcm, pad=0.05)
-
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.formatter.set_powerlimits((0, 0))
+cbar.ax.tick_params(labelsize=12)
+cbar.ax.yaxis.get_offset_text().set(size=12)
 u_field = calibrated_decoded[idx]
 
 ax = fig.add_subplot(4,3,10)
 pcm =ax.imshow(u_field[:,:,0], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_1, vmax=c_max_1)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
-ax.set_ylabel('Calibrated\nError')
-
-fig.colorbar(pcm, pad=0.05)
+ax.set_ylabel('Calibrated\nError', fontsize=18)
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.formatter.set_powerlimits((0, 0))
+cbar.ax.tick_params(labelsize=12)
+cbar.ax.yaxis.get_offset_text().set(size=12)
 
 ax = fig.add_subplot(4,3,11)
 pcm = ax.imshow(u_field[:,:,int(T/2)], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_2, vmax=c_max_2)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
-fig.colorbar(pcm, pad=0.05)
-
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.formatter.set_powerlimits((0, 0))
+cbar.ax.tick_params(labelsize=12)
+cbar.ax.yaxis.get_offset_text().set(size=12)
 
 ax = fig.add_subplot(4,3,12)
 pcm = ax.imshow(u_field[:,:,-1], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_3, vmax=c_max_3)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
-fig.colorbar(pcm, pad=0.05)
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.formatter.set_powerlimits((0, 0))
+cbar.ax.tick_params(labelsize=12)
+cbar.ax.yaxis.get_offset_text().set(size=12)
 
 fig.tight_layout()
-
 
 plt.savefig('ns_fno_heatmaps.svg', format="svg", bbox_inches='tight', transparent='True')
 plt.savefig('ns_fno_heatmaps.pdf', format="pdf", bbox_inches='tight', transparent='True')

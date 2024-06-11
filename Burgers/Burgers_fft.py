@@ -50,6 +50,7 @@ def solve_burgers(run, configuration):
     alpha = configuration['alpha']
     beta = configuration['beta']
     gamma = configuration['gamma']
+    
     u0 = np.sin(alpha*np.pi*x) + np.cos(beta*np.pi*-x) + 1/np.cosh(gamma*np.pi*x) 
 
     #Simulate in Fourier Freq domain. 
@@ -72,5 +73,15 @@ def solve_burgers(run, configuration):
     
     return u
 
+configuration = {'viscosity': 0.002,
+                 'domain length': 2.0,
+                 'discretisation': 1000,
+                 'dt': 0.0025,
+                 'iterations': 500,
+                 'alpha':1.0, 
+                 'beta':1.0,
+                 'gamma':1.0
+                 }
 
+u = solve_burgers('_', configuration)
 # %%

@@ -57,6 +57,8 @@ import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from matplotlib import cm 
 import matplotlib as mpl 
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
 plt.rcParams['text.usetex'] = True
 
 plt.rcParams['grid.linewidth'] = 1.0
@@ -255,7 +257,7 @@ plt.legend()
 
 #Plotting the evolution of solution, fno output and the cp error 
 plt.rcdefaults()
-fig = plt.figure(figsize=(10, 8))
+fig = plt.figure(figsize=(10.5, 8))
 
 idx = np.random.randint(0, npred) 
 
@@ -295,28 +297,34 @@ pcm =ax.imshow(u_field[:, :,0], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0],
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
 # ax.title.set_text('Initial')
-ax.title.set_text('t='+ str(T_in))
-ax.set_ylabel('Solution')
-fig.colorbar(pcm, pad=0.05)
- 
+ax.set_title('t='+ str(T_in), fontsize=20)
+ax.set_ylabel('Solution', fontsize=20)
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.ax.tick_params(labelsize=12)
 
 ax = fig.add_subplot(3,3,2)
 pcm = ax.imshow(u_field[:,:,int(T/2)], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_2, vmax=v_max_2)
 # ax.title.set_text('Middle')
-ax.title.set_text('t='+ str(int(T_in + (T/2))))
+ax.set_title('t='+ str(int(T_in + (T/2))), fontsize=20)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
-fig.colorbar(pcm, pad=0.05)
-
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.ax.tick_params(labelsize=12)
 
 ax = fig.add_subplot(3,3,3)
 pcm = ax.imshow(u_field[:,:,-1], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_3, vmax=v_max_3)
 # ax.title.set_text('Final')
-ax.title.set_text('t='+str(T+T_in))
+ax.set_title('t='+ str(T+T_in), fontsize=20)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
-fig.colorbar(pcm, pad=0.05)
-
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.ax.tick_params(labelsize=12)
 
 u_field = val_mean_decoded[idx]
 
@@ -324,22 +332,29 @@ ax = fig.add_subplot(3,3,4)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
 pcm =ax.imshow(u_field[:,:,0], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_1, vmax=v_max_1)
-ax.set_ylabel('FNO')
-
-fig.colorbar(pcm, pad=0.05)
+ax.set_ylabel('FNO', fontsize=20)
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.ax.tick_params(labelsize=12)
 
 ax = fig.add_subplot(3,3,5)
 pcm = ax.imshow(u_field[:,:,int(T/2)], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_2, vmax=v_max_2)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
-fig.colorbar(pcm, pad=0.05)
-
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.ax.tick_params(labelsize=12)
 
 ax = fig.add_subplot(3,3,6)
 pcm = ax.imshow(u_field[:,:,-1], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_3, vmax=v_max_3)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
-fig.colorbar(pcm, pad=0.05)
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.ax.tick_params(labelsize=12)
 
 # u_field = uncalibrated_decoded[idx]
 
@@ -370,23 +385,29 @@ ax = fig.add_subplot(3,3,7)
 pcm =ax.imshow(u_field[:,:,0], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_1, vmax=c_max_1)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
-ax.set_ylabel('Calibrated Error')
-
-fig.colorbar(pcm, pad=0.05)
+ax.set_ylabel('Calibrated Error', fontsize=20)
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.ax.tick_params(labelsize=12)
 
 ax = fig.add_subplot(3,3,8)
 pcm = ax.imshow(u_field[:,:,int(T/2)], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_2, vmax=c_max_2)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
-fig.colorbar(pcm, pad=0.05)
-
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.ax.tick_params(labelsize=12)
 
 ax = fig.add_subplot(3,3,9)
 pcm = ax.imshow(u_field[:,:,-1], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_3, vmax=c_max_3)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
-fig.colorbar(pcm, pad=0.05)
-
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.ax.tick_params(labelsize=12)
 fig.tight_layout()
 
 plt.savefig('wave_fno_heatmaps.svg', format="svg", bbox_inches='tight', transparent='True')
@@ -910,7 +931,7 @@ mpl.rcParams['axes.titlepad'] = 20
 
 #Plotting the evolution of solution, fno output and the cp error 
 plt.rcdefaults()
-fig = plt.figure(figsize=(10, 8))
+fig = plt.figure(figsize=(10.5, 8))
 
 idx = np.random.randint(0, npred) 
 
@@ -950,28 +971,34 @@ pcm =ax.imshow(u_field[:, :,0], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0],
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
 # ax.title.set_text('Initial')
-ax.title.set_text('t='+ str(T_in))
-ax.set_ylabel('Solution')
-fig.colorbar(pcm, pad=0.05)
- 
+ax.set_title('t='+ str(T_in), fontsize=20)
+ax.set_ylabel('Solution', fontsize=20)
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.ax.tick_params(labelsize=12)
 
 ax = fig.add_subplot(3,3,2)
 pcm = ax.imshow(u_field[:,:,int(T/2)], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_2, vmax=v_max_2)
 # ax.title.set_text('Middle')
-ax.title.set_text('t='+ str(int(T_in + (T/2))))
+ax.set_title('t='+ str(int(T_in + (T/2))), fontsize=20)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
-fig.colorbar(pcm, pad=0.05)
-
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.ax.tick_params(labelsize=12)
 
 ax = fig.add_subplot(3,3,3)
 pcm = ax.imshow(u_field[:,:,-1], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_3, vmax=v_max_3)
 # ax.title.set_text('Final')
-ax.title.set_text('t='+str(T+T_in))
+ax.set_title('t='+ str(T+T_in), fontsize=20)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
-fig.colorbar(pcm, pad=0.05)
-
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.ax.tick_params(labelsize=12)
 
 u_field = val_mean_decoded[idx]
 
@@ -979,22 +1006,29 @@ ax = fig.add_subplot(3,3,4)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
 pcm =ax.imshow(u_field[:,:,0], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_1, vmax=v_max_1)
-ax.set_ylabel('FNO')
-
-fig.colorbar(pcm, pad=0.05)
+ax.set_ylabel('FNO', fontsize=20)
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.ax.tick_params(labelsize=12)
 
 ax = fig.add_subplot(3,3,5)
 pcm = ax.imshow(u_field[:,:,int(T/2)], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_2, vmax=v_max_2)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
-fig.colorbar(pcm, pad=0.05)
-
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.ax.tick_params(labelsize=12)
 
 ax = fig.add_subplot(3,3,6)
 pcm = ax.imshow(u_field[:,:,-1], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=v_min_3, vmax=v_max_3)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
-fig.colorbar(pcm, pad=0.05)
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.ax.tick_params(labelsize=12)
 
 # u_field = uncalibrated_decoded[idx]
 
@@ -1025,23 +1059,29 @@ ax = fig.add_subplot(3,3,7)
 pcm =ax.imshow(u_field[:,:,0], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_1, vmax=c_max_1)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
-ax.set_ylabel('Calibrated Error')
-
-fig.colorbar(pcm, pad=0.05)
+ax.set_ylabel('Calibrated Error', fontsize=20)
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.ax.tick_params(labelsize=12)
 
 ax = fig.add_subplot(3,3,8)
 pcm = ax.imshow(u_field[:,:,int(T/2)], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_2, vmax=c_max_2)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
-fig.colorbar(pcm, pad=0.05)
-
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.ax.tick_params(labelsize=12)
 
 ax = fig.add_subplot(3,3,9)
 pcm = ax.imshow(u_field[:,:,-1], cmap=cm.coolwarm, extent=[-1.0, 1.0, -1.0, 1.0], vmin=c_min_3, vmax=c_max_3)
 ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
-fig.colorbar(pcm, pad=0.05)
-
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.1)
+cbar = fig.colorbar(pcm, cax=cax)
+cbar.ax.tick_params(labelsize=12)
 fig.tight_layout()
 
 plt.savefig('wave_fno_hs_heatmaps.svg', format="svg", bbox_inches='tight', transparent='True')

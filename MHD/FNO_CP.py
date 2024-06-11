@@ -100,7 +100,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 ################################################################
 
 # %%
-data = data_loc + '/Data/MHD_multi_blobs.npz'
+data = data_loc + '/Data/Multi-Blobs/MHD_multi_blobs.npz'
 
 # %%
 field = configuration['Field']
@@ -585,6 +585,12 @@ def calibrate(alpha):
     empirical_coverage = ((y_response >= prediction_sets[0].numpy()) & (y_response <= prediction_sets[1].numpy())).mean()
     return empirical_coverage
 
+def calibrate(alpha):     
+    qhat = np.quantile(cal_scores, np.ceil((n+1)*(1-alpha))/n, axis = 0, interpolation='higher')
+
+    prediction_sets =  [mean - qhat, mean + qhat]
+    empirical_coverage = ((y_response >= prediction_sets[0].numpy()) & (y_response <= prediction_sets[1].numpy())).mean()
+    return empirical_coverage
 
 alpha_levels = np.arange(0.05, 0.95, 0.1)
 emp_cov = []
@@ -601,7 +607,7 @@ plt.ylabel('Empirical Coverage')
 plt.title("MHD", fontsize=72)
 plt.legend()
 plt.grid() #Comment out if you dont want grids.
-plt.savefig("MHD_comparison.svg", format="svg", bbox_inches='tight')
+# plt.savefig("MHD_comparison.svg", format="svg", bbox_inches='tight')
 plt.show()
 # mpl.rcParams['xtick.minor.visible']=True
 # mpl.rcParams['font.size']=45
@@ -635,7 +641,7 @@ plt.xlabel(r'\textbf{$Z$}')
 plt.ylabel(r'\textbf{$\rho$}')
 plt.grid() #Comment out if you dont want grids.
 
-plt.savefig("rho_Z.svg", format="svg", bbox_inches='tight', transparent='True')
+# plt.savefig("rho_Z.svg", format="svg", bbox_inches='tight', transparent='True')
 plt.show()
 # %%
 idx = 10
@@ -652,9 +658,11 @@ plt.xlabel(r'\textbf{$R$}')
 plt.ylabel(r'\textbf{$\rho$}')
 plt.grid() #Comment out if you dont want grids.
 
-plt.savefig("rho_R.svg", format="svg", bbox_inches='tight', transparent='True')
+# plt.savefig("rho_R.svg", format="svg", bbox_inches='tight', transparent='True')
 plt.show()
 
+# %% 
+#Mapping the interception point. 
 plt.figure()
 plt.imshow(soln_vals[idx, var, :, :, time], cmap=cm.coolwarm, extent=[x_grid[0], x_grid[-1], y_grid[0], y_grid[-1]])
 plt.xlabel('R-Axis')
@@ -673,7 +681,7 @@ plt.xlabel(r'\textbf{$Z$}')
 plt.ylabel(r'\textbf{$\Phi$}')
 plt.grid() #Comment out if you dont want grids.
 
-plt.savefig("phi_Z.svg", format="svg", bbox_inches='tight', transparent='True')
+# plt.savefig("phi_Z.svg", format="svg", bbox_inches='tight', transparent='True')
 plt.show()
 
 
@@ -687,7 +695,7 @@ plt.xlabel(r'\textbf{$R$}')
 plt.ylabel(r'\textbf{$\Phi$}')
 plt.grid() #Comment out if you dont want grids.
 
-plt.savefig("phi_R.svg", format="svg", bbox_inches='tight', transparent='True')
+# plt.savefig("phi_R.svg", format="svg", bbox_inches='tight', transparent='True')
 plt.show()
 
 
@@ -704,7 +712,7 @@ plt.xlabel(r'\textbf{$Z$}')
 plt.ylabel(r'\textbf{$T$}')
 plt.grid() #Comment out if you dont want grids.
 
-plt.savefig("T_Z.svg", format="svg", bbox_inches='tight', transparent='True')
+# plt.savefig("T_Z.svg", format="svg", bbox_inches='tight', transparent='True')
 plt.show()
 
 
@@ -718,7 +726,7 @@ plt.xlabel(r'\textbf{$R$}')
 plt.ylabel(r'\textbf{$T$}')
 plt.grid() #Comment out if you dont want grids.
 
-plt.savefig("T_R.svg", format="svg", bbox_inches='tight', transparent='True')
+# plt.savefig("T_R.svg", format="svg", bbox_inches='tight', transparent='True')
 plt.show()
 
 
