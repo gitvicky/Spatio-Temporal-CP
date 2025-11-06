@@ -654,11 +654,11 @@ plt.plot(x_grid,lower_vals[idx, var, :, y_pos, time], label='Lower', alpha=0.8, 
 plt.plot(x_grid, upper_vals[idx, var,:, y_pos, time], label='Upper', alpha=0.8,  color = 'navy', ls='--')
 plt.plot(x_grid, soln_vals[idx, var,:, y_pos, time], label='Solution', alpha=0.8,  color = 'black')
 plt.legend()
-plt.xlabel(r'\textbf{$R$}')
-plt.ylabel(r'\textbf{$\rho$}')
+plt.xlabel(r'\textbf{$Z$}', fontsize=96, fontweight='bold')
+plt.ylabel(r'\textbf{$T$}', fontsize=96, fontweight='bold')
 plt.grid() #Comment out if you dont want grids.
 
-# plt.savefig("rho_R.svg", format="svg", bbox_inches='tight', transparent='True')
+plt.savefig("rho_R.svg", format="svg", bbox_inches='tight', transparent='True')
 plt.show()
 
 # %% 

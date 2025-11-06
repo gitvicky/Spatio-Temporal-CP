@@ -320,7 +320,7 @@ pred_set_1_viz = prediction_sets[1][idx, t_val]
 
 plt.figure()
 # plt.title(f"Residuals, alpha = {alpha}")
-plt.title(rf"Residuals, $\alpha$ = {alpha}", fontsize=72)
+plt.title(rf"AER, $\alpha$ = {alpha}", fontsize=72)
 plt.plot(x_range, Y_pred_viz, label='Exact', color='black', alpha = 0.7)
 plt.plot(x_range, mean_viz, label='Mean', color='firebrick', alpha = 0.7)
 plt.plot(x_range, pred_set_0_viz, label='lower-cal', color='teal', alpha = 0.7)
@@ -455,7 +455,7 @@ pred_set_uncal_1_viz = prediction_sets_uncalibrated[1][idx, t_val]
 
 plt.figure()
 # plt.title(f"Conformal by Dropout, alpha = {alpha}")
-plt.title(rf"Dropout, $\alpha$ = {alpha}", fontsize=72)
+plt.title(rf"STD, $\alpha$ = {alpha}", fontsize=72)
 plt.plot(x_range, Y_pred_viz, label='Exact', color='black', alpha = 0.7)
 plt.plot(x_range, mean_viz, label='Mean', color='firebrick', alpha = 0.7)
 plt.plot(x_range, pred_set_0_viz, label='lower-cal', color='teal', alpha = 0.7)

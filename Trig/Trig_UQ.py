@@ -358,6 +358,475 @@ plt.savefig("figures/Calibration_example.png", dpi = 600)
 plt.show()
 
 
+# %% 
+#Better plots for the talks 
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+# Set up the plot with high-quality defaults
+plt.rcParams.update({
+    'figure.figsize': (10, 8),
+    'font.size': 12,
+    'font.family': 'sans-serif',
+    'axes.linewidth': 1.2,
+    'axes.spines.top': True,
+    'axes.spines.right': True,
+    'axes.grid': True,
+    'grid.alpha': 0.3,
+    'grid.linewidth': 0.8,
+    'legend.frameon': False,
+    'legend.fontsize': 14,
+    'xtick.major.size': 6,
+    'ytick.major.size': 6,
+    'xtick.minor.size': 3,
+    'ytick.minor.size': 3,
+    'xtick.major.width': 1.2,
+    'ytick.major.width': 1.2,
+})
+
+# Configuration
+N_cal_show = 10     
+N_annotate = 9
+
+# Assuming you have your data variables: x_train, y_train, x_cal, y_cal, x_true, y_true, mymodel
+# Y_cal_model = mymodel(x_cal)
+
+fig, ax = plt.subplots(figsize=(10, 8))
+
+# Enhanced color scheme
+colors = {
+    'training': '#2E86AB',      # Deep blue
+    'calibration': '#F24236',   # Coral red
+    'regressor': '#F18F01',     # Orange
+    'true_function': '#00B4A6', # Teal
+    'residuals': '#E63946'      # Red for residual lines
+}
+
+
+
+
+# Plot with enhanced styling
+ax.scatter(x_train, y_train, 
+          label='Training points', 
+          color=colors['training'], 
+          s=60, 
+          alpha=0.8, 
+          edgecolors='white', 
+          linewidth=1.5,
+          zorder=5)
+
+ax.scatter(x_cal[:N_cal_show], y_cal[:N_cal_show], 
+          label='Calibration points', 
+          color=colors['calibration'], 
+          s=60, 
+          alpha=0.9, 
+          edgecolors='white', 
+          linewidth=1.5,
+          zorder=5)
+
+# Residual lines with better styling
+for i in range(N_cal_show):
+    ax.plot([x_cal[i], x_cal[i]], [Y_cal_model[i], y_cal[i]], 
+           alpha=0.7, 
+           color=colors['residuals'], 
+           linewidth=2,
+           zorder=3)
+
+# Enhanced line plots
+ax.plot(x_true, mymodel(x_true), 
+       '--', 
+       label='Neural Network', 
+       alpha=0.8, 
+       color=colors['regressor'],
+       linewidth=2.5,
+       zorder=4)
+
+ax.plot(x_true, y_true, 
+       '-', 
+       label='True function', 
+       alpha=1, 
+       linewidth=3, 
+       color=colors['true_function'],
+       zorder=4)
+
+# Enhanced annotation
+ax.annotate('s(x,y)', 
+           xy=(x_cal[N_annotate], (y_cal[N_annotate] + Y_cal_model[N_annotate])/2), 
+           xytext=(1.5, 1.0), 
+           arrowprops=dict(arrowstyle="->", 
+                          connectionstyle="angle3,angleA=-90,angleB=0",
+                          color='black',
+                          lw=1.5), 
+           fontsize=16,
+           fontweight='bold',
+           bbox=dict(boxstyle="round,pad=0.3", 
+                    facecolor='white', 
+                    edgecolor='black',
+                    alpha=0.9))
+
+# Enhanced labels and styling
+ax.set_xlabel("X", fontsize=18, fontweight='bold', labelpad=10)
+ax.set_ylabel("Y", fontsize=18, fontweight='bold', labelpad=10)
+
+# Customize tick labels
+ax.tick_params(axis='both', which='major', labelsize=14, colors='black')
+
+# Enhanced legend
+legend = ax.legend(loc='lower left', 
+                  fontsize=20, 
+                  frameon=True, 
+                  fancybox=True, 
+                  shadow=True,
+                  framealpha=0.95,
+                  edgecolor='black',
+                  facecolor='white')
+
+# Set legend marker sizes
+for handle in legend.legendHandles:
+    if hasattr(handle, 'set_sizes'):
+        handle.set_sizes([80])
+
+# Fine-tune the plot appearance
+ax.set_xlim(-0.1, 4.1)
+ax.set_ylim(-1.1, 1.3)
+
+# Set custom tick intervals
+ax.set_xticks(np.arange(0, 5, 1))  # X ticks every 1 unit
+ax.set_yticks(np.arange(-1, 1.5, 0.5))  # Y ticks every 0.5 units
+
+# Add subtle background color
+ax.set_facecolor('#fafafa')
+
+# Tight layout for better spacing
+plt.tight_layout()
+
+# Save with high resolution and quality
+plt.savefig("figures/Calibration_example_enhanced.png", 
+           dpi=300, 
+           bbox_inches='tight', 
+           facecolor='white',
+           edgecolor='none',
+           transparent=False)
+
+# Also save as PDF for vector graphics (best for presentations)
+plt.savefig("figures/Calibration_example_enhanced.pdf", 
+           bbox_inches='tight', 
+           facecolor='white',
+           edgecolor='none',
+           transparent=False)
+
+plt.show()
+
+# Reset matplotlib parameters to defaults (optional)
+plt.rcParams.update(plt.rcParamsDefault)
+
+
+# %% 
+def get_prediction_sets_poly(x, alpha = 0.1):
+    Y_predicted = mymodel(x)
+    qhat = np.quantile(np.sort(cal_scores_poly), np.ceil((N_cal+1)*(1-alpha))/(N_cal), axis = 0,interpolation='higher')
+    return [Y_predicted - qhat, Y_predicted + qhat]
+
+# Set up the plot with high-quality defaults (matching your enhanced style)
+plt.rcParams.update({
+    'figure.figsize': (10, 8),
+    'font.size': 12,
+    'font.family': 'sans-serif',
+    'axes.linewidth': 1.2,
+    'axes.spines.top': True,
+    'axes.spines.right': True,
+    'axes.grid': True,
+    'grid.alpha': 0.3,
+    'grid.linewidth': 0.8,
+    'legend.frameon': False,
+    'legend.fontsize': 14,
+    'xtick.major.size': 6,
+    'ytick.major.size': 6,
+    'xtick.minor.size': 3,
+    'ytick.minor.size': 3,
+    'xtick.major.width': 1.2,
+    'ytick.major.width': 1.2,
+})
+
+alpha = 0.1
+[Y_lo, Y_hi] = get_prediction_sets_poly(x_true, alpha)
+X_anotate = 2.8
+[Y_lo_anon, Y_hi_anon] = get_prediction_sets_poly(X_anotate, alpha)
+
+# Enhanced color scheme (matching your first plot)
+colors = {
+    'training': '#2E86AB',      # Deep blue
+    'regressor': '#F18F01',     # Orange
+    'confidence': '#E63946',    # Teal (for confidence bands)
+    'true_function': '#00B4A6', # Teal
+    'annotation': '#E63946'     # Red for annotations
+}
+
+fig, ax = plt.subplots(figsize=(10, 8))
+
+# Enhanced training points
+ax.scatter(x_train, y_train, 
+          label='Training points', 
+          color=colors['training'], 
+          s=60, 
+          alpha=0.8, 
+          edgecolors='white', 
+          linewidth=1.5,
+          zorder=5)
+
+# Enhanced regressor line
+ax.plot(x_true, mymodel(x_true), 
+       '--', 
+       label='Neural Network', 
+       alpha=0.8, 
+       color=colors['regressor'],
+       linewidth=2.5,
+       zorder=4)
+
+# Enhanced confidence bands
+ax.plot(x_true, Y_lo, 
+       '--', 
+       alpha=0.8, 
+       color=colors['confidence'],
+       linewidth=2.5,
+       zorder=3)
+
+ax.plot(x_true, Y_hi, 
+       '--', 
+       label=r'$(1-\alpha)$ confidence band', 
+       alpha=0.8, 
+       color=colors['confidence'],
+       linewidth=2.5,
+       zorder=3)
+
+# Enhanced true function line
+ax.plot(x_true, y_true, 
+       '-', 
+       label='True function', 
+       alpha=1, 
+       linewidth=3, 
+       color=colors['true_function'],
+       zorder=4)
+
+# Enhanced annotations with better styling
+ax.annotate('', 
+           xy=(X_anotate, Y_hi_anon), 
+           xytext=(X_anotate, mymodel(X_anotate)), 
+           arrowprops=dict(arrowstyle="->",
+                          color=colors['annotation'],
+                          lw=1.5), 
+           fontsize=15)
+
+ax.annotate('', 
+           xy=(X_anotate, Y_lo_anon), 
+           xytext=(X_anotate, mymodel(X_anotate)), 
+           arrowprops=dict(arrowstyle="->",
+                          color=colors['annotation'],
+                          lw=1.5), 
+           fontsize=15)
+
+# Enhanced text annotation
+ax.text(2.9, 0.5, r'$\hat{q}$', 
+       fontsize=16,
+       fontweight='bold',
+       bbox=dict(boxstyle="round,pad=0.3", 
+                facecolor='white', 
+                edgecolor='black',
+                alpha=0.9))
+
+# Enhanced labels and styling
+ax.set_xlabel("X", fontsize=18, fontweight='bold', labelpad=10)
+ax.set_ylabel("Y", fontsize=18, fontweight='bold', labelpad=10)
+
+# Customize tick labels
+ax.tick_params(axis='both', which='major', labelsize=14, colors='black')
+
+# Enhanced legend
+legend = ax.legend(loc='lower left', 
+                  fontsize=20, 
+                  frameon=True, 
+                  fancybox=True, 
+                  shadow=True,
+                  framealpha=0.95,
+                  edgecolor='black',
+                  facecolor='white')
+
+# Set legend marker sizes
+for handle in legend.legendHandles:
+    if hasattr(handle, 'set_sizes'):
+        handle.set_sizes([80])
+
+# Fine-tune the plot appearance (adjust limits as needed for your data)
+ax.set_xlim(-0.1, 4.1)
+ax.set_ylim(-1.1, 1.3)
+
+# Set custom tick intervals
+ax.set_xticks(np.arange(0, 5, 1))  # X ticks every 1 unit
+ax.set_yticks(np.arange(-1, 1.5, 0.5))  # Y ticks every 0.5 units
+
+# Add subtle background color
+ax.set_facecolor('#fafafa')
+
+# Tight layout for better spacing
+plt.tight_layout()
+
+# Save with high resolution and quality
+plt.savefig("figures/Regressor_90_enhanced.png", 
+           dpi=300, 
+           bbox_inches='tight', 
+           facecolor='white',
+           edgecolor='none',
+           transparent=False)
+
+# Also save as PDF for vector graphics (best for presentations)
+plt.savefig("figures/Regressor_90_enhanced.pdf", 
+           bbox_inches='tight', 
+           facecolor='white',
+           edgecolor='none',
+           transparent=False)
+
+plt.show()
+
+# Reset matplotlib parameters to defaults (optional)
+plt.rcParams.update(plt.rcParamsDefault)
+
+# %% 
+# Set up the plot with high-quality defaults (matching your enhanced style)
+plt.rcParams.update({
+    'figure.figsize': (10, 8),
+    'font.size': 12,
+    'font.family': 'sans-serif',
+    'axes.linewidth': 1.2,
+    'axes.spines.top': True,
+    'axes.spines.right': True,
+    'axes.grid': True,
+    'grid.alpha': 0.3,
+    'grid.linewidth': 0.8,
+    'legend.frameon': False,
+    'legend.fontsize': 14,
+    'xtick.major.size': 6,
+    'ytick.major.size': 6,
+    'xtick.minor.size': 3,
+    'ytick.minor.size': 3,
+    'xtick.major.width': 1.2,
+    'ytick.major.width': 1.2,
+})
+
+# Enhanced color scheme (matching your other plots)
+colors = {
+    'cdf_line': '#2E86AB',      # Deep blue for CDF line
+    'annotation': '#E63946',    # Red for annotations
+    'grid_lines': '#00B4A6',    # Teal for grid lines
+    'text': '#E63946'           # Red for text
+}
+
+fig, ax = plt.subplots(figsize=(10, 8))
+
+# Enhanced step plot for CDF
+ax.step(np.sort(cal_scores_poly), 
+        np.linspace(0, 1, N_cal+1)[:-1],
+        color=colors['cdf_line'],
+        linewidth=3,
+        alpha=0.9,
+        where='post',
+        zorder=5)
+
+ymin, ymax = ax.get_ylim()
+xmin, xmax = ax.get_xlim()
+
+# Enhanced horizontal dashed line
+ax.annotate('', 
+           xy=(qhat, alpha_cut), 
+           xytext=(0, alpha_cut), 
+           arrowprops=dict(arrowstyle="-", 
+                          linestyle="--",
+                          color=colors['grid_lines'],
+                          lw=2,
+                          alpha=0.8), 
+           fontsize=15)
+
+# Enhanced vertical dashed line with arrow
+ax.annotate('', 
+           xy=(qhat, ymin), 
+           xytext=(qhat, alpha_cut), 
+           arrowprops=dict(arrowstyle="->", 
+                          linestyle="--",
+                          color=colors['grid_lines'],
+                          lw=2,
+                          alpha=0.8), 
+           fontsize=15)
+
+# Enhanced annotation for 1-alpha
+ax.annotate(r'$1 - \alpha$', 
+           xy=(xmin, alpha_cut), 
+           xytext=(-0.09, 0.7), 
+           arrowprops=dict(arrowstyle="->", 
+                          color=colors['annotation'],
+                          connectionstyle="angle3,angleA=-70,angleB=0",
+                          lw=1.5), 
+           fontsize=18, 
+           fontweight='bold',
+           color=colors['text'],
+           bbox=dict(boxstyle="round,pad=0.3", 
+                    facecolor='white', 
+                    edgecolor=colors['annotation'],
+                    alpha=0.9))
+
+# Enhanced text annotation for q-hat
+ax.text(qhat, ymin - 0.09, r'$\hat{q}$', 
+       fontsize=20, 
+       fontweight='bold',
+       color=colors['text'],
+       ha='center',
+       bbox=dict(boxstyle="round,pad=0.3", 
+                facecolor='white', 
+                edgecolor=colors['annotation'],
+                alpha=0.9))
+
+# Enhanced labels and styling
+ax.set_xlabel("s(x,y)", fontsize=18, fontweight='bold', labelpad=10)
+ax.set_ylabel("CDF", fontsize=18, fontweight='bold', labelpad=10)
+
+# Customize tick labels
+ax.tick_params(axis='both', which='major', labelsize=14, colors='black')
+
+# Fine-tune the plot appearance
+ax.set_ylim(ymin - 0.05, ymax + 0.05)  # Add some padding
+ax.set_xlim(xmin - 0.02, xmax + 0.02)  # Add some padding
+
+# Add subtle background color
+ax.set_facecolor('#fafafa')
+
+# Enhance the grid
+ax.grid(True, alpha=0.3, linewidth=0.8, color='gray')
+
+# Add minor ticks for better precision
+ax.minorticks_on()
+
+# Tight layout for better spacing
+plt.tight_layout()
+
+# Save with high resolution and quality
+plt.savefig("figures/cal_score_distribution_enhanced.png", 
+           dpi=300, 
+           bbox_inches='tight', 
+           facecolor='white',
+           edgecolor='none',
+           transparent=False)
+
+# Also save as PDF for vector graphics (best for presentations)
+plt.savefig("figures/cal_score_distribution_enhanced.pdf", 
+           bbox_inches='tight', 
+           facecolor='white',
+           edgecolor='none',
+           transparent=False)
+
+plt.show()
+
+# Reset matplotlib parameters to defaults (optional)
+plt.rcParams.update(plt.rcParamsDefault)
 # %% Conformal with covariate shift
 
 ###
