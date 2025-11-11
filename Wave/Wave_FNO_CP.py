@@ -12,11 +12,7 @@ Experimenting with a range of UQ Methods:
     1. Dropout
     2. Quantile Regression 
     3. NN Ensemble 
-    4. Physics-based residual
-    5. Deep Kernel Learning
 
-Once UQ methodolgies have been demonstrated on each, we can use Conformal Prediction over a
- multitude of conformal scores to find empirically rigorous coverage. 
 """
 
 # %%
@@ -410,8 +406,8 @@ cbar = fig.colorbar(pcm, cax=cax)
 cbar.ax.tick_params(labelsize=12)
 fig.tight_layout()
 
-plt.savefig('wave_fno_heatmaps.svg', format="svg", bbox_inches='tight', transparent='True')
-plt.savefig('wave_fno_heatmaps.pdf', format="pdf", bbox_inches='tight', transparent='True')
+plt.savefig('Plots/wave_fno_heatmaps.svg', format="svg", bbox_inches='tight', transparent='True')
+plt.savefig('Plots/wave_fno_heatmaps.pdf', format="pdf", bbox_inches='tight', transparent='True')
 
 # %%
 # ##############################
@@ -724,7 +720,7 @@ ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
 fig.colorbar(pcm, pad=0.05)
 
-# plt.savefig('wave_fno_heatmaps.svg', format="svg", bbox_inches='tight', transparent='True')
+# plt.savefig('Plots/Plots/wave_fno_heatmaps.svg', format="svg", bbox_inches='tight', transparent='True')
 
 
 # %% 
@@ -1084,8 +1080,8 @@ cbar = fig.colorbar(pcm, cax=cax)
 cbar.ax.tick_params(labelsize=12)
 fig.tight_layout()
 
-plt.savefig('wave_fno_hs_heatmaps.svg', format="svg", bbox_inches='tight', transparent='True')
-plt.savefig('wave_fno_hs_heatmaps.pdf', format="pdf", bbox_inches='tight', transparent='True')
+plt.savefig('Plots/wave_fno_hs_heatmaps.svg', format="svg", bbox_inches='tight', transparent='True')
+plt.savefig('Plots/wave_fno_hs_heatmaps.pdf', format="pdf", bbox_inches='tight', transparent='True')
 
 # %% 
 #With Dropout on Half Speed
@@ -1468,5 +1464,5 @@ plt.xticks([])
 plt.yticks([])
 plt.colorbar()
 plt.tight_layout()
-# plt.savefig('wave_unet_marginal_cells_slice.svg', format="svg", bbox_inches='tight', transparent='True')
+# plt.savefig('Plots/wave_unet_marginal_cells_slice.svg', format="svg", bbox_inches='tight', transparent='True')
 # %%

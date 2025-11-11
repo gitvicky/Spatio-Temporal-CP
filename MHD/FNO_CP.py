@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 
-FNO modelled over the MHD data built using JOREK for multi-blob diffusion. Conformal Prediction over it
+FNO modelled over the MHD data built using JOREK for multi-blob diffusion. 
+Conformal Prediction over it
 """
 # %%
 #Training Conditions
@@ -607,7 +608,7 @@ plt.ylabel('Empirical Coverage')
 plt.title("MHD", fontsize=72)
 plt.legend()
 plt.grid() #Comment out if you dont want grids.
-# plt.savefig("MHD_comparison.svg", format="svg", bbox_inches='tight')
+# plt.savefig("Plots/MHD_comparison.svg", format="svg", bbox_inches='tight')
 plt.show()
 # mpl.rcParams['xtick.minor.visible']=True
 # mpl.rcParams['font.size']=45
@@ -641,7 +642,7 @@ plt.xlabel(r'\textbf{$Z$}')
 plt.ylabel(r'\textbf{$\rho$}')
 plt.grid() #Comment out if you dont want grids.
 
-# plt.savefig("rho_Z.svg", format="svg", bbox_inches='tight', transparent='True')
+# plt.savefig("Plots/rho_Z.svg", format="svg", bbox_inches='tight', transparent='True')
 plt.show()
 # %%
 idx = 10
@@ -658,7 +659,7 @@ plt.xlabel(r'\textbf{$Z$}', fontsize=96, fontweight='bold')
 plt.ylabel(r'\textbf{$T$}', fontsize=96, fontweight='bold')
 plt.grid() #Comment out if you dont want grids.
 
-plt.savefig("rho_R.svg", format="svg", bbox_inches='tight', transparent='True')
+plt.savefig("Plots/rho_R.svg", format="svg", bbox_inches='tight', transparent='True')
 plt.show()
 
 # %% 
@@ -681,7 +682,7 @@ plt.xlabel(r'\textbf{$Z$}')
 plt.ylabel(r'\textbf{$\Phi$}')
 plt.grid() #Comment out if you dont want grids.
 
-# plt.savefig("phi_Z.svg", format="svg", bbox_inches='tight', transparent='True')
+# plt.savefig("Plots/phi_Z.svg", format="svg", bbox_inches='tight', transparent='True')
 plt.show()
 
 
@@ -695,7 +696,7 @@ plt.xlabel(r'\textbf{$R$}')
 plt.ylabel(r'\textbf{$\Phi$}')
 plt.grid() #Comment out if you dont want grids.
 
-# plt.savefig("phi_R.svg", format="svg", bbox_inches='tight', transparent='True')
+# plt.savefig("Plots/phi_R.svg", format="svg", bbox_inches='tight', transparent='True')
 plt.show()
 
 
@@ -712,7 +713,7 @@ plt.xlabel(r'\textbf{$Z$}')
 plt.ylabel(r'\textbf{$T$}')
 plt.grid() #Comment out if you dont want grids.
 
-# plt.savefig("T_Z.svg", format="svg", bbox_inches='tight', transparent='True')
+# plt.savefig("Plots/T_Z.svg", format="svg", bbox_inches='tight', transparent='True')
 plt.show()
 
 
@@ -726,7 +727,7 @@ plt.xlabel(r'\textbf{$R$}')
 plt.ylabel(r'\textbf{$T$}')
 plt.grid() #Comment out if you dont want grids.
 
-# plt.savefig("T_R.svg", format="svg", bbox_inches='tight', transparent='True')
+# plt.savefig("Plots/T_R.svg", format="svg", bbox_inches='tight', transparent='True')
 plt.show()
 
 

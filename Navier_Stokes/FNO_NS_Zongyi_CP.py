@@ -11,11 +11,10 @@ FNO trained to model the fixed mapping evolution (no AR rollouts) of vorticity
 ----------------------------------------------------------------------------------------------------------------------------------------
 
 Experimenting with a range of UQ Methods:
-    1̶.̶ D̶r̶o̶p̶o̶u̶t̶
+    1. Dropout
     2. Residuals 
 
-Once UQ methodolgies have been demonstrated on each, we can use Conformal Prediction over a
- multitude of conformal scores to find empirically rigorous coverage. 
+
 """
 
 # %%
@@ -293,7 +292,7 @@ plt.plot(x, y_response[idx, x_id, :, tt], linewidth = 1, color = "black", label 
 plt.xlabel(r"\textbf{y}")
 plt.ylabel(r"\textbf{u}")
 plt.legend()
-# plt.savefig("wave_unet_residual.svg", format="svg", bbox_inches='tight', transparent='True')
+# plt.savefig("Plots/wave_unet_residual.svg", format="svg", bbox_inches='tight', transparent='True')
 plt.show()
 # %%
 def calibrate_residual(alpha):
@@ -487,7 +486,7 @@ plt.subplots_adjust(wspace=0, hspace=0)
 plt.tight_layout()
 
 
-plt.savefig('wave_unet_hs_cells_calibrated.svg', format="svg", bbox_inches='tight', transparent='True')
+plt.savefig('Plots/wave_unet_hs_cells_calibrated.svg', format="svg", bbox_inches='tight', transparent='True')
 # %% 
 
 # %%
@@ -841,7 +840,7 @@ plt.ylabel('Empirical Coverage')
 plt.title("Navier-Stokes", fontsize=72)
 plt.legend()
 plt.grid() #Comment out if you dont want grids.
-plt.savefig("NS_coverage.svg", format="svg", bbox_inches='tight')
+plt.savefig("Plots/NS_coverage.svg", format="svg", bbox_inches='tight')
 plt.show()
 
 # %%
@@ -865,7 +864,7 @@ plt.xlabel(r"\textbf{x}")
 plt.ylabel(r"\textbf{$\nu$}")
 plt.legend()
 plt.grid() #Comment out if you dont want grids.
-plt.savefig("NS_residual_x.svg", format="svg", bbox_inches='tight')
+plt.savefig("Plots/NS_residual_x.svg", format="svg", bbox_inches='tight')
 
 # %%
 #Slice plots along the x axis. 
@@ -889,7 +888,7 @@ plt.xlabel(r"\textbf{x}")
 plt.ylabel(r"\textbf{$\nu$}")
 plt.legend()
 plt.grid() #Comment out if you dont want grids.
-plt.savefig("NS_dropout_x.svg", format="svg", bbox_inches='tight')
+plt.savefig("Plots/NS_dropout_x.svg", format="svg", bbox_inches='tight')
 
 # %% 
 
@@ -913,7 +912,7 @@ plt.xlabel(r"\textbf{y}")
 plt.ylabel(r"\textbf{$\nu$}")
 plt.legend()
 plt.grid() #Comment out if you dont want grids.
-plt.savefig("NS_residual_y.svg", format="svg", bbox_inches='tight')
+plt.savefig("Plots/NS_residual_y.svg", format="svg", bbox_inches='tight')
 
 # %%
 #Slice plots along the y axis. 
@@ -937,7 +936,7 @@ plt.xlabel(r"\textbf{y}")
 plt.ylabel(r"\textbf{$\nu$}")
 plt.legend()
 plt.grid() #Comment out if you dont want grids.
-plt.savefig("NS_dropout_y.svg", format="svg", bbox_inches='tight')
+plt.savefig("Plots/NS_dropout_y.svg", format="svg", bbox_inches='tight')
 
 
 # %%
@@ -1148,7 +1147,7 @@ cbar.ax.yaxis.get_offset_text().set(size=12)
 
 fig.tight_layout()
 
-plt.savefig('ns_fno_heatmaps.svg', format="svg", bbox_inches='tight', transparent='True')
-plt.savefig('ns_fno_heatmaps.pdf', format="pdf", bbox_inches='tight', transparent='True')
+plt.savefig('Plots/ns_fno_heatmaps.svg', format="svg", bbox_inches='tight', transparent='True')
+plt.savefig('Plots/ns_fno_heatmaps.pdf', format="pdf", bbox_inches='tight', transparent='True')
 
 # %%

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 
-FNO modelled over the MHD data built using JOREK for multi-blob diffusion. 
+FNO modelled over the MHD data built using JOREK for multi-blob diffusion. Univariate model. 
 """
 # %%
 configuration = {"Case": 'Multi-Blobs', #Specifying the Simulation Scenario

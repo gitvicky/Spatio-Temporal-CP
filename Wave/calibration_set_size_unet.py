@@ -220,7 +220,7 @@ plt.ylabel('Empirical Coverage')
 plt.title('CQR')
 plt.legend()
 plt.grid() #Comment out if you dont want grids.
-plt.savefig("Wave_Unet_cal_size_cqr.svg", format="svg", bbox_inches='tight')
+plt.savefig("Plots/Wave_Unet_cal_size_cqr.svg", format="svg", bbox_inches='tight')
 plt.show()
 
 # %%
@@ -279,7 +279,7 @@ plt.ylabel('Empirical Coverage')
 plt.title('Residual')
 plt.legend()
 plt.grid() #Comment out if you dont want grids.
-plt.savefig("Wave_Unet_cal_size_residual.svg", format="svg", bbox_inches='tight')
+plt.savefig("Plots/Wave_Unet_cal_size_residual.svg", format="svg", bbox_inches='tight')
 plt.show()
 
 
@@ -343,6 +343,6 @@ plt.ylabel('Empirical Coverage')
 plt.title('Dropout')
 plt.legend()
 plt.grid() #Comment out if you dont want grids.
-plt.savefig("Wave_Unet_cal_size_dropout.svg", format="svg", bbox_inches='tight')
+plt.savefig("Plots/Wave_Unet_cal_size_dropout.svg", format="svg", bbox_inches='tight')
 plt.show()
 # %%

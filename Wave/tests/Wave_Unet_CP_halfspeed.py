@@ -11,11 +11,8 @@ Experimenting with a range of UQ Methods:
     1. Dropout
     2. Quantile Regression 
     3. NN Ensemble 
-    4. Physics-based residual
-    5. Deep Kernel Learning
 
-Once UQ methodolgies have been demonstrated on each, we can use Conformal Prediction over a
- multitude of conformal scores to find empirically rigorous coverage. 
+
 """
 
 # %%
@@ -632,7 +629,7 @@ plt.subplots_adjust(wspace=0, hspace=0)
 plt.tight_layout()
 
 
-# plt.savefig('wave_unet_hs_cells_calibrated.svg', format="svg", bbox_inches='tight', transparent='True')
+# plt.savefig('Plots/wave_unet_hs_cells_calibrated.svg', format="svg", bbox_inches='tight', transparent='True')
 
 # %% 
 plt.figure()
@@ -644,8 +641,8 @@ plt.xticks([])
 plt.yticks([])
 plt.colorbar()
 plt.tight_layout()
-plt.savefig('wave_unet_hs_cells_predicted.svg', format="svg", bbox_inches='tight', transparent='True')
-# plt.savefig('wave_unet_hs_cells_actual.svg', format="svg", bbox_inches='tight', transparent='True')
+plt.savefig('Plots/wave_unet_hs_cells_predicted.svg', format="svg", bbox_inches='tight', transparent='True')
+# plt.savefig('Plots/wave_unet_hs_cells_actual.svg', format="svg", bbox_inches='tight', transparent='True')
 
 
 # %% 
@@ -783,7 +780,7 @@ ax.axes.xaxis.set_ticks([])
 ax.axes.yaxis.set_ticks([])
 fig.colorbar(pcm, pad=0.05)
 
-plt.savefig('wave_unet_hs_heatmaps.svg', format="svg", bbox_inches='tight', transparent='True')
+plt.savefig('Plots/wave_unet_hs_heatmaps.svg', format="svg", bbox_inches='tight', transparent='True')
 
 
 # plt.subplots_adjust(wspace=0)#, hspace=0)
@@ -819,7 +816,7 @@ plt.plot(x_points, y_response[idx, tt][x_id, :], linewidth = 1, color = "black",
 plt.xlabel(r"\textbf{y}")
 plt.ylabel(r"\textbf{u}")
 plt.legend()
-plt.savefig("wave_unet_dropout.svg", format="svg", bbox_inches='tight', transparent='True')
+plt.savefig("Plots/wave_dropout.svg", format="svg", bbox_inches='tight', transparent='True')
 plt.show()
 
 # %%
@@ -1008,7 +1005,7 @@ plt.subplots_adjust(wspace=0, hspace=0)
 plt.tight_layout()
 
 
-# plt.savefig('wave_unet_marginal_cells_calibrated.svg', format="svg", bbox_inches='tight', transparent='True')
+# plt.savefig('Plots/wave_unet_marginal_cells_calibrated.svg', format="svg", bbox_inches='tight', transparent='True')
 
 # %%
 # %%
@@ -1020,5 +1017,5 @@ plt.xticks([])
 plt.yticks([])
 plt.colorbar()
 plt.tight_layout()
-# plt.savefig('wave_unet_marginal_cells_slice.svg', format="svg", bbox_inches='tight', transparent='True')
+# plt.savefig('Plots/wave_unet_marginal_cells_slice.svg', format="svg", bbox_inches='tight', transparent='True')
 # %%

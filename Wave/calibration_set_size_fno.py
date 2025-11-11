@@ -252,7 +252,7 @@ plt.ylabel('Empirical Coverage')
 plt.title('Residual')
 plt.legend()
 plt.grid() #Comment out if you dont want grids.
-plt.savefig("Wave_FNO_cal_size_residual.svg", format="svg", bbox_inches='tight')
+plt.savefig("Plots/Wave_FNO_cal_size_residual.svg", format="svg", bbox_inches='tight')
 plt.show()
 # %%
 #Using Dropout
@@ -338,6 +338,6 @@ plt.ylabel('Empirical Coverage')
 plt.title('Dropout')
 plt.legend()
 plt.grid() #Comment out if you dont want grids.
-plt.savefig("Wave_FNO_cal_size_dropout.svg", format="svg", bbox_inches='tight')
+plt.savefig("Plots/Wave_FNO_cal_size_dropout.svg", format="svg", bbox_inches='tight')
 plt.show()
 # %%
