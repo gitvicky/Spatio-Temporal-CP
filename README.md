@@ -46,7 +46,7 @@ All experiments follow this 6-step framework:
 **Domain**: 1D spatial domain [0, 1] discretized into 32 points
 
 **Data Generation**:
-- 7,000 simulations using finite difference methods
+- 7,000 simulations using finite difference methods (py-pde package)
 - Training: 5,000 samples
 - Calibration: 1,000 samples
 - Validation: 1,000 samples
@@ -54,11 +54,26 @@ All experiments follow this 6-step framework:
 
 **Model**: 3-layer MLP (64 neurons per layer)
 
-**Training**:
+**Workflow**:
+
+The Poisson experiment includes data generation, model training, and CP evaluation all in a single script:
+
 ```bash
 cd Poisson/
+
+# This single script performs:
+# 1. Data generation using py-pde solver
+# 2. Model training for CQR (3 models), AER (1 model), STD (1 model with dropout)
+# 3. Conformal prediction calibration and evaluation
 python Poisson_NN_CP.py
 ```
+
+The script will:
+1. Generate PDE solutions using finite difference methods
+2. Train separate models for each CP method
+3. Perform calibration on the calibration set
+4. Validate coverage on the test set
+5. Generate visualization plots
 
 **Results**: All methods achieve ~90% coverage with tight error bars (AER: 0.002 normalized units)
 
@@ -98,11 +113,36 @@ python Poisson_NN_CP.py
 **Model**: 1D U-Net (4 encoder-decoder levels, batch normalization, tanh activation)
 - Maps first 10 time steps → next 10 time steps
 
-**Training**:
+**Workflow**:
+
 ```bash
 cd Conv_Diff/
+
+# Step 1: Generate training data
+# Generates 3,000 training samples with in-distribution parameters
+python DataGen.py
+
+# Step 2: Generate calibration and validation data  
+# Generates 2,000 OOD samples (1,000 calibration + 1,000 validation)
+# Edit DataGen.py to change parameter bounds for OOD regime before running
+
+# Step 3: Train model and perform CP evaluation
+# This script trains the U-Net and evaluates all three CP methods
 python CD_UNet_CP.py
 ```
+
+**Script Details**:
+
+`DataGen.py`:
+- Uses `RunSim.py` to solve the convection-diffusion PDE
+- Performs Latin hypercube sampling over parameter space
+- Saves data as `.npz` files in `Data/` directory
+
+`CD_UNet_CP.py`:
+- Loads generated data
+- Trains separate U-Nets for CQR (3 quantile models), AER (1 model), STD (1 model with dropout)
+- Performs conformal calibration
+- Validates coverage and generates plots
 
 **Results**: CP successfully calibrates even with distribution shift:
 - CQR: 25.53% → 93.05% coverage after calibration
@@ -145,19 +185,60 @@ python CD_UNet_CP.py
    - Output shape: [60, 33, 33]
    - 6 Fourier layers with width 32
 
-**Training**:
+**Workflow**:
+
 ```bash
 cd Wave/
-# U-Net
+
+# Step 1: Generate training, calibration, and validation data
+# Uses spectral solver to generate wave solutions
+python Spectral_Wave_Data_Gen.py
+
+# The script includes functions:
+# - wave_solution(): Solves 2D wave equation for given parameters
+# - LHS_Sampling(): Generates data using Latin hypercube sampling
+# - Parameter_Scan(): Alternative grid-based sampling (optional)
+
+# Step 2a: Train U-Net model
+# Trains U-Net for feed-forward prediction
+python Wave_UNet.py
+
+# Step 2b: Train FNO model  
+# Trains FNO for autoregressive prediction
+python Wave_FNO.py
+
+# Step 3a: Evaluate U-Net with Conformal Prediction
+# Loads trained U-Net and performs CP calibration/validation
 python Wave_Unet_CP.py
 
-# FNO
+# Step 3b: Evaluate FNO with Conformal Prediction
+# Loads trained FNO and performs CP calibration/validation
 python Wave_FNO_CP.py
 
-# Out-of-distribution testing (half speed)
+# Optional: Out-of-distribution testing (half wave speed)
 python tests/Wave_Unet_CP_halfspeed.py
 python tests/Wave_FNO_CP_halfspeed.py
 ```
+
+**Script Details**:
+
+`Spectral_Wave_Data_Gen.py`:
+- Implements spectral solver for 2D wave equation
+- `wave_solution(amplitude, x_pos, y_pos)`: Generates single simulation
+- `LHS_Sampling()`: Generates full dataset with Latin hypercube sampling
+- Saves data as `.npz` file in `Data/` directory
+
+Training Scripts (`Wave_UNet.py`, `Wave_FNO.py`):
+- Load generated data from `.npz` file
+- Train model for 500 epochs
+- Save trained model weights
+
+CP Evaluation Scripts (`Wave_Unet_CP.py`, `Wave_FNO_CP.py`):
+- Load trained model weights
+- Load calibration and validation data
+- Compute nonconformity scores (CQR, AER, STD)
+- Perform calibration and validate coverage
+- Generate visualization plots
 
 **Results**: 
 - U-Net: ~90% coverage with all methods (AER most efficient)
@@ -169,10 +250,10 @@ python tests/Wave_FNO_CP_halfspeed.py
 **Physics**: Incompressible 2D Navier-Stokes equations modeling viscous fluid dynamics (vorticity formulation).
 
 **Domain**:
-- Spatial: (0, 1) × (0, 1) grid
+- Spatial: (0, 1) × (0, 1) grid with 64×64 resolution
 - Temporal evolution of vorticity field
 
-**Data Source**: Uses data from [FNO paper](https://github.com/neuraloperator/neuraloperator) (Li et al., 2021)
+**Data Source**: Uses pre-generated data from the [FNO paper](https://github.com/neuraloperator/neuraloperator) (Li et al., 2021)
 
 **Setup**:
 - Training: viscosity ν = 10⁻³
@@ -185,18 +266,117 @@ python tests/Wave_FNO_CP_halfspeed.py
 - Modes: 12 (spectral truncation)
 - Width: configurable
 
-**Training**:
+**Workflow**:
+
 ```bash
 cd Navier_Stokes/
-python NS_FNO_CP.py
 
-# Training details in utils.py and model_FNO.py
+# Step 1: Download FNO data from original paper
+# Download the Navier-Stokes dataset from:
+# https://drive.google.com/drive/folders/1UnbQh2WWc6knEHbLn-ZaXrKUZhp7pjt-
+
+# Required files:
+# - ns_V1e-3_N5000_T50.mat (training data, ν = 10⁻³)
+# - ns_V1e-4_N10000_T30.mat (test data, ν = 10⁻⁴)
+
+# Or use the direct links from the neuraloperator repository:
+wget https://drive.google.com/uc?export=download&id=1r3idxpsHa21ijhlu3QQ1hVvi7SnyHLLT \
+    -O ns_V1e-3_N5000_T50.mat
+
+wget https://drive.google.com/uc?export=download&id=1ViYaXD8MfH48x5aYiKbEZH4JRO1YZY2f \
+    -O ns_V1e-4_N10000_T30.mat
+
+# Convert .mat files to .npy format (if needed)
+# The training script will handle loading the data
+
+# Step 2: Train FNO model
+# Trains FNO on ν = 10⁻³ data
+python FNO_NS_Zongyi.py
+
+# Step 3: Evaluate with Conformal Prediction
+# Loads trained FNO and performs CP on ν = 10⁻⁴ data (out-of-distribution)
+python NS_FNO_CP.py
 ```
+
+**Script Details**:
+
+`FNO_NS_Zongyi.py`:
+- Loads Navier-Stokes data from `.mat` or `.npy` files
+- Implements FNO architecture (see `utils.py` for model definition)
+- Trains on ν = 10⁻³ data for 500 epochs
+- Saves trained model weights
+
+`NS_FNO_CP.py`:
+- Loads trained FNO model
+- Loads ν = 10⁻⁴ data for calibration and testing
+- Performs CP using AER and STD methods
+- Validates coverage on out-of-distribution regime
+- Generates visualization plots
+
+**Data Information**:
+
+The FNO paper provides two datasets:
+1. **Training data** (ν = 10⁻³):
+   - 5,000 initial conditions
+   - 50 time steps each
+   - 64×64 spatial resolution
+
+2. **Test data** (ν = 10⁻⁴):
+   - 10,000 initial conditions  
+   - 30 time steps each
+   - 64×64 spatial resolution
 
 **Results**: 
 - Uncalibrated dropout: only 7.52% coverage
 - After CP calibration: 90.27% coverage (STD method)
-- Demonstrates CP's ability to correct severely underestimated uncertainty
+- Demonstrates CP's ability to correct severely underestimated uncertainty in OOD settings
+
+---
+
+## Workflow Summary
+
+Each experiment follows a consistent workflow pattern:
+
+### General Workflow
+
+```
+1. Data Generation → 2. Model Training → 3. CP Evaluation
+```
+
+### Experiment-Specific Details
+
+| Experiment | Data Generation | Model Training | CP Evaluation |
+|------------|----------------|----------------|---------------|
+| **Poisson** | Integrated in main script | Integrated in main script | `Poisson_NN_CP.py` |
+| **Conv-Diff** | `DataGen.py` + `RunSim.py` | Integrated in CP script | `CD_UNet_CP.py` |
+| **Wave** | `Spectral_Wave_Data_Gen.py` | `Wave_UNet.py` / `Wave_FNO.py` | `Wave_Unet_CP.py` / `Wave_FNO_CP.py` |
+| **Navier-Stokes** | Download from FNO paper | `FNO_NS_Zongyi.py` | `NS_FNO_CP.py` |
+
+### Key Points
+
+1. **Poisson**: All-in-one script that generates data, trains models, and evaluates CP
+2. **Convection-Diffusion**: Separate data generation, then combined training + CP evaluation
+3. **Wave**: Fully separated pipeline - data generation, training, and CP evaluation are independent
+4. **Navier-Stokes**: Uses external data source (FNO paper), then training and CP evaluation
+
+### Scripts Purpose
+
+- **Data Generation Scripts** (`DataGen.py`, `Spectral_Wave_Data_Gen.py`, `RunSim.py`):
+  - Solve PDEs numerically
+  - Sample parameter space (Latin hypercube or uniform)
+  - Save datasets as `.npz` or `.npy` files
+
+- **Training Scripts** (`Wave_UNet.py`, `Wave_FNO.py`, `FNO_NS_Zongyi.py`):
+  - Load generated/downloaded data
+  - Train neural network surrogates
+  - Save model weights
+
+- **CP Evaluation Scripts** (`*_CP.py`):
+  - Load trained models and data
+  - Compute nonconformity scores for CQR, AER, STD
+  - Perform calibration
+  - Validate coverage guarantees
+  - Generate plots and metrics
 
 ---
 
@@ -642,31 +822,98 @@ pip install torch numpy scipy matplotlib py-pde h5py
 
 ## Reproducing Paper Results
 
-To reproduce the results in Table 1 of the paper:
+To reproduce the results in Table 1 of the paper, follow these steps for each experiment:
 
+### 1D Poisson
 ```bash
-# 1D Poisson
-cd Poisson && python Poisson_NN_CP.py
-
-# 1D Convection-Diffusion  
-cd Conv_Diff && python CD_UNet_CP.py
-
-# 2D Wave (U-Net)
-cd Wave && python Wave_Unet_CP.py
-
-# 2D Wave (FNO)
-cd Wave && python Wave_FNO_CP.py
-
-# 2D Navier-Stokes
-cd Navier_Stokes && python NS_FNO_CP.py
+cd Poisson
+# All-in-one: data generation + training + CP evaluation
+python Poisson_NN_CP.py
 ```
 
-Each script will:
-1. Load or generate data (if available)
-2. Load the trained model (if available)
-3. Perform calibration
-4. Compute coverage and tightness metrics
-5. Generate visualization plots
+### 1D Convection-Diffusion
+```bash
+cd Conv_Diff
+
+# Step 1: Generate training data (in-distribution)
+python DataGen.py
+
+# Step 2: Edit DataGen.py to change parameter bounds
+# Change to OOD parameters (see experiment section), then run:
+python DataGen.py  # Generate calibration/validation data
+
+# Step 3: Train models and evaluate CP
+python CD_UNet_CP.py
+```
+
+### 2D Wave (U-Net)
+```bash
+cd Wave
+
+# Step 1: Generate data
+python Spectral_Wave_Data_Gen.py
+
+# Step 2: Train U-Net
+python Wave_UNet.py
+
+# Step 3: Evaluate with CP
+python Wave_Unet_CP.py
+
+# Optional: OOD testing at half wave speed
+python tests/Wave_Unet_CP_halfspeed.py
+```
+
+### 2D Wave (FNO)
+```bash
+cd Wave
+
+# Step 1: Generate data (if not done already)
+python Spectral_Wave_Data_Gen.py
+
+# Step 2: Train FNO
+python Wave_FNO.py
+
+# Step 3: Evaluate with CP
+python Wave_FNO_CP.py
+
+# Optional: OOD testing at half wave speed
+python tests/Wave_FNO_CP_halfspeed.py
+```
+
+### 2D Navier-Stokes
+```bash
+cd Navier_Stokes
+
+# Step 1: Download data from FNO paper
+# See experiment section for download links
+
+# Step 2: Train FNO
+python FNO_NS_Zongyi.py
+
+# Step 3: Evaluate with CP
+python NS_FNO_CP.py
+```
+
+### What Each Script Does
+
+**Data Generation Scripts**:
+- Solve PDEs numerically with varying parameters
+- Sample parameter space (Latin hypercube)
+- Output: `.npz` or `.npy` files in `Data/` directory
+
+**Training Scripts**:
+- Load generated/downloaded data
+- Train neural network models (500-1000 epochs)
+- Output: Model weights (`.pth` files) in `Models/` directory
+
+**CP Evaluation Scripts**:
+- Load trained models
+- Load calibration and validation data
+- Train separate models for each CP method (CQR, AER, STD)
+- Compute nonconformity scores
+- Perform calibration
+- Validate coverage
+- Output: Plots and coverage metrics
 
 ---
 
