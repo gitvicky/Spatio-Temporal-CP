@@ -1,6 +1,6 @@
 # Uncertainty Quantification of Surrogate Models using Conformal Prediction
 
-This repository contains the implementation of experiments from the paper **["Uncertainty Quantification of Surrogate Models using Conformal Prediction"]([url](https://arxiv.org/abs/2408.09881))**. The code provides a framework for obtaining statistically guaranteed error bars on neural network predictions for spatio-temporal PDE systems using conformal prediction (CP).
+This repository contains the implementation of experiments from the paper **["Uncertainty Quantification of Surrogate Models using Conformal Prediction"](https://arxiv.org/abs/2408.09881)**. The code provides a framework for obtaining statistically guaranteed error bars on neural network predictions for spatio-temporal PDE systems using conformal prediction (CP).
 
 ## Overview
 
@@ -57,7 +57,7 @@ All experiments follow this 6-step framework:
 **Training**:
 ```bash
 cd Poisson/
-python Poisson_MLP_CP.py
+python Poisson_NN_CP.py
 ```
 
 **Results**: All methods achieve ~90% coverage with tight error bars (AER: 0.002 normalized units)
@@ -577,7 +577,7 @@ For large n_cal, this approaches (1 - alpha). For small n_cal, it provides conse
 
 ### Out-of-Distribution CP
 
-CP can provide valid coverage even when test distribution differs from training:
+CP can provide valid coverage even when test distribution differs from training (as long as we have calibration dtaa in the new regime):
 
 1. Train model on distribution P_train
 2. Calibrate on distribution P_cal (can differ from P_train)
@@ -646,7 +646,7 @@ To reproduce the results in Table 1 of the paper:
 
 ```bash
 # 1D Poisson
-cd Poisson && python Poisson_MLP_CP.py
+cd Poisson && python Poisson_NN_CP.py
 
 # 1D Convection-Diffusion  
 cd Conv_Diff && python CD_UNet_CP.py
@@ -662,8 +662,8 @@ cd Navier_Stokes && python NS_FNO_CP.py
 ```
 
 Each script will:
-1. Load or generate data
-2. Train model(s) for each CP method
+1. Load or generate data (if available)
+2. Load the trained model (if available)
 3. Perform calibration
 4. Compute coverage and tightness metrics
 5. Generate visualization plots
@@ -696,11 +696,14 @@ Each script will:
 If you use this code in your research, please cite:
 
 ```bibtex
-@article{gopakumar2025uncertainty,
-  title={Uncertainty Quantification of Surrogate Models using Conformal Prediction},
-  author={Gopakumar, Vignesh and others},
-  journal={arXiv preprint arXiv:XXXX.XXXXX},
-  year={2025}
+@misc{gopakumar2024uncertaintyquantificationsurrogatemodels,
+      title={Uncertainty Quantification of Surrogate Models using Conformal Prediction}, 
+      author={Vignesh Gopakumar and Ander Gray and Joel Oskarsson and Lorenzo Zanisi and Stanislas Pamela and Daniel Giles and Matt Kusner and Marc Peter Deisenroth},
+      year={2024},
+      eprint={2408.09881},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2408.09881}, 
 }
 ```
 
@@ -720,10 +723,10 @@ If you use this code in your research, please cite:
 
 ## License
 
-[Specify your license here]
+MIT License]
 
 ---
 
 ## Contact
 
-For questions or issues, please open an issue on GitHub or contact [your contact information].
+For questions or issues, please open an issue on GitHub or contact v.gopakumar@ucl.ac.uk
