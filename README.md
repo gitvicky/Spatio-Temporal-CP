@@ -1,6 +1,6 @@
 # Uncertainty Quantification of Surrogate Models using Conformal Prediction
 
-This repository contains the implementation of experiments from the paper **"Uncertainty Quantification of Surrogate Models using Conformal Prediction"**. The code provides a framework for obtaining statistically guaranteed error bars on neural network predictions for spatio-temporal PDE systems using conformal prediction (CP).
+This repository contains the implementation of experiments from the paper **["Uncertainty Quantification of Surrogate Models using Conformal Prediction"]([url](https://arxiv.org/abs/2408.09881))**. The code provides a framework for obtaining statistically guaranteed error bars on neural network predictions for spatio-temporal PDE systems using conformal prediction (CP).
 
 ## Overview
 
