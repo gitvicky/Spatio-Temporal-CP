@@ -342,7 +342,7 @@ plt.xlabel("x")
 plt.ylabel("u")
 plt.legend()
 plt.grid() #Comment out if you dont want grids.
-plt.savefig("poisson_cqr.svg", format="svg", bbox_inches='tight', transparent='True')
+plt.savefig("Plots/poisson_cqr.svg", format="svg", bbox_inches='tight', transparent='True')
 plt.show()
 # %% 
 # Calculate empirical coverage (before and after calibration)
@@ -500,7 +500,7 @@ plt.xlabel("x")
 plt.ylabel("u")
 plt.legend()
 plt.grid() #Comment out if you dont want grids.
-plt.savefig("poisson_residual.svg", format="svg", bbox_inches='tight')
+plt.savefig("Plots/poisson_residual.svg", format="svg", bbox_inches='tight')
 plt.show()
 # %%
 # plt.figure()
@@ -699,7 +699,7 @@ plt.xlabel("x")
 plt.ylabel("u")
 plt.legend()
 plt.grid() #Comment out if you dont want grids.
-plt.savefig("poisson_dropout.svg", format="svg", bbox_inches='tight', transparent='True')
+plt.savefig("Plots/poisson_dropout.svg", format="svg", bbox_inches='tight', transparent='True')
 plt.show()
 # %% 
 # Calculate empirical coverage (before and after calibration)
@@ -823,7 +823,7 @@ plt.ylabel('Empirical Coverage')
 plt.title("Poisson", fontsize=72)
 plt.legend()
 plt.grid() #Comment out if you dont want grids.
-plt.savefig("poisson_comparison.svg", format="svg", bbox_inches='tight')
+plt.savefig("Plots/poisson_comparison.svg", format="svg", bbox_inches='tight')
 plt.show()
 
 # %%

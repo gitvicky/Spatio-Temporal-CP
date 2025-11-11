@@ -13,7 +13,6 @@ from matplotlib import pyplot as plt
 from time import time
 from sympy import *
 
-# from simtrack import Simtrack
 
 plt.ioff()
 
@@ -22,22 +21,10 @@ plt.ioff()
 def run_sim(ii, D_damp, c, mu, sigma):
     
     start_time = time()
-    # run = Simtrack()   
 
-    # run_name = 'Simrun_tests_no_alert'+str(ii)
     run_params = {'D_damp': D_damp, 'c': c, 'mu': mu, 'sigma': sigma}
 
-    #     # Specify a run name, metadata (dict), tags (list), description, folder
-    # run.init(run_name,
-    #         run_params, 
-    #         ['FTCS'],  # Tags
-    #         'Convection Diffusion 1D Simulation',   # Description
-    #         '/ConvDiff/Mark_1')    # Folder full path
-    
-    #Upload the code
-    # run.save('RunSim_simtrack.py', 'code')
-    
-    
+
         
     dx = 0.05
     x = np.arange(0, 10, dx)
@@ -94,16 +81,6 @@ def run_sim(ii, D_damp, c, mu, sigma):
         u[-1] = u[-2]
         
         u_mid = u[100]
-        # run.log({'u_mid': float(u_mid)})
-
-        # #Alerting a failed simulation
-        # if u_mid > 1e6:
-        #     run.add_alert('Simulation Unstable', # Name
-        #             'is above', # Type
-        #             'u_interface',           # Metric
-        #             1,                # Frequency
-        #             1,                # Window
-        #             threshold=1e6)     # Threshold
 
         u_dataset[ii+1] = u
         
@@ -121,7 +98,6 @@ def run_sim(ii, D_damp, c, mu, sigma):
     # run.save(os.getcwd() + '/Outputs/' + run_name + '_u.npy', 'output')
     
     end_time = time()
-    # run.set_status('completed')
 
     return u_dataset
 

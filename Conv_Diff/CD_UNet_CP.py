@@ -241,7 +241,7 @@ plt.ylabel(r"\textbf{u}")
 plt.legend()
 plt.grid() #Comment out if you dont want grids.
 
-plt.savefig("convdiff_cqr.svg", format="svg", bbox_inches='tight', transparent='True')
+plt.savefig("Plots/convdiff_cqr.svg", format="svg", bbox_inches='tight', transparent='True')
 plt.show()
 # %% 
 #Testing calibration across range of Alpha for QCR 
@@ -329,7 +329,7 @@ plt.xlabel(r"\textbf{x}")
 plt.ylabel(r"\textbf{u}")
 plt.legend()
 plt.grid() #Comment out if you dont want grids.
-plt.savefig("convdiff_residual.svg", format="svg", bbox_inches='tight',  transparent='True')
+plt.savefig("Plots/convdiff_residual.svg", format="svg", bbox_inches='tight',  transparent='True')
 plt.show()
 
 # %%
@@ -467,7 +467,7 @@ plt.ylabel("u")
 plt.legend()
 plt.grid() #Comment out if you dont want grids.
 
-plt.savefig("convdiff_dropout.svg", format="svg", bbox_inches='tight', transparent='True')
+plt.savefig("Plots/convdiff_dropout.svg", format="svg", bbox_inches='tight', transparent='True')
 plt.show()
 # %%
 #Empirical Coverage across the full range 
@@ -520,7 +520,7 @@ plt.ylabel('Empirical Coverage')
 plt.title("Convection-Diffusion", fontsize=72)
 plt.legend()
 plt.grid() #Comment out if you dont want grids.
-plt.savefig("convdiff_comparison.svg", format="svg", bbox_inches='tight')
+plt.savefig("Plots/convdiff_comparison.svg", format="svg", bbox_inches='tight')
 plt.show()
 # %%
 # outer_grid = fig.add_gridspec(2, 5, wspace=0, hspace=0)
