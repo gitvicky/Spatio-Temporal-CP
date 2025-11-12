@@ -979,7 +979,7 @@ If you use this code in your research, please cite:
 
 ## License
 
-MIT License]
+MIT License
 
 ---
 
