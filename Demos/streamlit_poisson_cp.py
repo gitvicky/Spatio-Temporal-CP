@@ -150,26 +150,64 @@ COLOR_PALETTE = {
 
 
 # ===========================
-# Data Generation
+# Data Generation using py-pde
 # ===========================
 
-def generate_poisson_data(n_samples=7000):
-    """Generate synthetic Poisson equation data"""
-    st.info("Generating Poisson 1D data...")
+def generate_poisson_data(n_samples=3000, lb=0, ub=4, grid_size=32):
+    """Generate Poisson equation data using py-pde
     
+    Solves the 1D Poisson equation: -d²u/dx² = f(x)
+    with boundary conditions: u(0) = 0, du/dx(1) = 1
+    
+    Args:
+        n_samples: Number of samples to generate
+        lb: Lower bound for uniform forcing term
+        ub: Upper bound for uniform forcing term
+        grid_size: Number of grid points (default: 32)
+    
+    Returns:
+        X: Input forcing terms (n_samples, grid_size)
+        Y: Solution fields (n_samples, grid_size)
+    """
+    st.info(f"Generating {n_samples} Poisson 1D samples using py-pde...")
+    
+    from pde import CartesianGrid, ScalarField, solve_poisson_equation
+    
+    # Generate random forcing term parameters
     np.random.seed(42)
+    params = lb + (ub - lb) * np.random.uniform(size=n_samples)
     
-    # Generate input features (forcing terms)
-    X = np.random.randn(n_samples, 32).astype(np.float32)
+    inps = []
+    outs = []
     
-    # Generate corresponding solutions
-    Y = np.zeros((n_samples, 32), dtype=np.float32)
-    x_points = np.linspace(0, 1, 32)
+    # Create progress bar
+    progress_bar = st.progress(0)
+    progress_text = st.empty()
     
-    for i in range(n_samples):
-        forcing = X[i]
-        Y[i] = np.cumsum(forcing) * 0.01 + np.sin(2 * np.pi * x_points) * 0.1
-        Y[i] += np.random.randn(32) * 0.01
+    for ii in range(n_samples):
+        # Create grid and forcing field
+        grid = CartesianGrid([[0, 1]], grid_size, periodic=False)
+        field = ScalarField(grid, params[ii])
+        
+        # Solve Poisson equation with boundary conditions
+        # BC: u(0) = 0 (Dirichlet), du/dx(1) = 1 (Neumann)
+        result = solve_poisson_equation(field, bc=[{"value": 0}, {"derivative": 1}])
+        
+        inps.append(field.data)
+        outs.append(result.data)
+        
+        # Update progress
+        if (ii + 1) % 100 == 0 or ii == n_samples - 1:
+            progress = (ii + 1) / n_samples
+            progress_bar.progress(progress)
+            progress_text.text(f"Generated {ii + 1}/{n_samples} samples")
+    
+    progress_text.empty()
+    
+    X = np.asarray(inps, dtype=np.float32)
+    Y = np.asarray(outs, dtype=np.float32)
+    
+    st.success(f"✅ Generated {n_samples} samples using py-pde")
     
     return X, Y
 
@@ -182,7 +220,11 @@ def train_quantile_model(X_train, Y_train, gamma, epochs=100, batch_size=100):
     """Train quantile regression model"""
     device = torch.device('cpu')
     
-    model = MLP(32, 32, 3, 64)
+    # Get dimensions from data
+    input_dim = X_train.shape[1]
+    output_dim = Y_train.shape[1]
+    
+    model = MLP(input_dim, output_dim, 3, 64)
     model = model.to(device)
     
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
@@ -226,7 +268,11 @@ def train_residual_model(X_train, Y_train, epochs=100, batch_size=100):
     """Train residual-based model"""
     device = torch.device('cpu')
     
-    model = MLP(32, 32, 3, 64)
+    # Get dimensions from data
+    input_dim = X_train.shape[1]
+    output_dim = Y_train.shape[1]
+    
+    model = MLP(input_dim, output_dim, 3, 64)
     model = model.to(device)
     
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
@@ -271,7 +317,11 @@ def train_dropout_model(X_train, Y_train, epochs=100, batch_size=100):
     """Train dropout-based model"""
     device = torch.device('cpu')
     
-    model = MLP_Dropout(32, 32, 3, 64, dropout_rate=0.1)
+    # Get dimensions from data
+    input_dim = X_train.shape[1]
+    output_dim = Y_train.shape[1]
+    
+    model = MLP_Dropout(input_dim, output_dim, 3, 64, dropout_rate=0.1)
     model = model.to(device)
     
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
@@ -393,9 +443,15 @@ def main():
     
     # Data settings
     st.sidebar.subheader("Data Settings")
-    n_samples = st.sidebar.number_input("Total Samples", value=7000, min_value=1000, step=1000)
-    train_split = st.sidebar.number_input("Training Samples", value=5000, min_value=1000, step=500)
+    n_samples = st.sidebar.number_input("Total Samples", value=3000, min_value=1000, step=1000)
+    train_split = st.sidebar.number_input("Training Samples", value=2000, min_value=1000, step=500)
     cal_split = st.sidebar.number_input("Calibration Samples", value=1000, min_value=100, step=100)
+    
+    # Py-PDE settings
+    st.sidebar.subheader("PDE Settings")
+    lb = st.sidebar.number_input("Forcing Lower Bound", value=0.0, step=0.5)
+    ub = st.sidebar.number_input("Forcing Upper Bound", value=4.0, step=0.5)
+    grid_size = st.sidebar.number_input("Grid Size", value=32, min_value=16, max_value=128, step=16)
     
     # Training settings
     st.sidebar.subheader("Training Settings")
@@ -430,7 +486,7 @@ def main():
         # Generate data button
         if st.button("🔄 Generate Data", type="primary"):
             with st.spinner("Generating data..."):
-                X, Y = generate_poisson_data(n_samples)
+                X, Y = generate_poisson_data(n_samples, lb=lb, ub=ub, grid_size=grid_size)
                 
                 # Split data
                 X_train = X[:train_split]
@@ -533,7 +589,8 @@ def main():
                 
                 x_viz = X_test[viz_idx:viz_idx+1]
                 y_viz = Y_test[viz_idx]
-                x_range = np.linspace(0, 1, 32)
+                grid_size = X_test.shape[1]  # Get grid size from data
+                x_range = np.linspace(0, 1, grid_size)
                 
                 fig, axes = plt.subplots(len(st.session_state.models_trained), 1, 
                                         figsize=(12, 4.5*len(st.session_state.models_trained)))

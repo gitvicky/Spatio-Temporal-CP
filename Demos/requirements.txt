@@ -1,9 +1,6 @@
-# Core dependencies for Streamlit Poisson CP App
 streamlit>=1.28.0
 numpy>=1.24.0
-torch>=2.1.0
+torch>=2.0.0
 matplotlib>=3.7.0
-
-# Optional: if you need these for the original script
-# pyDOE>=0.3.8
-# scipy>=1.10.0
+py-pde>=0.36.0
+scipy>=1.10.0
