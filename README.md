@@ -30,7 +30,9 @@ All experiments follow this 6-step framework:
 Codes to generate data, train surrogate models and to perform CP for base experiments is given here. For the more advanced experiments, go through the repositories given below:
 
 [Plasma Modelling](https://github.com/Plasma-FNO)
+
 [Foundation Physics Models](https://github.com/gitvicky/multiple_physics_pretraining) 
+
 [Neural Weather Models](https://github.com/gitvicky/neural-lam-CP)
 
 
