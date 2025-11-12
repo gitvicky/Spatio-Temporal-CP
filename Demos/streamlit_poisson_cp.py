@@ -92,6 +92,7 @@ def MLP_dropout_eval(model, x, num_samples=50):
 # Color Palette Configuration
 # ===========================
 
+# Primary Color Scheme (current)
 COLOR_PALETTE = {
     'CQR': {
         'main': '#C41E3A',        # Ruby Red
@@ -108,16 +109,44 @@ COLOR_PALETTE = {
         'dark': '#004D57'          # Deep Teal
     },
     'STD': {
-        'main': '#264653',         # Charcoal Blue
-        'prediction': '#2A9D8F',   # Persian Green
-        'bounds': '#5AB2A8',       # Sea Green
-        'fill': '#B8E6DD',         # Powder Blue
-        'dark': '#1A3A45'          # Dark Navy
+        'main': '#5B2C6F',         # Deep Purple
+        'prediction': '#8E44AD',   # Amethyst
+        'bounds': '#A569BD',       # Medium Purple
+        'fill': '#D7BDE2',         # Lavender
+        'dark': '#4A235A'          # Dark Purple
     },
     'ground_truth': '#2C3E50',     # Dark Slate
     'background': '#F8F9FA',        # Light Gray
     'grid': '#E0E0E0'              # Medium Gray
 }
+
+# Alternative Color Scheme (uncomment to use)
+# COLOR_PALETTE = {
+#     'CQR': {
+#         'main': '#D32F2F',        # Red 700
+#         'prediction': '#EF5350',   # Red 400
+#         'bounds': '#E57373',       # Red 300
+#         'fill': '#FFCDD2',         # Red 100
+#         'dark': '#B71C1C'          # Red 900
+#     },
+#     'AER': {
+#         'main': '#F57C00',         # Orange 700
+#         'prediction': '#FF9800',   # Orange 500
+#         'bounds': '#FFB74D',       # Orange 300
+#         'fill': '#FFE0B2',         # Orange 100
+#         'dark': '#E65100'          # Orange 900
+#     },
+#     'STD': {
+#         'main': '#1976D2',         # Blue 700
+#         'prediction': '#2196F3',   # Blue 500
+#         'bounds': '#64B5F6',       # Blue 300
+#         'fill': '#BBDEFB',         # Blue 100
+#         'dark': '#0D47A1'          # Blue 900
+#     },
+#     'ground_truth': '#263238',     # Blue Grey 900
+#     'background': '#FAFAFA',       # Grey 50
+#     'grid': '#E0E0E0'              # Grey 300
+# }
 
 
 # ===========================
