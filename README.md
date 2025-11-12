@@ -32,6 +32,10 @@ Codes to generate data, train surrogate models and to perform CP for base experi
 [Plasma Modelling](https://github.com/Plasma-FNO), [Foundation Physics Models](https://github.com/gitvicky/multiple_physics_pretraining), [Neural Weather Models](https://github.com/gitvicky/neural-lam-CP)
 
 
+## Interactive Demo
+In order to run an interactive streamlit demo, navigate to Demos/ and execute `streamlit run streamlit_poisson_cp.py`, one the requirements are installed. A `readme` is attached to the demo to help get started. 
+
+
 ## Repository Structure
 
 ```
