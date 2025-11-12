@@ -33,7 +33,7 @@ Codes to generate data, train surrogate models and to perform CP for base experi
 
 
 ## Interactive Demo
-In order to run an interactive streamlit demo, navigate to Demos/ and execute `streamlit run streamlit_poisson_cp.py`, one the requirements are installed. A `readme` is attached to the demo to help get started. 
+In order to run an interactive streamlit demo, navigate to [Demos/](https://github.com/gitvicky/Spatio-Temporal-CP/tree/main/Demos) and execute `streamlit run streamlit_poisson_cp.py`, one the requirements are installed. A `readme` is attached to the demo to help get started. 
 
 
 ## Repository Structure
