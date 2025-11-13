@@ -37,7 +37,7 @@ Codes to generate data, train surrogate models and to perform CP for base experi
 ## Interactive Demo
 👉 [A live interactive demo of our method applied to the Poisson Equation can be found in this server](https://spatiotemporal-conformal-prediction.streamlit.app/)
 
-![Streamlit Visualiser for ST-CP over Poisson Equation](demo_overview.png)
+![Streamlit Visualiser for ST-CP over Poisson Equation](demo.png)
 In order to run the interactive demo locally, navigate to [Demos/](https://github.com/gitvicky/Spatio-Temporal-CP/tree/main/Demos) and execute `streamlit run streamlit_poisson_cp.py`, one the requirements are installed. A `readme` is attached to the demo to help get started. 
 
 
