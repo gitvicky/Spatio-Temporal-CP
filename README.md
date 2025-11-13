@@ -14,6 +14,8 @@ Conformal prediction provides **distribution-free, model-agnostic uncertainty qu
 
 **Key Result**: CP provides valid uncertainty bounds regardless of model architecture or training procedure, requiring only exchangeability between calibration and test data.
 
+![Calibrated Error bars over Neural Weather Predictions](overview.png)
+
 ## Experiment Structure
 
 All experiments follow this 6-step framework:
