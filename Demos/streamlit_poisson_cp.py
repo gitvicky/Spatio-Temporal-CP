@@ -153,7 +153,7 @@ COLOR_PALETTE = {
 # Data Generation using py-pde
 # ===========================
 
-def generate_poisson_data(n_samples=3000, lb=0, ub=4, grid_size=32):
+def generate_poisson_data(n_samples=4000, lb=0, ub=4, grid_size=32):
     """Generate Poisson equation data using py-pde
     
     Solves the 1D Poisson equation: -d²u/dx² = f(x)
@@ -443,14 +443,14 @@ def main():
     
     # Data settings
     st.sidebar.subheader("Data Settings")
-    n_samples = st.sidebar.number_input("Total Samples", value=3000, min_value=1000, step=1000)
+    n_samples = st.sidebar.number_input("Total Samples", value=4000, min_value=1000, step=1000)
     train_split = st.sidebar.number_input("Training Samples", value=2000, min_value=1000, step=500)
     cal_split = st.sidebar.number_input("Calibration Samples", value=1000, min_value=100, step=100)
     
     # Py-PDE settings
     st.sidebar.subheader("PDE Settings")
     lb = st.sidebar.number_input("Forcing Lower Bound", value=0.0, step=0.5)
-    ub = st.sidebar.number_input("Forcing Upper Bound", value=4.0, step=0.5)
+    ub = st.sidebar.number_input("Forcing Upper Bound", value=8.0, step=0.5)
     grid_size = st.sidebar.number_input("Grid Size", value=32, min_value=16, max_value=128, step=16)
     
     # Training settings
@@ -459,7 +459,7 @@ def main():
     
     # Alpha parameter
     st.sidebar.subheader("Conformal Prediction")
-    alpha = st.sidebar.slider("Alpha (1-α = coverage)", min_value=0.01, max_value=0.50, value=0.10, step=0.01)
+    alpha = st.sidebar.slider("Alpha (1-α = coverage)", min_value=0.10, max_value=0.90, value=0.50, step=0.10)
     
     # Method selection
     methods = st.sidebar.multiselect(
@@ -469,7 +469,7 @@ def main():
     )
     
     # Visualization sample
-    viz_idx = st.sidebar.number_input("Visualization Sample Index", value=23, min_value=0, step=1)
+    viz_idx = st.sidebar.number_input("Visualization Sample Index", value=50, min_value=0, step=1)
     
     # Initialize session state
     if 'data_generated' not in st.session_state:
